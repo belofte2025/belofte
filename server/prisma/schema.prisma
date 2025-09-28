@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id          String            @id @default(uuid())
+  address     String?
+  phone       String?
+  createdAt   DateTime          @default(now())
+  companyName String
+  containers  Container[]
+  customer    Customer[]
+  custpayment CustomerPayment[]
+  sale        Sale[]
+  suppliers   Supplier[]
+  users       User[]
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  companyId String
+  createdAt DateTime   @default(now())
+  role      String     @default("user")
+  userName  String
+  auditLog  AuditLog[]
+  company   Company    @relation(fields: [companyId], references: [id])
+}
+
+model Customer {
+  id           String            @id @default(uuid())
+  phone        String
+  balance      Float             @default(0)
+  companyId    String
+  createdAt    DateTime          @default(now())
+  customerName String
+  company      Company           @relation(fields: [companyId], references: [id])
+  custpayment  CustomerPayment[]
+  sale         Sale[]
+}
+
+model Container {
+  id          String          @id @default(uuid())
+  containerNo String
+  arrivalDate DateTime
+  year        Int
+  status      String          @default("Pending")
+  supplierId  String
+  companyId   String
+  createdAt   DateTime        @default(now())
+  company     Company         @relation(fields: [companyId], references: [id])
+  supplier    Supplier        @relation(fields: [supplierId], references: [id])
+  items       ContainerItem[]
+}
+
+model ContainerItem {
+  id          String    @id @default(uuid())
+  containerId String
+  itemName    String
+  quantity    Int
+  receivedQty Int       @default(0)
+  unitPrice   Float
+  soldQty     Int       @default(0)
+  container   Container @relation(fields: [containerId], references: [id])
+}
+
+model SupplierItem {
+  id         String   @id @default(uuid())
+  supplierId String
+  itemName   String
+  price      Float
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+}
+
+model Supplier {
+  id           String         @id @default(uuid())
+  contact      String
+  country      String
+  companyId    String
+  createdAt    DateTime       @default(now())
+  suppliername String
+  containers   Container[]
+  company      Company        @relation(fields: [companyId], references: [id])
+  items        SupplierItem[]
+}
+
+model Sale {
+  id          String     @id @default(uuid())
+  saleType    String
+  sourceType  String
+  sourceId    String
+  customerId  String
+  companyId   String
+  totalAmount Float
+  createdAt   DateTime   @default(now())
+  company     Company    @relation(fields: [companyId], references: [id])
+  customer    Customer   @relation(fields: [customerId], references: [id])
+  items       SaleItem[]
+}
+
+model SaleItem {
+  id        String @id @default(uuid())
+  saleId    String
+  itemName  String
+  quantity  Int
+  unitPrice Float
+  sale      Sale   @relation(fields: [saleId], references: [id])
+}
+
+model CustomerPayment {
+  id          String   @id @default(uuid())
+  customerId  String
+  companyId   String
+  amount      Float
+  note        String?
+  createdAt   DateTime @default(now())
+  paymentType String?  @db.VarChar
+  company     Company  @relation(fields: [companyId], references: [id])
+  customer    Customer @relation(fields: [customerId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String
+  actionType  String
+  entityType  String
+  entityId    String
+  description String
+  timestamp   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}

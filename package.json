@@ -1,0 +1,25 @@
+{
+  "name": "belofte-enterprise",
+  "version": "1.0.0",
+  "description": "Unified frontend and backend application",
+  "main": "server/dist/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "start": "cd server && npm start",
+    "vercel:build": "cd client && npm run build",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "clean": "rimraf client/.next client/out server/dist"
+  },
+  "keywords": ["express", "nextjs", "typescript", "fullstack"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "rimraf": "^5.0.0"
+  }
+}

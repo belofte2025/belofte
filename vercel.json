@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "name": "belofte-enterprise",
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/next",
+      "config": {
+        "distDir": ".next"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "client/$1"
+    }
+  ]
+}

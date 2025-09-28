@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id          String            @id @default(uuid())
+  name        String
+  address     String?
+  phone       String?
+  users       User[]
+  sale        Sale[]
+  custpayment CustomerPayment[]
+  customer    Customer[]
+  suppliers   Supplier[] // ✅ Add this
+  containers  Container[] // ✅ Add this
+  createdAt   DateTime          @default(now())
+}
+
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  password  String
+  role      String     @default("user") // "admin" | "staff" | "viewer"
+  auditLog  AuditLog[]
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id])
+  createdAt DateTime   @default(now())
+}
+
+model Customer {
+  id          String            @id @default(uuid())
+  name        String
+  phone       String
+  balance     Float             @default(0)
+  companyId   String
+  sale        Sale[]
+  custpayment CustomerPayment[]
+  company     Company           @relation(fields: [companyId], references: [id])
+  createdAt   DateTime          @default(now())
+}
+
+model Container {
+  id          String          @id @default(uuid())
+  containerNo String
+  arrivalDate DateTime
+  year        Int
+  status      String          @default("Pending")
+  supplierId  String
+  companyId   String
+  supplier    Supplier        @relation(fields: [supplierId], references: [id])
+  company     Company         @relation(fields: [companyId], references: [id])
+  items       ContainerItem[]
+  createdAt   DateTime        @default(now())
+}
+
+model ContainerItem {
+  id          String    @id @default(uuid())
+  containerId String
+  itemName    String
+  quantity    Int // Expected quantity
+  receivedQty Int       @default(0)
+  unitPrice   Float
+  container   Container @relation(fields: [containerId], references: [id])
+}
+
+model SupplierItem {
+  id         String   @id @default(uuid())
+  supplierId String
+  itemName   String
+  price      Float
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+}
+
+model Supplier {
+  id         String         @id @default(uuid())
+  name       String
+  contact    String
+  country    String
+  companyId  String
+  company    Company        @relation(fields: [companyId], references: [id])
+  items      SupplierItem[]
+  containers Container[] // ✅ Add this
+  createdAt  DateTime       @default(now())
+}
+
+model Sale {
+  id          String   @id @default(uuid())
+  saleType    String // "cash" or "credit"
+  sourceType  String // "container" or "supplier"
+  sourceId    String // containerId or supplierId
+  customerId  String
+  companyId   String
+  totalAmount Float
+  createdAt   DateTime @default(now())
+
+  items    SaleItem[]
+  customer Customer   @relation(fields: [customerId], references: [id])
+  company  Company    @relation(fields: [companyId], references: [id])
+}
+
+model SaleItem {
+  id        String @id @default(uuid())
+  saleId    String
+  itemName  String
+  quantity  Int
+  unitPrice Float
+
+  sale Sale @relation(fields: [saleId], references: [id])
+}
+
+model CustomerPayment {
+  id         String   @id @default(uuid())
+  customerId String
+  companyId  String
+  amount     Float
+  note       String?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  company  Company  @relation(fields: [companyId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String
+  actionType  String // e.g., CREATE, UPDATE, DELETE
+  entityType  String // e.g., Sale, Payment, Container
+  entityId    String
+  description String
+  timestamp   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
