@@ -6,8 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --env-file=.env src/index.ts",
-    "build": "tsc",
-    "start": "npx prisma migrate deploy && node dist/index.js"
+    "build": "npx prisma generate && tsc",
+    "start": "npx prisma migrate deploy && node dist/index.js",
+    "postinstall": "npx prisma generate"
   },
   "keywords": [],
   "author": "",
