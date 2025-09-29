@@ -1,19 +1,9 @@
 {
   "version": 2,
-  "name": "belofte-enterprise",
-  "builds": [
-    {
-      "src": "client/package.json",
-      "use": "@vercel/next",
-      "config": {
-        "distDir": ".next"
-      }
+  "functions": {
+    "api/[...all].ts": {
+      "runtime": "nodejs20.x",
+      "includeFiles": "prisma/**"
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "client/$1"
-    }
-  ]
+  }
 }
