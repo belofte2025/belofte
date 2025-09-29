@@ -1,17 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  BarChart2,
-  Users,
-  ArrowRight,
-  CheckCircle,
-  TrendingUp,
-  Shield,
-  Zap,
-  Container,
-  Package,
-} from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -107,23 +97,9 @@ export default function Home() {
                 href="/login"
                 className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 font-semibold rounded-full hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-xl"
               >
-                Get Started
+                Login
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 px-8 py-4 border-2 border-white/30 text-white font-semibold rounded-full hover:bg-white/10 transition-all duration-200 backdrop-blur-sm"
-              >
-                Create Account
-              </Link>
-            </div>
-
-            {/* Stats */}
-            <div className="mt-16 grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-4xl mx-auto">
-              <StatCard number="99.9" label="Uptime" suffix="%" />
-              <StatCard number="500" label="Happy Customers" suffix="+" />
-              <StatCard number="24/7" label="Support" />
-              <StatCard number="5" label="Star Rating" suffix="⭐" />
             </div>
           </div>
         </div>
@@ -150,68 +126,12 @@ export default function Home() {
                 digital age.
               </p>
             </div>
-            <div>
-              <h3 className="font-semibold text-white mb-4">Product</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/features"
-                    className="hover:text-white transition-colors"
-                  >
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/pricing"
-                    className="hover:text-white transition-colors"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/security"
-                    className="hover:text-white transition-colors"
-                  >
-                    Security
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-4">Support</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/help"
-                    className="hover:text-white transition-colors"
-                  >
-                    Help Center
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/contact"
-                    className="hover:text-white transition-colors"
-                  >
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/status"
-                    className="hover:text-white transition-colors"
-                  >
-                    System Status
-                  </Link>
-                </li>
-              </ul>
-            </div>
           </div>
+
           <div className="border-t border-gray-800 mt-12 pt-8 text-center">
             <p className="text-gray-400">
-              © {new Date().getFullYear()} EYO Solutions. All rights reserved.
+              © {new Date().getFullYear()} EYO Solutions. All rights reserved
+              0246462398.
             </p>
           </div>
         </div>
