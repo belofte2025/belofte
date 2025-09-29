@@ -1,9 +1,20 @@
 {
   "version": 2,
-  "functions": {
-    "api/[...all].ts": {
-      "runtime": "nodejs20.x",
-      "includeFiles": "{prisma/**,node_modules/.prisma/**}"
+  "builds": [
+    {
+      "src": "api/[...all].ts",
+      "use": "@vercel/node"
     }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/[...all]"
+    }
+  ],
+  "installCommand": "npm install && npx prisma generate",
+  "buildCommand": "npm run build",
+  "env": {
+    "NODE_ENV": "production"
   }
 }
