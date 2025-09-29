@@ -2,13 +2,14 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import ItemDetailsPage from "@/components/pages/items/ItemDetailsPage";
 
 interface ItemPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function ItemPage({ params }: ItemPageProps) {
+export default async function ItemPage({ params }: ItemPageProps) {
+  const { id } = await params;
   return (
     <DashboardLayout>
-      <ItemDetailsPage itemId={params.id} />
+      <ItemDetailsPage itemId={id} />
     </DashboardLayout>
   );
 }

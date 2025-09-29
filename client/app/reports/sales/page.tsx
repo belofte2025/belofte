@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
   ArrowLeft, 
@@ -43,7 +43,7 @@ export default function SalesReportPage() {
     return date.toISOString().split('T')[0];
   });
 
-  const fetchSalesReport = async () => {
+  const fetchSalesReport = useCallback(async () => {
     if (!startDate || !endDate) {
       toast.error("Please select both start and end dates");
       return;
@@ -65,11 +65,11 @@ export default function SalesReportPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchSalesReport();
-  }, []); // Only on mount
+  }, [fetchSalesReport]);
 
   // Calculate summary stats for PDF export
   const totalRevenue = Array.isArray(sales) ? sales.reduce((sum, sale) => sum + sale.totalAmount, 0) : 0;
@@ -134,7 +134,7 @@ export default function SalesReportPage() {
 
       html2pdf().from(content).save(`Sales_Report_${startDate}_to_${endDate}.pdf`);
       toast.success("Report exported successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to export report");
     }
   };
@@ -252,7 +252,7 @@ export default function SalesReportPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {Array.isArray(sales) && sales.map((sale, index) => (
+                    {Array.isArray(sales) && sales.map((sale) => (
                       <tr key={sale.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {new Date(sale.createdAt).toLocaleDateString()}

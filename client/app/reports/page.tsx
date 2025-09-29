@@ -2,80 +2,14 @@
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
-  Download,
-  RefreshCw,
   Users,
   Package,
   Container,
   FileText,
-  ArrowUpRight,
-  ArrowDownRight
+  ArrowUpRight
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
-interface ReportCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  value: string;
-  change: string;
-  changeType: "increase" | "decrease";
-  href?: string;
-}
-
-function ReportCard({
-  icon,
-  title,
-  description,
-  value,
-  change,
-  changeType,
-  href,
-}: ReportCardProps) {
-  const content = (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-blue-100 rounded-lg">{icon}</div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{title}</h3>
-              <p className="text-sm text-gray-600">{description}</p>
-            </div>
-          </div>
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-2xl font-bold text-gray-900 mb-1">{value}</p>
-              <div
-                className={`flex items-center text-sm ${
-                  changeType === "increase" ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {changeType === "increase" ? (
-                  <ArrowUpRight className="w-4 h-4 mr-1" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4 mr-1" />
-                )}
-                {change}
-              </div>
-            </div>
-            {href && (
-              <Link
-                href={href}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                View Details →
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  return href ? <Link href={href}>{content}</Link> : content;
-}
 
 interface QuickReportProps {
   icon: React.ReactNode;
@@ -115,7 +49,6 @@ function QuickReportCard({
 }
 
 export default function ReportsPage() {
-  const [dateRange, setDateRange] = useState("7d");
 
   return (
     <DashboardLayout>

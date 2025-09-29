@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { 
   getSupplierItemsForQuantityManagement, 
   bulkAdjustQuantities 
@@ -57,7 +56,6 @@ type QuantityAdjustment = {
 };
 
 export default function QuantityManagementPage({ supplierId }: QuantityManagementPageProps) {
-  const router = useRouter();
   const [data, setData] = useState<SupplierData | null>(null);
   const [loading, setLoading] = useState(true);
   const [bulkMode, setBulkMode] = useState(false);
@@ -171,7 +169,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
       setAdjustments({});
       setBulkMode(false);
       
-      const successCount = result.results.filter((r: any) => r.status === 'updated').length;
+      const successCount = result.results.filter((r: { status: string }) => r.status === 'updated').length;
       toast.success(`Successfully adjusted ${successCount} items`);
     } catch (error) {
       console.error("Failed to bulk adjust quantities:", error);

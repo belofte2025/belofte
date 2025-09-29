@@ -2,13 +2,14 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import QuantityManagementPage from "@/components/pages/items/QuantityManagementPage";
 
 interface QuantityManagementRouteProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function QuantityManagementRoute({ params }: QuantityManagementRouteProps) {
+export default async function QuantityManagementRoute({ params }: QuantityManagementRouteProps) {
+  const { id } = await params;
   return (
     <DashboardLayout>
-      <QuantityManagementPage supplierId={params.id} />
+      <QuantityManagementPage supplierId={id} />
     </DashboardLayout>
   );
 }

@@ -1,57 +1,8 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CheckCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
-interface FeatureCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  features: string[];
-}
-
-function FeatureCard({ icon, title, description, features }: FeatureCardProps) {
-  return (
-    <div className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="relative z-10">
-        <div className="mb-6 inline-flex p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-          {icon}
-        </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-700 transition-colors">
-          {title}
-        </h3>
-        <p className="text-gray-600 mb-6">{description}</p>
-        <ul className="space-y-2">
-          {features.map((feature, index) => (
-            <li key={index} className="flex items-center text-sm text-gray-700">
-              <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-              {feature}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-interface StatProps {
-  number: string;
-  label: string;
-  suffix?: string;
-}
-
-function StatCard({ number, label, suffix = "" }: StatProps) {
-  return (
-    <div className="text-center">
-      <div className="text-4xl font-bold text-white mb-2">
-        {number}
-        <span className="text-2xl text-blue-200">{suffix}</span>
-      </div>
-      <div className="text-blue-100 font-medium">{label}</div>
-    </div>
-  );
-}
 
 export default function Home() {
   return (

@@ -75,9 +75,6 @@ export default function ContainersReportPage() {
     sum + (Array.isArray(container.items) ? container.items.reduce((itemSum, item) => itemSum + item.soldQty, 0) : 0), 0
   ) : 0;
 
-  const recentContainers = Array.isArray(containers) ? containers
-    .sort((a, b) => new Date(b.arrivalDate).getTime() - new Date(a.arrivalDate).getTime())
-    .slice(0, 10) : [];
 
   const exportToPDF = async () => {
     try {
@@ -143,7 +140,7 @@ export default function ContainersReportPage() {
 
       html2pdf().from(content).save(`Container_Report_${new Date().toLocaleDateString().replace(/\//g, '_')}.pdf`);
       toast.success("Report exported successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to export report");
     }
   };

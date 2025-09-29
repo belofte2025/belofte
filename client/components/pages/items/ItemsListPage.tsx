@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSupplierItemsWithSales, deleteSupplierItem } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
-import { PlusCircle, Package, Factory, DollarSign, Trash2, Edit, Eye, Settings, TrendingUp } from "lucide-react";
+import { PlusCircle, Factory, DollarSign, Trash2, Eye, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
@@ -69,7 +69,7 @@ export default function ItemsListPage() {
         await deleteSupplierItem(id);
         setItems(prev => prev.filter(item => item.id !== id));
         toast.success("Item deleted successfully");
-      } catch (error) {
+      } catch {
         toast.error("Failed to delete item");
       }
     }
@@ -200,14 +200,14 @@ export default function ItemsListPage() {
                 </span>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => toast.info("Navigate to supplier page first for price management")}
+                    onClick={() => toast("Navigate to supplier page first for price management")}
                     className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200"
                   >
                     <DollarSign className="w-4 h-4" />
                     Manage Prices
                   </button>
                   <button
-                    onClick={() => toast.info("Navigate to supplier page first for quantity management")}
+                    onClick={() => toast("Navigate to supplier page first for quantity management")}
                     className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors duration-200"
                   >
                     <TrendingUp className="w-4 h-4" />

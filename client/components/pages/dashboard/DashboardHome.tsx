@@ -51,7 +51,7 @@ export default function DashboardHome() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
+        {stats.map((stat) => {
           return (
             <div
               key={stat.title}
@@ -76,7 +76,7 @@ export default function DashboardHome() {
         <h2 className="text-xl font-semibold text-gray-900">Quick Actions</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {quickActions.map((action, index) => {
+          {quickActions.map((action) => {
             return (
               <a
                 key={action.title}

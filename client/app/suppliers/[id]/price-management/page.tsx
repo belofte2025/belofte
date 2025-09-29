@@ -2,13 +2,14 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import PriceManagementPage from "@/components/pages/items/PriceManagementPage";
 
 interface PriceManagementRouteProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function PriceManagementRoute({ params }: PriceManagementRouteProps) {
+export default async function PriceManagementRoute({ params }: PriceManagementRouteProps) {
+  const { id } = await params;
   return (
     <DashboardLayout>
-      <PriceManagementPage supplierId={params.id} />
+      <PriceManagementPage supplierId={id} />
     </DashboardLayout>
   );
 }

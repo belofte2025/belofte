@@ -2,13 +2,14 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import SupplierDetailsPage from "@/components/pages/suppliers/SupplierDetailsPage";
 
 interface SupplierPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function SupplierPage({ params }: SupplierPageProps) {
+export default async function SupplierPage({ params }: SupplierPageProps) {
+  const { id } = await params;
   return (
     <DashboardLayout>
-      <SupplierDetailsPage supplierId={params.id} />
+      <SupplierDetailsPage supplierId={id} />
     </DashboardLayout>
   );
 }

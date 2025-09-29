@@ -121,9 +121,9 @@ export default function CustomersReportPage() {
 
       html2pdf().from(content).save(`Customer_Analytics_Report_${new Date().toLocaleDateString().replace(/\//g, '_')}.pdf`);
       toast.success("Report exported successfully!");
-    } catch (error) {
-      toast.error("Failed to export report");
-    }
+        } catch {
+          toast.error("Failed to export report");
+        }
   };
 
   return (

@@ -17,8 +17,8 @@ type Supplier = {
   contact: string;
   country: string;
   createdAt: string;
-  containers: any[];
-  items: any[];
+  containers: unknown[];
+  items: unknown[];
 };
 
 export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageProps) {
@@ -54,7 +54,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
 
   const handleSave = async () => {
     try {
-      const updatedSupplier = await updateSupplier(supplierId, formData);
+      await updateSupplier(supplierId, formData);
       setSupplier(prev => prev ? { ...prev, ...formData } : null);
       setEditing(false);
       toast.success("Supplier updated successfully");

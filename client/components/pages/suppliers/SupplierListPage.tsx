@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSuppliers, deleteSupplier } from "@/services/supplierService";
-import { formatCurrency } from "@/utils/format";
-import { PlusCircle, Eye, Edit, Trash2, Package, Building } from "lucide-react";
+import { PlusCircle, Eye, Trash2, Building, Package } from "lucide-react";
 import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
@@ -15,8 +14,8 @@ type Supplier = {
   contact: string;
   country: string;
   createdAt: string;
-  containers: any[];
-  items: any[];
+  containers: unknown[];
+  items: unknown[];
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -68,7 +67,7 @@ export default function SupplierListPage() {
         await deleteSupplier(id);
         setSuppliers(prev => prev.filter(s => s.id !== id));
         toast.success("Supplier deleted successfully");
-      } catch (error) {
+      } catch {
         toast.error("Failed to delete supplier");
       }
     }

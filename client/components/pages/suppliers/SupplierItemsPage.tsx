@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getSupplierItems, addSupplierItem, deleteSupplierItem, getSupplierById } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, Plus, Trash2, Package, DollarSign, X, Settings, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Package, DollarSign, X, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Dialog } from "@headlessui/react";
 

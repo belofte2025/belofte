@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { 
   getSupplierItemsForPriceManagement, 
   bulkUpdatePrices, 
@@ -42,7 +41,6 @@ type SupplierData = {
 };
 
 export default function PriceManagementPage({ supplierId }: PriceManagementPageProps) {
-  const router = useRouter();
   const [data, setData] = useState<SupplierData | null>(null);
   const [loading, setLoading] = useState(true);
   const [bulkMode, setBulkMode] = useState(false);

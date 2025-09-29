@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
   ArrowLeft, 
@@ -34,14 +34,6 @@ export default function InventoryReportPage() {
   const [supplierFilter, setSupplierFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
-
-  useEffect(() => {
-    filterInventory();
-  }, [inventory, searchTerm, supplierFilter, stockFilter]);
-
   const fetchInventory = async () => {
     setLoading(true);
     try {
@@ -56,7 +48,7 @@ export default function InventoryReportPage() {
     }
   };
 
-  const filterInventory = () => {
+  const filterInventory = useCallback(() => {
     if (!Array.isArray(inventory)) return;
     let filtered = [...inventory];
 
@@ -87,7 +79,15 @@ export default function InventoryReportPage() {
     }
 
     setFilteredInventory(filtered);
-  };
+  }, [inventory, searchTerm, supplierFilter, stockFilter]);
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  useEffect(() => {
+    filterInventory();
+  }, [filterInventory]);
 
   // Calculate inventory statistics for PDF export
   const totalItems = Array.isArray(inventory) ? inventory.length : 0;
@@ -167,7 +167,7 @@ export default function InventoryReportPage() {
 
       html2pdf().from(content).save(`Inventory_Report_${new Date().toLocaleDateString().replace(/\//g, '_')}.pdf`);
       toast.success("Report exported successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to export report");
     }
   };
