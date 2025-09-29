@@ -51,10 +51,11 @@ belofte-enterprise/
 ├── client/                 # Next.js frontend (deployed to Vercel)
 │   ├── .env.local         # Development environment variables
 │   ├── .env.example       # Environment variables template
-│   ├── vercel.json        # Vercel client configuration
+│   ├── vercel.json        # Vercel client configuration (minimal)
 │   └── ...
 ├── server/                # Express.js backend (deploy separately)
-├── vercel.json            # Root Vercel configuration
+│   ├── vercel.json        # Server functions configuration
+│   └── ...
 └── package.json           # Root package.json
 ```
 

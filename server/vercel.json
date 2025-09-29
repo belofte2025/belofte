@@ -3,7 +3,7 @@
   "functions": {
     "api/[...all].ts": {
       "runtime": "nodejs20.x",
-      "includeFiles": ["prisma/**"]
+      "includeFiles": "{prisma/**,node_modules/.prisma/**}"
     }
   }
 }
