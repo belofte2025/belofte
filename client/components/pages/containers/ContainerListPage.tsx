@@ -143,50 +143,30 @@ export default function ContainerListPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Containers</p>
-                <p className="text-3xl font-bold text-gray-900">{totalContainers}</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <Container className="w-6 h-6 text-blue-600" />
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Containers</p>
+              <p className="text-3xl font-bold text-gray-900">{totalContainers}</p>
             </div>
           </div>
           
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-3xl font-bold text-yellow-600">{pendingContainers}</p>
-              </div>
-              <div className="p-3 bg-yellow-100 rounded-full">
-                <Clock className="w-6 h-6 text-yellow-600" />
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pending</p>
+              <p className="text-3xl font-bold text-yellow-600">{pendingContainers}</p>
             </div>
           </div>
           
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Received</p>
-                <p className="text-3xl font-bold text-green-600">{receivedContainers}</p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Received</p>
+              <p className="text-3xl font-bold text-green-600">{receivedContainers}</p>
             </div>
           </div>
           
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-3xl font-bold text-blue-600">{doneContainers}</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <Truck className="w-6 h-6 text-blue-600" />
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Completed</p>
+              <p className="text-3xl font-bold text-blue-600">{doneContainers}</p>
             </div>
           </div>
         </div>

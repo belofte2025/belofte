@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getCustomers } from "@/services/customerService";
 import { formatCurrency } from "@/utils/format";
 import ActionModal from "@/components/shared/ActionModal";
-import { PlusCircle, Eye, Users, TrendingUp, DollarSign } from "lucide-react";
+import { PlusCircle, Eye } from "lucide-react";
 import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
@@ -87,42 +87,27 @@ export default function CustomerList() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Customers</p>
-                <p className="text-3xl font-bold text-gray-900">{totalCustomers}</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Customers</p>
+              <p className="text-3xl font-bold text-gray-900">{totalCustomers}</p>
             </div>
           </div>
           
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Outstanding Debts</p>
-                <p className="text-3xl font-bold text-red-600">{positiveBalance}</p>
-              </div>
-              <div className="p-3 bg-red-100 rounded-full">
-                <TrendingUp className="w-6 h-6 text-red-600" />
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Outstanding Debts</p>
+              <p className="text-3xl font-bold text-red-600">{positiveBalance}</p>
             </div>
           </div>
           
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Balance</p>
-                <p className={`text-3xl font-bold ${
-                  totalBalance > 0 ? 'text-red-600' : totalBalance < 0 ? 'text-green-600' : 'text-gray-900'
-                }`}>
-                  {formatCurrency(totalBalance)}
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <DollarSign className="w-6 h-6 text-green-600" />
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Balance</p>
+              <p className={`text-3xl font-bold ${
+                totalBalance > 0 ? 'text-red-600' : totalBalance < 0 ? 'text-green-600' : 'text-gray-900'
+              }`}>
+                {formatCurrency(totalBalance)}
+              </p>
             </div>
           </div>
         </div>
