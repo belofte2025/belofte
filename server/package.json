@@ -23,6 +23,7 @@
     "multer": "^2.0.0",
     "pg": "^8.16.0",
     "prisma": "^6.8.2",
+    "serverless-http": "^4.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"
