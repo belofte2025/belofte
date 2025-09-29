@@ -77,3 +77,47 @@ export const getSupplierItemsWithSales = async () => {
     supplierName: item.supplierName,
   }));
 };
+
+// ========== PRICE MANAGEMENT ==========
+
+export const getSupplierItemsForPriceManagement = async (supplierId: string) => {
+  const res = await api.get(`/suppliers/${supplierId}/price-management`);
+  return res.data;
+};
+
+export const bulkUpdatePrices = async (
+  supplierId: string,
+  updates: { itemId: string; price: number }[]
+) => {
+  const res = await api.put(`/suppliers/${supplierId}/price-management/bulk`, {
+    updates,
+  });
+  return res.data;
+};
+
+export const updateSinglePrice = async (
+  itemId: string,
+  price: number
+) => {
+  const res = await api.put(`/suppliers/items/${itemId}`, {
+    price,
+  });
+  return res.data;
+};
+
+// ========== QUANTITY MANAGEMENT ==========
+
+export const getSupplierItemsForQuantityManagement = async (supplierId: string) => {
+  const res = await api.get(`/suppliers/${supplierId}/quantity-management`);
+  return res.data;
+};
+
+export const bulkAdjustQuantities = async (
+  supplierId: string,
+  adjustments: { itemName: string; quantityChange: number; reason?: string }[]
+) => {
+  const res = await api.put(`/suppliers/${supplierId}/quantity-management/bulk`, {
+    adjustments,
+  });
+  return res.data;
+};

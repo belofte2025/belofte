@@ -6,11 +6,7 @@ import {
   ArrowLeft, 
   Download, 
   Users,
-  DollarSign,
-  TrendingUp,
-  CreditCard,
-  Phone,
-  User
+  Phone
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
@@ -39,29 +35,30 @@ export default function CustomersReportPage() {
     setLoading(true);
     try {
       const data = await getAllCustomers();
-      setCustomers(data);
+      setCustomers(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error("Failed to fetch customers");
       console.error(error);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate customer statistics
-  const totalCustomers = customers.length;
-  const totalOutstanding = customers.reduce((sum, customer) => 
+  // Calculate customer statistics for PDF export
+  const totalCustomers = Array.isArray(customers) ? customers.length : 0;
+  const totalOutstanding = Array.isArray(customers) ? customers.reduce((sum, customer) => 
     customer.balance > 0 ? sum + customer.balance : sum, 0
-  );
-  const totalCredits = customers.reduce((sum, customer) => 
+  ) : 0;
+  const totalCredits = Array.isArray(customers) ? customers.reduce((sum, customer) => 
     customer.balance < 0 ? sum + Math.abs(customer.balance) : sum, 0
-  );
+  ) : 0;
   const averageBalance = totalCustomers > 0 ? 
     customers.reduce((sum, customer) => sum + customer.balance, 0) / totalCustomers : 0;
   
-  const customersWithDebt = customers.filter(c => c.balance > 0).length;
-  const customersWithCredit = customers.filter(c => c.balance < 0).length;
-  const customersCleared = customers.filter(c => c.balance === 0).length;
+  const customersWithDebt = Array.isArray(customers) ? customers.filter(c => c.balance > 0).length : 0;
+  const customersWithCredit = Array.isArray(customers) ? customers.filter(c => c.balance < 0).length : 0;
+  const customersCleared = Array.isArray(customers) ? customers.filter(c => c.balance === 0).length : 0;
 
   const exportToPDF = async () => {
     try {
@@ -107,7 +104,7 @@ export default function CustomersReportPage() {
                 </tr>
               </thead>
               <tbody>
-                ${customers.map(customer => `
+                ${Array.isArray(customers) ? customers.map(customer => `
                   <tr>
                     <td>${customer.customerName || customer.name}</td>
                     <td>${customer.phone}</td>
@@ -115,7 +112,7 @@ export default function CustomersReportPage() {
                     <td>${customer.balance > 0 ? 'Owes Money' : customer.balance < 0 ? 'Has Credit' : 'Cleared'}</td>
                     <td>${new Date(customer.createdAt).toLocaleDateString()}</td>
                   </tr>
-                `).join('')}
+                `).join('') : ''}
               </tbody>
             </table>
           </body>
@@ -149,7 +146,7 @@ export default function CustomersReportPage() {
               <div className="ml-auto">
                 <button
                   onClick={exportToPDF}
-                  disabled={loading || customers.length === 0}
+                  disabled={loading || !Array.isArray(customers) || customers.length === 0}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-lg hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   <Download className="w-4 h-4" />
@@ -159,103 +156,6 @@ export default function CustomersReportPage() {
             </div>
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Customers</p>
-                  <p className="text-3xl font-bold text-blue-600">{totalCustomers}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
-                  <p className="text-3xl font-bold text-red-600">{formatCurrency(totalOutstanding)}</p>
-                </div>
-                <div className="p-3 bg-red-100 rounded-full">
-                  <DollarSign className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Credits</p>
-                  <p className="text-3xl font-bold text-green-600">{formatCurrency(totalCredits)}</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <CreditCard className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Average Balance</p>
-                  <p className={`text-3xl font-bold ${
-                    averageBalance > 0 ? 'text-red-600' : 
-                    averageBalance < 0 ? 'text-green-600' : 'text-gray-600'
-                  }`}>
-                    {formatCurrency(averageBalance)}
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Customer Status Distribution */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-red-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <DollarSign className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Customers with Debt</h3>
-                <p className="text-3xl font-bold text-red-600">{customersWithDebt}</p>
-                <p className="text-sm text-gray-500">
-                  {totalCustomers > 0 ? Math.round((customersWithDebt / totalCustomers) * 100) : 0}% of total
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-green-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <CreditCard className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Customers with Credit</h3>
-                <p className="text-3xl font-bold text-green-600">{customersWithCredit}</p>
-                <p className="text-sm text-gray-500">
-                  {totalCustomers > 0 ? Math.round((customersWithCredit / totalCustomers) * 100) : 0}% of total
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <User className="w-8 h-8 text-gray-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Cleared Customers</h3>
-                <p className="text-3xl font-bold text-gray-600">{customersCleared}</p>
-                <p className="text-sm text-gray-500">
-                  {totalCustomers > 0 ? Math.round((customersCleared / totalCustomers) * 100) : 0}% of total
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* Customers Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -268,7 +168,7 @@ export default function CustomersReportPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <span className="ml-3 text-gray-600">Loading customer data...</span>
               </div>
-            ) : customers.length === 0 ? (
+            ) : !Array.isArray(customers) || customers.length === 0 ? (
               <div className="text-center py-16">
                 <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Customers Found</h3>
@@ -297,7 +197,7 @@ export default function CustomersReportPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {customers.map((customer) => (
+                    {Array.isArray(customers) && customers.map((customer) => (
                       <tr key={customer.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">

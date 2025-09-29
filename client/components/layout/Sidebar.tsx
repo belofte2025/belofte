@@ -16,17 +16,18 @@ import {
   ChevronDown,
   ChevronRight,
   BarChart3,
-  FileText,
   Container,
   Package,
   TrendingUp,
-  PieChart,
   Building2,
+  Factory,
 } from "lucide-react";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Customers", href: "/customers", icon: Users },
+  { name: "Suppliers", href: "/suppliers", icon: Factory },
+  { name: "Items", href: "/items", icon: Package },
   { name: "Containers", href: "/containers", icon: Container },
   { name: "Sales", href: "/sales", icon: ShoppingCart },
 ];
@@ -35,11 +36,9 @@ const reportItems = [
   { name: "Overview", href: "/reports", icon: BarChart3 },
   { name: "Sales", href: "/reports/sales", icon: TrendingUp },
   { name: "Customers", href: "/reports/customers", icon: Users },
+  { name: "Suppliers", href: "/reports/suppliers", icon: Factory },
   { name: "Containers", href: "/reports/containers", icon: Container },
   { name: "Inventory", href: "/reports/inventory", icon: Package },
-  { name: "Performance", href: "/reports/performance", icon: BarChart3 },
-  { name: "Financial", href: "/reports/financial", icon: PieChart },
-  { name: "Summary", href: "/summary", icon: FileText },
 ];
 
 type SidebarProps = {
@@ -50,7 +49,7 @@ type SidebarProps = {
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [reportsOpen, setReportsOpen] = useState(pathname.startsWith('/reports') || pathname.startsWith('/summary'));
+  const [reportsOpen, setReportsOpen] = useState(pathname.startsWith('/reports'));
 
   return (
     <>
@@ -122,7 +121,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                 onClick={() => setReportsOpen(!reportsOpen)}
                 className={clsx(
                   "flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg",
-                  (pathname.startsWith('/reports') || pathname.startsWith('/summary'))
+                  pathname.startsWith('/reports')
                     ? "bg-blue-600 text-white"
                     : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 )}

@@ -6,10 +6,6 @@ import {
   ArrowLeft, 
   Download, 
   Package,
-  AlertTriangle,
-  TrendingUp,
-  ShoppingCart,
-  Filter,
   Search
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -50,16 +46,18 @@ export default function InventoryReportPage() {
     setLoading(true);
     try {
       const data = await getInventoryReport();
-      setInventory(data);
+      setInventory(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error("Failed to fetch inventory");
       console.error(error);
+      setInventory([]);
     } finally {
       setLoading(false);
     }
   };
 
   const filterInventory = () => {
+    if (!Array.isArray(inventory)) return;
     let filtered = [...inventory];
 
     // Search filter
@@ -91,18 +89,18 @@ export default function InventoryReportPage() {
     setFilteredInventory(filtered);
   };
 
-  // Calculate inventory statistics
-  const totalItems = inventory.length;
-  const totalValue = inventory.reduce((sum, item) => sum + item.totalValue, 0);
-  const inStockItems = inventory.filter(item => item.available > 0).length;
-  const outOfStockItems = inventory.filter(item => item.available === 0).length;
-  const lowStockItems = inventory.filter(item => item.available > 0 && item.available < 10).length;
+  // Calculate inventory statistics for PDF export
+  const totalItems = Array.isArray(inventory) ? inventory.length : 0;
+  const totalValue = Array.isArray(inventory) ? inventory.reduce((sum, item) => sum + item.totalValue, 0) : 0;
+  const inStockItems = Array.isArray(inventory) ? inventory.filter(item => item.available > 0).length : 0;
+  const outOfStockItems = Array.isArray(inventory) ? inventory.filter(item => item.available === 0).length : 0;
+  const lowStockItems = Array.isArray(inventory) ? inventory.filter(item => item.available > 0 && item.available < 10).length : 0;
   
-  const totalOrdered = inventory.reduce((sum, item) => sum + item.totalOrdered, 0);
-  const totalReceived = inventory.reduce((sum, item) => sum + item.totalReceived, 0);
-  const totalSold = inventory.reduce((sum, item) => sum + item.totalSold, 0);
+  const totalOrdered = Array.isArray(inventory) ? inventory.reduce((sum, item) => sum + item.totalOrdered, 0) : 0;
+  const totalReceived = Array.isArray(inventory) ? inventory.reduce((sum, item) => sum + item.totalReceived, 0) : 0;
+  const totalSold = Array.isArray(inventory) ? inventory.reduce((sum, item) => sum + item.totalSold, 0) : 0;
 
-  const suppliers = [...new Set(inventory.map(item => item.supplierName))];
+  const suppliers = Array.isArray(inventory) ? [...new Set(inventory.map(item => item.supplierName))] : [];
 
   const exportToPDF = async () => {
     try {
@@ -210,92 +208,6 @@ export default function InventoryReportPage() {
             </div>
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Items</p>
-                  <p className="text-3xl font-bold text-blue-600">{totalItems}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Package className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Inventory Value</p>
-                  <p className="text-3xl font-bold text-green-600">{formatCurrency(totalValue)}</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">In Stock</p>
-                  <p className="text-3xl font-bold text-purple-600">{inStockItems}</p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <ShoppingCart className="w-6 h-6 text-purple-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Alerts</p>
-                  <p className="text-3xl font-bold text-red-600">{outOfStockItems + lowStockItems}</p>
-                </div>
-                <div className="p-3 bg-red-100 rounded-full">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Stock Status Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-red-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <AlertTriangle className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Out of Stock</h3>
-                <p className="text-3xl font-bold text-red-600">{outOfStockItems}</p>
-                <p className="text-sm text-gray-500">Require immediate attention</p>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-yellow-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <Package className="w-8 h-8 text-yellow-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Low Stock</h3>
-                <p className="text-3xl font-bold text-yellow-600">{lowStockItems}</p>
-                <p className="text-sm text-gray-500">Need restocking soon</p>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-green-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <ShoppingCart className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">In Stock</h3>
-                <p className="text-3xl font-bold text-green-600">{inStockItems}</p>
-                <p className="text-sm text-gray-500">Available for sale</p>
-              </div>
-            </div>
-          </div>
 
           {/* Filters */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">

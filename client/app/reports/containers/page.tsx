@@ -9,7 +9,6 @@ import {
   Package,
   TrendingUp,
   Calendar,
-  Truck,
   AlertCircle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -48,36 +47,37 @@ export default function ContainersReportPage() {
     setLoading(true);
     try {
       const data = await getAllContainers();
-      setContainers(data);
+      setContainers(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error("Failed to fetch containers");
       console.error(error);
+      setContainers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate container statistics
-  const totalContainers = containers.length;
-  const pendingContainers = containers.filter(c => c.status === 'Pending').length;
-  const completedContainers = containers.filter(c => c.status === 'Completed').length;
-  const processingContainers = containers.filter(c => c.status === 'Processing').length;
+  // Calculate container statistics for PDF export
+  const totalContainers = Array.isArray(containers) ? containers.length : 0;
+  const pendingContainers = Array.isArray(containers) ? containers.filter(c => c.status === 'Pending').length : 0;
+  const completedContainers = Array.isArray(containers) ? containers.filter(c => c.status === 'Completed').length : 0;
+  const processingContainers = Array.isArray(containers) ? containers.filter(c => c.status === 'Processing').length : 0;
   
-  const totalItems = containers.reduce((sum, container) => 
-    sum + container.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
-  );
+  const totalItems = Array.isArray(containers) ? containers.reduce((sum, container) => 
+    sum + (Array.isArray(container.items) ? container.items.reduce((itemSum, item) => itemSum + item.quantity, 0) : 0), 0
+  ) : 0;
   
-  const totalReceived = containers.reduce((sum, container) => 
-    sum + container.items.reduce((itemSum, item) => itemSum + item.receivedQty, 0), 0
-  );
+  const totalReceived = Array.isArray(containers) ? containers.reduce((sum, container) => 
+    sum + (Array.isArray(container.items) ? container.items.reduce((itemSum, item) => itemSum + item.receivedQty, 0) : 0), 0
+  ) : 0;
   
-  const totalSold = containers.reduce((sum, container) => 
-    sum + container.items.reduce((itemSum, item) => itemSum + item.soldQty, 0), 0
-  );
+  const totalSold = Array.isArray(containers) ? containers.reduce((sum, container) => 
+    sum + (Array.isArray(container.items) ? container.items.reduce((itemSum, item) => itemSum + item.soldQty, 0) : 0), 0
+  ) : 0;
 
-  const recentContainers = containers
+  const recentContainers = Array.isArray(containers) ? containers
     .sort((a, b) => new Date(b.arrivalDate).getTime() - new Date(a.arrivalDate).getTime())
-    .slice(0, 10);
+    .slice(0, 10) : [];
 
   const exportToPDF = async () => {
     try {
@@ -196,98 +196,6 @@ export default function ContainersReportPage() {
             </div>
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Containers</p>
-                  <p className="text-3xl font-bold text-blue-600">{totalContainers}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Container className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Items</p>
-                  <p className="text-3xl font-bold text-purple-600">{totalItems}</p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <Package className="w-6 h-6 text-purple-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Items Received</p>
-                  <p className="text-3xl font-bold text-green-600">{totalReceived}</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <Truck className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Items Sold</p>
-                  <p className="text-3xl font-bold text-orange-600">{totalSold}</p>
-                </div>
-                <div className="p-3 bg-orange-100 rounded-full">
-                  <TrendingUp className="w-6 h-6 text-orange-600" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Status Distribution */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-yellow-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <AlertCircle className="w-8 h-8 text-yellow-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Pending</h3>
-                <p className="text-3xl font-bold text-yellow-600">{pendingContainers}</p>
-                <p className="text-sm text-gray-500">
-                  {totalContainers > 0 ? Math.round((pendingContainers / totalContainers) * 100) : 0}% of total
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-blue-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <TrendingUp className="w-8 h-8 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Processing</h3>
-                <p className="text-3xl font-bold text-blue-600">{processingContainers}</p>
-                <p className="text-sm text-gray-500">
-                  {totalContainers > 0 ? Math.round((processingContainers / totalContainers) * 100) : 0}% of total
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="text-center">
-                <div className="p-4 bg-green-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <Package className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Completed</h3>
-                <p className="text-3xl font-bold text-green-600">{completedContainers}</p>
-                <p className="text-sm text-gray-500">
-                  {totalContainers > 0 ? Math.round((completedContainers / totalContainers) * 100) : 0}% of total
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* Containers Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

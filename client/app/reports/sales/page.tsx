@@ -6,10 +6,7 @@ import {
   ArrowLeft, 
   Download, 
   Calendar, 
-  TrendingUp,
-  DollarSign,
-  BarChart3,
-  FileText
+  BarChart3
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
@@ -60,10 +57,11 @@ export default function SalesReportPage() {
     setLoading(true);
     try {
       const data = await getDetailedSalesReport(startDate, endDate);
-      setSales(data);
+      setSales(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error("Failed to fetch sales report");
       console.error(error);
+      setSales([]);
     } finally {
       setLoading(false);
     }
@@ -73,12 +71,12 @@ export default function SalesReportPage() {
     fetchSalesReport();
   }, []); // Only on mount
 
-  // Calculate summary stats
-  const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-  const totalTransactions = sales.length;
+  // Calculate summary stats for PDF export
+  const totalRevenue = Array.isArray(sales) ? sales.reduce((sum, sale) => sum + sale.totalAmount, 0) : 0;
+  const totalTransactions = Array.isArray(sales) ? sales.length : 0;
   const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-  const cashSales = sales.filter(s => s.saleType.toLowerCase() === 'cash').length;
-  const creditSales = sales.filter(s => s.saleType.toLowerCase() === 'credit').length;
+  const cashSales = Array.isArray(sales) ? sales.filter(s => s.saleType.toLowerCase() === 'cash').length : 0;
+  const creditSales = Array.isArray(sales) ? sales.filter(s => s.saleType.toLowerCase() === 'credit').length : 0;
 
   const exportToPDF = async () => {
     try {
@@ -119,15 +117,15 @@ export default function SalesReportPage() {
                 </tr>
               </thead>
               <tbody>
-                ${sales.map(sale => `
+                ${Array.isArray(sales) ? sales.map(sale => `
                   <tr>
                     <td>${new Date(sale.createdAt).toLocaleDateString()}</td>
                     <td>${sale.customerName}</td>
                     <td>${sale.saleType}</td>
                     <td>${formatCurrency(sale.totalAmount)}</td>
-                    <td>${sale.items.length} items</td>
+                    <td>${Array.isArray(sale.items) ? sale.items.length : 0} items</td>
                   </tr>
-                `).join('')}
+                `).join('') : ''}
               </tbody>
             </table>
           </body>
@@ -202,7 +200,7 @@ export default function SalesReportPage() {
                   </button>
                   <button
                     onClick={exportToPDF}
-                    disabled={loading || sales.length === 0}
+                    disabled={loading || !Array.isArray(sales) || sales.length === 0}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-lg hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     <Download className="w-4 h-4" />
@@ -213,59 +211,6 @@ export default function SalesReportPage() {
             </div>
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-3xl font-bold text-green-600">{formatCurrency(totalRevenue)}</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <DollarSign className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Transactions</p>
-                  <p className="text-3xl font-bold text-blue-600">{totalTransactions}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Transaction</p>
-                  <p className="text-3xl font-bold text-purple-600">{formatCurrency(avgTransaction)}</p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Sales Mix</p>
-                  <p className="text-lg font-bold text-gray-900">
-                    <span className="text-green-600">{cashSales}</span> Cash / 
-                    <span className="text-red-600">{creditSales}</span> Credit
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-100 rounded-full">
-                  <BarChart3 className="w-6 h-6 text-gray-600" />
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Sales Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -278,7 +223,7 @@ export default function SalesReportPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <span className="ml-3 text-gray-600">Loading sales data...</span>
               </div>
-            ) : sales.length === 0 ? (
+            ) : !Array.isArray(sales) || sales.length === 0 ? (
               <div className="text-center py-16">
                 <BarChart3 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Sales Found</h3>
@@ -307,7 +252,7 @@ export default function SalesReportPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {sales.map((sale, index) => (
+                    {Array.isArray(sales) && sales.map((sale, index) => (
                       <tr key={sale.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {new Date(sale.createdAt).toLocaleDateString()}
@@ -328,7 +273,7 @@ export default function SalesReportPage() {
                           {formatCurrency(sale.totalAmount)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {sale.items.length} items
+                          {Array.isArray(sale.items) ? sale.items.length : 0} items
                         </td>
                       </tr>
                     ))}

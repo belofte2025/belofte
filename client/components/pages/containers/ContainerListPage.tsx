@@ -368,16 +368,6 @@ export default function ContainerListPage() {
               </button>
               <button
                 onClick={() => {
-                  setSelectedId(null);
-                  window.location.href = `/summary/container/${selectedId}`;
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded-xl text-sm font-medium transition-colors duration-200"
-              >
-                <Truck className="w-4 h-4" />
-                Container Sales Report
-              </button>
-              <button
-                onClick={() => {
                   handleDelete(selectedId!);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl text-sm font-medium transition-colors duration-200"

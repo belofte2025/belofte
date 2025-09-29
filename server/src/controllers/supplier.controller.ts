@@ -357,3 +357,269 @@ export const listSupplierItemsWithSales = async (
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// ------------------------------
+// BULK PRICE & QUANTITY MANAGEMENT
+// ------------------------------
+
+export const bulkUpdatePrices = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const { updates } = req.body; // [{ itemId, price }, ...]
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+
+    // Validate all items belong to the supplier
+    const itemIds = updates.map((u: { itemId: string }) => u.itemId);
+    const items = await prisma.supplierItem.findMany({
+      where: {
+        id: { in: itemIds },
+        supplierId,
+      },
+    });
+
+    if (items.length !== itemIds.length) {
+      res.status(400).json({ error: "Some items don't belong to this supplier" });
+      return;
+    }
+
+    // Perform bulk updates
+    const updatePromises = updates.map((update: { itemId: string; price: number }) =>
+      prisma.supplierItem.update({
+        where: { id: update.itemId },
+        data: { price: update.price },
+      })
+    );
+
+    const updatedItems = await Promise.all(updatePromises);
+
+    res.json({
+      message: `Updated ${updatedItems.length} item prices`,
+      updatedItems,
+    });
+  } catch (error) {
+    console.error("Failed to bulk update prices:", error);
+    res.status(500).json({ error: "Failed to update prices", detail: error });
+  }
+};
+
+export const bulkAdjustQuantities = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const { adjustments } = req.body; // [{ itemName, quantityChange, reason? }, ...]
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+
+    // For each adjustment, find the latest container items for this supplier/item combination
+    const results = [];
+
+    for (const adjustment of adjustments) {
+      const { itemName, quantityChange, reason } = adjustment;
+
+      // Find container items for this supplier and item
+      const containerItems = await prisma.containerItem.findMany({
+        where: {
+          itemName,
+          container: {
+            supplierId,
+            companyId,
+          },
+        },
+        include: {
+          container: true,
+        },
+        orderBy: {
+          container: {
+            arrivalDate: 'desc',
+          },
+        },
+      });
+
+      if (containerItems.length === 0) {
+        results.push({
+          itemName,
+          status: 'skipped',
+          reason: 'No container items found for this supplier/item combination',
+        });
+        continue;
+      }
+
+      // Apply adjustment to the most recent container item
+      const latestItem = containerItems[0];
+      const newQuantity = Math.max(0, latestItem.quantity + quantityChange);
+
+      const updatedItem = await prisma.containerItem.update({
+        where: { id: latestItem.id },
+        data: { quantity: newQuantity },
+      });
+
+      results.push({
+        itemName,
+        status: 'updated',
+        oldQuantity: latestItem.quantity,
+        newQuantity,
+        quantityChange,
+        reason: reason || 'Bulk adjustment',
+        containerId: latestItem.containerId,
+      });
+    }
+
+    res.json({
+      message: `Processed ${adjustments.length} quantity adjustments`,
+      results,
+    });
+  } catch (error) {
+    console.error("Failed to bulk adjust quantities:", error);
+    res.status(500).json({ error: "Failed to adjust quantities", detail: error });
+  }
+};
+
+export const getSupplierItemsForPriceManagement = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+      include: {
+        items: true,
+      },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+
+    res.json({
+      supplier: {
+        id: supplier.id,
+        name: supplier.suppliername,
+        country: supplier.country,
+      },
+      items: supplier.items.map(item => ({
+        id: item.id,
+        itemName: item.itemName,
+        price: item.price,
+      })),
+    });
+  } catch (error) {
+    console.error("Failed to fetch items for price management:", error);
+    res.status(500).json({ error: "Failed to fetch items", detail: error });
+  }
+};
+
+export const getSupplierItemsForQuantityManagement = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Get supplier items with their latest quantities from containers
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+
+    // Get all container items for this supplier
+    const containerItems = await prisma.containerItem.findMany({
+      where: {
+        container: {
+          supplierId,
+          companyId,
+        },
+      },
+      include: {
+        container: {
+          select: {
+            id: true,
+            containerNo: true,
+            arrivalDate: true,
+          },
+        },
+      },
+      orderBy: {
+        container: {
+          arrivalDate: 'desc',
+        },
+      },
+    });
+
+    // Group by item name and get the latest entry for each
+    const itemMap = new Map();
+    containerItems.forEach(item => {
+      if (!itemMap.has(item.itemName) || 
+          new Date(item.container.arrivalDate) > new Date(itemMap.get(item.itemName).container.arrivalDate)) {
+        itemMap.set(item.itemName, item);
+      }
+    });
+
+    const items = Array.from(itemMap.values()).map(item => ({
+      id: item.id,
+      itemName: item.itemName,
+      quantity: item.quantity,
+      receivedQty: item.receivedQty,
+      soldQty: item.soldQty,
+      unitPrice: item.unitPrice,
+      container: {
+        id: item.container.id,
+        containerNo: item.container.containerNo,
+        arrivalDate: item.container.arrivalDate,
+      },
+    }));
+
+    res.json({
+      supplier: {
+        id: supplier.id,
+        name: supplier.suppliername,
+        country: supplier.country,
+      },
+      items,
+    });
+  } catch (error) {
+    console.error("Failed to fetch items for quantity management:", error);
+    res.status(500).json({ error: "Failed to fetch items", detail: error });
+  }
+};
