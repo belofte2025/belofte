@@ -7,11 +7,24 @@ import {
   uploadOpeningStockItems,
   uploadSupplierItems,
 } from "../controllers/upload.controller";
+import { generateCustomerTemplate, generateSupplierTemplate } from "../controllers/template.controller";
+import { importCustomers, importSuppliers } from "../controllers/import.controller";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 const router = Router();
+
+// Template download routes (public - no authentication required)
+router.get("/templates/customers", generateCustomerTemplate);
+router.get("/templates/suppliers", generateSupplierTemplate);
+
+
+// Apply authentication middleware to all routes below this point
 router.use(authenticate);
+
+// Import routes (require authentication)
+router.post("/import/customers", upload.single("file"), importCustomers);
+router.post("/import/suppliers", upload.single("file"), importSuppliers);
 
 router.post(
   "/container/:id/items",
@@ -99,5 +112,6 @@ router.post(
  *         description: Internal server error
  */
 router.post("/openingstock", upload.single("file"), uploadOpeningStockItems);
+
 
 export default router;

@@ -287,4 +287,103 @@ router.get("/allsuppliers", supplier_controller_1.getSuppliers);
  *         description: Internal server error
  */
 router.get("/items/withsales", supplier_controller_1.listSupplierItemsWithSales);
+/**
+ * @openapi
+ * /suppliers/{supplierId}/price-management:
+ *   get:
+ *     tags: [Price Management]
+ *     summary: Get supplier items for price management
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Supplier items with pricing info
+ */
+router.get("/:supplierId/price-management", supplier_controller_1.getSupplierItemsForPriceManagement);
+/**
+ * @openapi
+ * /suppliers/{supplierId}/price-management/bulk:
+ *   put:
+ *     tags: [Price Management]
+ *     summary: Bulk update item prices for a supplier
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [updates]
+ *             properties:
+ *               updates:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     itemId: { type: string }
+ *                     price: { type: number }
+ *     responses:
+ *       200:
+ *         description: Prices updated successfully
+ */
+router.put("/:supplierId/price-management/bulk", supplier_controller_1.bulkUpdatePrices);
+/**
+ * @openapi
+ * /suppliers/{supplierId}/quantity-management:
+ *   get:
+ *     tags: [Quantity Management]
+ *     summary: Get supplier items for quantity management
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Supplier items with quantity info
+ */
+router.get("/:supplierId/quantity-management", supplier_controller_1.getSupplierItemsForQuantityManagement);
+/**
+ * @openapi
+ * /suppliers/{supplierId}/quantity-management/bulk:
+ *   put:
+ *     tags: [Quantity Management]
+ *     summary: Bulk adjust item quantities for a supplier
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [adjustments]
+ *             properties:
+ *               adjustments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     itemName: { type: string }
+ *                     quantityChange: { type: number }
+ *                     reason: { type: string }
+ *     responses:
+ *       200:
+ *         description: Quantities adjusted successfully
+ */
+router.put("/:supplierId/quantity-management/bulk", supplier_controller_1.bulkAdjustQuantities);
 exports.default = router;

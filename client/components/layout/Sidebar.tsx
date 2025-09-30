@@ -18,6 +18,9 @@ import {
   TrendingUp,
   Building2,
   Factory,
+  Settings,
+  UserPlus,
+  Truck,
 } from "lucide-react";
 
 const navItems = [
@@ -27,6 +30,12 @@ const navItems = [
   { name: "Items", href: "/items", icon: Package },
   { name: "Containers", href: "/containers", icon: Container },
   { name: "Sales", href: "/sales", icon: ShoppingCart },
+];
+
+const utilityItems = [
+  { name: "Overview", href: "/utilities", icon: Settings },
+  { name: "Customer Import", href: "/utilities/customer-import", icon: UserPlus },
+  { name: "Supplier Import", href: "/utilities/supplier-import", icon: Truck },
 ];
 
 const reportItems = [
@@ -47,6 +56,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [reportsOpen, setReportsOpen] = useState(pathname.startsWith('/reports'));
+  const [utilitiesOpen, setUtilitiesOpen] = useState(pathname.startsWith('/utilities'));
 
   return (
     <>
@@ -160,6 +170,62 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                       <Icon className={clsx(
                         "mr-3 h-4 w-4",
                         isActive ? "text-blue-600" : "text-gray-400"
+                      )} />
+                      {name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Utilities dropdown */}
+            <div className="mt-4">
+              <button
+                onClick={() => setUtilitiesOpen(!utilitiesOpen)}
+                className={clsx(
+                  "flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg",
+                  pathname.startsWith('/utilities')
+                    ? "bg-green-600 text-white"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                )}
+                aria-expanded={utilitiesOpen}
+                aria-controls="utilities-submenu"
+              >
+                <span className="flex items-center">
+                  <Settings className="mr-3 h-5 w-5" />
+                  Utilities
+                </span>
+                <ChevronRight className={clsx(
+                  "h-4 w-4 transition-transform",
+                  utilitiesOpen && "rotate-90"
+                )} />
+              </button>
+
+              {/* Utilities submenu */}
+              <div
+                id="utilities-submenu"
+                className={clsx(
+                  "mt-1 ml-6 space-y-1",
+                  utilitiesOpen ? "block" : "hidden"
+                )}
+              >
+                {utilityItems.map(({ name, href, icon: Icon }) => {
+                  const isActive = pathname === href;
+                  return (
+                    <Link
+                      key={name}
+                      href={href}
+                      className={clsx(
+                        "flex items-center px-2.5 py-2 text-sm rounded-md",
+                        isActive
+                          ? "bg-green-50 text-green-700"
+                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                      )}
+                      onClick={() => setOpen(false)}
+                    >
+                      <Icon className={clsx(
+                        "mr-3 h-4 w-4",
+                        isActive ? "text-green-600" : "text-gray-400"
                       )} />
                       {name}
                     </Link>

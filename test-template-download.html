@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Template Download</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 10px; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Template Download Test</h1>
+    <button id="downloadBtn">Download Template</button>
+    <div id="status"></div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:4000/api';
+        const statusDiv = document.getElementById('status');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        downloadBtn.addEventListener('click', async () => {
+            statusDiv.innerHTML = '<div class="loading">⏳ Downloading template...</div>';
+            downloadBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/uploads/template`, {
+                    method: 'GET',
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Get filename from headers
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'Belofte_Import_Template.xlsx';
+                
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/i);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                // Download the file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                statusDiv.innerHTML = `<div class="success">✅ Template downloaded successfully!<br>📁 File: ${filename}<br>📄 Size: ${blob.size} bytes</div>`;
+            } catch (error) {
+                console.error('Download error:', error);
+                statusDiv.innerHTML = `<div class="error">❌ Failed to download template: ${error.message}</div>`;
+            } finally {
+                downloadBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
