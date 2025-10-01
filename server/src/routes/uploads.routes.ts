@@ -7,7 +7,7 @@ import {
   uploadOpeningStockItems,
   uploadSupplierItems,
 } from "../controllers/upload.controller";
-import { generateCustomerTemplate, generateSupplierTemplate } from "../controllers/template.controller";
+import { generateCustomerTemplate, generateSupplierTemplate, generateBulkImportTemplate } from "../controllers/template.controller";
 import { importCustomers, importSuppliers } from "../controllers/import.controller";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -15,6 +15,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
 
 // Template download routes (public - no authentication required)
+router.get("/template", generateBulkImportTemplate);
 router.get("/templates/customers", generateCustomerTemplate);
 router.get("/templates/suppliers", generateSupplierTemplate);
 

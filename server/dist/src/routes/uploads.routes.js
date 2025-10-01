@@ -12,6 +12,7 @@ const import_controller_1 = require("../controllers/import.controller");
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
 const router = (0, express_1.Router)();
 // Template download routes (public - no authentication required)
+router.get("/template", template_controller_1.generateBulkImportTemplate);
 router.get("/templates/customers", template_controller_1.generateCustomerTemplate);
 router.get("/templates/suppliers", template_controller_1.generateSupplierTemplate);
 // Apply authentication middleware to all routes below this point
