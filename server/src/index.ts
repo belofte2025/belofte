@@ -34,6 +34,11 @@ app.use(express.json());
 
 // Swagger setup temporarily disabled to fix path-to-regexp issues
 
+// ───────────────────── Health Check ─────────────────────
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
 // ───────────────────── API Routes ─────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/companies", companyRoutes);
