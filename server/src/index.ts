@@ -18,7 +18,7 @@ import userRoutes from "./routes/user.routes";
 import auditRoutes from "./routes/audit.routes";
 import reportRoutes from "./routes/report.routes";
 import uploadsRoutes from "./routes/uploads.routes";
-
+import customerDebtroutes from "./routes/customerDebt.routes";
 dotenv.config();
 
 const app = express();
@@ -49,6 +49,7 @@ app.use("/api/offloading", offloadingRoutes);
 app.use("/api/sales", saleRoutes);
 app.use("/api/payments", customerPaymentRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/customerdebts", customerDebtroutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/users", userRoutes);

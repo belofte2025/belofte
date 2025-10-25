@@ -45,19 +45,23 @@ export const createCustomer = async (req: Request, res: Response) => {
   }
 };
 
-// GET /customers
+// GET /customers - NOW INCLUDES DEBTS IN BALANCE
 export const getCustomers = async (req: Request, res: Response) => {
   const companyId = req.user?.companyId;
-  if (!companyId) res.status(400).json({ error: "Company ID is required" });
+  if (!companyId) {
+    res.status(400).json({ error: "Company ID is required" });
+    return;
+  }
 
   try {
-    // Get all customers for this company
+    // Get all customers for this company with their related data
     const customers = await prisma.customer.findMany({
       where: { companyId },
       select: {
         id: true,
         customerName: true,
         phone: true,
+        balance: true,
         sale: {
           where: { saleType: "credit" },
           select: { totalAmount: true },
@@ -65,33 +69,46 @@ export const getCustomers = async (req: Request, res: Response) => {
         custpayment: {
           select: { amount: true },
         },
+        debts: {
+          where: {
+            OR: [{ status: "unpaid" }, { status: "partial" }],
+          },
+          select: { amount: true, status: true },
+        },
       },
       orderBy: { customerName: "asc" },
     });
 
-    // Calculate balance dynamically
-    const enrichedCustomers = customers.map((customer: {
-      id: string;
-      customerName: string;
-      phone: string;
-      sale: { totalAmount: number }[];
-      custpayment: { amount: number }[];
-    }) => {
-      const totalCredit = customer.sale.reduce(
-        (sum: number, s: { totalAmount: number }) => sum + s.totalAmount,
+    // Calculate accurate balance for each customer
+    const enrichedCustomers = customers.map((customer) => {
+      // Calculate total credit sales
+      const totalCreditSales = customer.sale.reduce(
+        (sum, s) => sum + s.totalAmount,
         0
       );
+
+      // Calculate total payments
       const totalPayments = customer.custpayment.reduce(
-        (sum: number, p: { amount: number }) => sum + p.amount,
+        (sum, p) => sum + p.amount,
         0
       );
-      const balance = totalCredit - totalPayments;
+
+      // Calculate total unpaid debts
+      const totalUnpaidDebts = customer.debts.reduce(
+        (sum, d) => sum + d.amount,
+        0
+      );
+
+      // Calculate the actual balance
+      // Balance = Credit Sales + Unpaid Debts - Payments
+      const calculatedBalance =
+        totalCreditSales + totalUnpaidDebts - totalPayments;
 
       return {
         id: customer.id,
         name: customer.customerName,
         phone: customer.phone,
-        balance,
+        balance: calculatedBalance,
       };
     });
 
@@ -109,6 +126,11 @@ export const getCustomerById = async (req: Request, res: Response) => {
 
     const customer = await prisma.customer.findFirst({
       where: { id, companyId },
+      include: {
+        debts: {
+          where: { status: { not: "paid" } },
+        },
+      },
     });
 
     if (!customer) {
@@ -121,6 +143,7 @@ export const getCustomerById = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch customer", detail: err });
   }
 };
+
 export const updateCustomer = async (req: Request, res: Response) => {
   try {
     const companyId = req.user?.companyId;
@@ -146,6 +169,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
     res.status(400).json({ error: "Failed to update customer", detail: err });
   }
 };
+
 // Record a customer payment
 export const createCustomerPayment = async (req: Request, res: Response) => {
   try {
@@ -168,7 +192,7 @@ export const createCustomerPayment = async (req: Request, res: Response) => {
         amount,
         note,
         customerId,
-        companyId, // Now companyId is guaranteed to be string
+        companyId,
       },
     });
 
@@ -215,12 +239,14 @@ export const getCustomerPayments = async (req: Request, res: Response) => {
     return;
   }
 };
-// customer.controller.ts
+
+// GET CUSTOMER STATEMENT - NOW INCLUDES DEBTS
 export const getCustomerStatement = async (req: Request, res: Response) => {
   try {
     const customerId = req.params.id;
     const companyId = req.user?.companyId;
 
+    // Fetch credit sales
     const sales = await prisma.sale.findMany({
       where: { customerId, companyId, saleType: "credit" },
       select: {
@@ -231,6 +257,7 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
       },
     });
 
+    // Fetch payments
     const payments = await prisma.customerPayment.findMany({
       where: { customerId, companyId },
       select: {
@@ -241,36 +268,87 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
       },
     });
 
-    const statement = [
-      ...sales.map((s: {
-        id: string;
-        createdAt: Date;
-        totalAmount: number;
-        items: { quantity: number; itemName: string }[];
-      }) => ({
+    // Fetch debts
+    const debts = await prisma.customerDebt.findMany({
+      where: { customerId, companyId },
+      select: {
+        id: true,
+        createdAt: true,
+        amount: true,
+        description: true,
+        debtType: true,
+        status: true,
+      },
+    });
+
+    // Combine all transactions into a unified statement
+    const statementItems = [
+      // Credit sales (increase balance)
+      ...sales.map((s) => ({
         id: s.id,
         date: s.createdAt.toISOString().split("T")[0],
-        type: "sale",
+        timestamp: s.createdAt,
+        type: "credit_sale" as const,
         description: s.items
-          .map((i: { quantity: number; itemName: string }) => `${i.quantity}x ${i.itemName}`)
+          .map(
+            (i: { quantity: number; itemName: string }) =>
+              `${i.quantity}x ${i.itemName}`
+          )
           .join(", "),
-        amount: s.totalAmount,
+        debit: s.totalAmount, // Amount owed (increases balance)
+        credit: 0,
+        status: "completed",
       })),
-      ...payments.map((p: {
-        id: string;
-        createdAt: Date;
-        amount: number;
-        note: string | null;
-      }) => ({
+
+      // Payments (decrease balance)
+      ...payments.map((p) => ({
         id: p.id,
         date: p.createdAt.toISOString().split("T")[0],
-        type: "payment",
+        timestamp: p.createdAt,
+        type: "payment" as const,
         description: p.note || "Payment received",
-        amount: p.amount,
+        debit: 0,
+        credit: p.amount, // Payment received (decreases balance)
+        status: "completed",
       })),
-    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    res.json(statement);
+      // Debts (increase balance)
+      ...debts.map((d) => ({
+        id: d.id,
+        date: d.createdAt.toISOString().split("T")[0],
+        timestamp: d.createdAt,
+        type: "debt" as const,
+        description: d.description || `${d.debtType.replace("_", " ")} debt`,
+        debit: d.status !== "paid" ? d.amount : 0, // Only unpaid debts affect balance
+        credit: d.status === "paid" ? d.amount : 0, // Paid debts shown as credit
+        status: d.status,
+      })),
+    ].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+    // Calculate running balance for each transaction
+    let runningBalance = 0;
+    const statement = statementItems.map((item) => {
+      runningBalance = runningBalance + item.debit - item.credit;
+      return {
+        ...item,
+        balance: runningBalance,
+      };
+    });
+
+    // Calculate summary
+    const totalDebits = statement.reduce((sum, item) => sum + item.debit, 0);
+    const totalCredits = statement.reduce((sum, item) => sum + item.credit, 0);
+    const currentBalance = totalDebits - totalCredits;
+
+    res.json({
+      statement,
+      summary: {
+        totalDebits,
+        totalCredits,
+        currentBalance,
+        totalTransactions: statement.length,
+      },
+    });
   } catch (err) {
     console.error("Statement fetch error:", err);
     res.status(500).json({ error: "Internal error" });

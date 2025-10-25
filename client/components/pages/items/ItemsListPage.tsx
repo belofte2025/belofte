@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSupplierItemsWithSales, deleteSupplierItem } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
-import { PlusCircle, Factory, DollarSign, Trash2, Eye, TrendingUp } from "lucide-react";
+import { PlusCircle, Factory, DollarSign, TrendingUp, Download } from "lucide-react";
 import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
@@ -63,15 +63,63 @@ export default function ItemsListPage() {
     }
   };
 
-  const handleDelete = async (id: string, itemName: string, supplierName: string) => {
-    if (window.confirm(`Are you sure you want to delete "${itemName}" from ${supplierName}?`)) {
-      try {
-        await deleteSupplierItem(id);
-        setItems(prev => prev.filter(item => item.id !== id));
-        toast.success("Item deleted successfully");
-      } catch {
-        toast.error("Failed to delete item");
-      }
+  const exportToPDF = async () => {
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      
+      const content = `
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h1, h2 { color: #1f2937; }
+              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f3f4f6; }
+              .summary { background-color: #f9fafb; padding: 15px; margin: 15px 0; }
+            </style>
+          </head>
+          <body>
+            <h1>Items Report</h1>
+            <div class="summary">
+              <h2>Summary</h2>
+              <p><strong>Total Items:</strong> ${totalItems}</p>
+              <p><strong>Total Value:</strong> ${formatCurrency(totalValue)}</p>
+              <p><strong>Total Sold:</strong> ${totalSold}</p>
+              <p><strong>Total Available:</strong> ${totalAvailable}</p>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Supplier</th>
+                  <th>Unit Price</th>
+                  <th>Quantity</th>
+                  <th>Sold</th>
+                  <th>Available</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filtered.map(item => `
+                  <tr>
+                    <td>${item.itemName}</td>
+                    <td>${item.supplierName}</td>
+                    <td>${formatCurrency(item.unitPrice)}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.sold}</td>
+                    <td>${item.available}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </body>
+        </html>
+      `;
+
+      html2pdf().from(content).save(`Items_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("Report exported successfully!");
+    } catch {
+      toast.error("Failed to export report");
     }
   };
 
@@ -107,13 +155,23 @@ export default function ItemsListPage() {
               <h1 className="text-3xl font-bold text-gray-900">Items Management</h1>
               <p className="mt-1 text-gray-600">Manage items across all suppliers</p>
             </div>
-            <Link
-              href="/items/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Add Item
-            </Link>
+            <div className="flex gap-3">
+              <button
+                onClick={exportToPDF}
+                disabled={loading || items.length === 0}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                <Download className="w-5 h-5" />
+                Export PDF
+              </button>
+              <Link
+                href="/items/new"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Add Item
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -247,9 +305,6 @@ export default function ItemsListPage() {
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Uniqueness
                       </th>
-                      <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -299,24 +354,6 @@ export default function ItemsListPage() {
                           >
                             {getDuplicateStatus(item.itemName)}
                           </Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Link
-                              href={`/items/${item.id}`}
-                              className="inline-flex items-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
-                              title="View Details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleDelete(item.id, item.itemName, item.supplierName)}
-                              className="inline-flex items-center p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-                              title="Delete Item"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
                         </td>
                       </tr>
                     ))}

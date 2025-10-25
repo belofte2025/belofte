@@ -211,6 +211,47 @@ export default function SalesReportPage() {
             </div>
           </div>
 
+          {/* Summary Stats */}
+          {!loading && Array.isArray(sales) && sales.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-2">{formatCurrency(totalRevenue)}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Transactions</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-2">{totalTransactions}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Average Transaction</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-2">{formatCurrency(avgTransaction)}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Sales Type</p>
+                    <p className="text-lg font-bold text-gray-900 mt-2">
+                      <span className="text-green-600">{cashSales} Cash</span>
+                      <span className="text-gray-400 mx-2">|</span>
+                      <span className="text-red-600">{creditSales} Credit</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Sales Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

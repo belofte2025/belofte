@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import {
   Upload,
   Download,
@@ -14,34 +14,28 @@ import {
   ArrowLeft,
   Users,
 } from "lucide-react";
-import { downloadCustomerTemplate, uploadCustomerData, uploadOpeningBalances } from "@/lib/api/imports";
-
-interface ImportResult {
-  success: boolean;
-  message: string;
-  data?: Record<string, unknown> | null;
-  errors?: string[];
-}
+import {
+  downloadCustomerTemplate,
+  importCustomers,
+  ImportResult,
+} from "@/lib/api/imports";
 
 export default function CustomerImportContent() {
   const router = useRouter();
   const [customerFile, setCustomerFile] = useState<File | null>(null);
-  const [openingBalanceFile, setOpeningBalanceFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
-  const [activeUploadType, setActiveUploadType] = useState<'customer' | 'opening' | null>(null);
-  
+
   const customerFileInputRef = useRef<HTMLInputElement>(null);
-  const openingBalanceFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = async () => {
     setIsDownloading(true);
     try {
       await downloadCustomerTemplate();
     } catch (error) {
-      console.error('Failed to download template:', error);
-      alert('Failed to download template. Please try again.');
+      console.error("Failed to download template:", error);
+      alert("Failed to download template. Please try again.");
     } finally {
       setIsDownloading(false);
     }
@@ -54,78 +48,39 @@ export default function CustomerImportContent() {
     }
   };
 
-  const handleOpeningBalanceFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setOpeningBalanceFile(e.target.files[0]);
-      setImportResult(null);
-    }
-  };
-
   const handleCustomerUpload = async () => {
     if (!customerFile) return;
 
     setIsUploading(true);
-    setActiveUploadType('customer');
     setImportResult(null);
 
     try {
-      const result = await uploadCustomerData(customerFile);
+      const result = await importCustomers(customerFile);
       setImportResult(result);
       setCustomerFile(null);
       if (customerFileInputRef.current) {
-        customerFileInputRef.current.value = '';
+        customerFileInputRef.current.value = "";
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "An unexpected error occurred";
       setImportResult({
         success: false,
-        message: 'Failed to import customer data',
-        errors: [errorMessage]
+        message: "Failed to import customer data",
+        details: {
+          customers: { created: 0, errors: [errorMessage] },
+          balances: { created: 0, errors: [] },
+        },
       });
     } finally {
       setIsUploading(false);
-      setActiveUploadType(null);
-    }
-  };
-
-  const handleOpeningBalanceUpload = async () => {
-    if (!openingBalanceFile) return;
-
-    setIsUploading(true);
-    setActiveUploadType('opening');
-    setImportResult(null);
-
-    try {
-      const result = await uploadOpeningBalances(openingBalanceFile);
-      setImportResult(result);
-      setOpeningBalanceFile(null);
-      if (openingBalanceFileInputRef.current) {
-        openingBalanceFileInputRef.current.value = '';
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      setImportResult({
-        success: false,
-        message: 'Failed to import opening balances',
-        errors: [errorMessage]
-      });
-    } finally {
-      setIsUploading(false);
-      setActiveUploadType(null);
     }
   };
 
   const clearCustomerFile = () => {
     setCustomerFile(null);
     if (customerFileInputRef.current) {
-      customerFileInputRef.current.value = '';
-    }
-  };
-
-  const clearOpeningBalanceFile = () => {
-    setOpeningBalanceFile(null);
-    if (openingBalanceFileInputRef.current) {
-      openingBalanceFileInputRef.current.value = '';
+      customerFileInputRef.current.value = "";
     }
   };
 
@@ -136,7 +91,7 @@ export default function CustomerImportContent() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <button 
+              <button
                 onClick={() => router.back()}
                 className="p-1 hover:bg-gray-100 rounded"
               >
@@ -148,7 +103,7 @@ export default function CustomerImportContent() {
               </h1>
             </div>
             <p className="text-gray-600">
-              Import customer data and opening balances from Excel files
+              Import customers and opening balances from a single Excel file
             </p>
           </div>
           <button
@@ -176,13 +131,28 @@ export default function CustomerImportContent() {
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-900 mb-2">Import Instructions</h3>
+            <h3 className="font-semibold text-blue-900 mb-2">
+              Import Instructions
+            </h3>
             <ul className="text-blue-800 text-sm space-y-1">
-              <li>• Download the Excel template and fill it with your customer data</li>
-              <li>• Customer names must be unique within your company</li>
-              <li>• For opening balances, ensure customer phone numbers match exactly</li>
-              <li>• All required fields must be filled according to the template</li>
-              <li>• Dates should be in YYYY-MM-DD format</li>
+              <li>
+                • Download the Excel template which contains two sheets:
+                &ldquo;Customers&rdquo; and &ldquo;Opening Balances&rdquo;
+              </li>
+              <li>
+                • Fill in the Customers sheet with customer names and phone
+                numbers
+              </li>
+              <li>
+                • Fill in the Opening Balances sheet with customer names,
+                amounts, and optional notes
+              </li>
+              <li>• Customer names must match exactly between both sheets</li>
+              <li>
+                • Upload the single Excel file to import both customers and
+                their opening balances
+              </li>
+              <li>• Do not change sheet names or column headers</li>
             </ul>
           </div>
         </div>
@@ -192,9 +162,9 @@ export default function CustomerImportContent() {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Users className="w-5 h-5 text-blue-600" />
-          Import Customer Data
+          Import Customer Data & Opening Balances
         </h2>
-        
+
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 hover:bg-blue-50 transition-colors relative">
           <input
             ref={customerFileInputRef}
@@ -209,12 +179,17 @@ export default function CustomerImportContent() {
               <div className="flex items-center justify-center gap-3 mb-4">
                 <FileSpreadsheet className="w-8 h-8 text-green-600" />
                 <div className="text-left">
-                  <p className="font-medium text-gray-900">{customerFile.name}</p>
+                  <p className="font-medium text-gray-900">
+                    {customerFile.name}
+                  </p>
                   <p className="text-sm text-gray-500">
                     {(customerFile.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
-                <button onClick={clearCustomerFile} className="p-1 hover:bg-gray-100 rounded">
+                <button
+                  onClick={clearCustomerFile}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
                   <X className="w-4 h-4 text-gray-500" />
                 </button>
               </div>
@@ -225,7 +200,8 @@ export default function CustomerImportContent() {
                   Choose customer data Excel file
                 </p>
                 <p className="text-sm text-gray-500">
-                  Excel files (.xlsx, .xls) are supported
+                  Excel files (.xlsx, .xls) with both Customers and Opening
+                  Balances sheets
                 </p>
               </div>
             )}
@@ -233,10 +209,10 @@ export default function CustomerImportContent() {
             {customerFile && (
               <button
                 onClick={handleCustomerUpload}
-                disabled={isUploading && activeUploadType === 'customer'}
+                disabled={isUploading}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
               >
-                {isUploading && activeUploadType === 'customer' ? (
+                {isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Importing...
@@ -245,71 +221,6 @@ export default function CustomerImportContent() {
                   <>
                     <Upload className="w-4 h-4" />
                     Import Customer Data
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Opening Balances Upload */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <FileSpreadsheet className="w-5 h-5 text-blue-600" />
-          Import Opening Balances
-        </h2>
-        
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 hover:bg-blue-50 transition-colors relative">
-          <input
-            ref={openingBalanceFileInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleOpeningBalanceFileSelect}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-          />
-
-          <div className="text-center">
-            {openingBalanceFile ? (
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <FileSpreadsheet className="w-8 h-8 text-green-600" />
-                <div className="text-left">
-                  <p className="font-medium text-gray-900">{openingBalanceFile.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {(openingBalanceFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-                <button onClick={clearOpeningBalanceFile} className="p-1 hover:bg-gray-100 rounded">
-                  <X className="w-4 h-4 text-gray-500" />
-                </button>
-              </div>
-            ) : (
-              <div className="mb-4">
-                <FileSpreadsheet className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-lg font-medium text-gray-900 mb-1">
-                  Choose opening balances Excel file
-                </p>
-                <p className="text-sm text-gray-500">
-                  Excel files (.xlsx, .xls) are supported
-                </p>
-              </div>
-            )}
-
-            {openingBalanceFile && (
-              <button
-                onClick={handleOpeningBalanceUpload}
-                disabled={isUploading && activeUploadType === 'opening'}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
-              >
-                {isUploading && activeUploadType === 'opening' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Import Opening Balances
                   </>
                 )}
               </button>
@@ -349,24 +260,61 @@ export default function CustomerImportContent() {
                 {importResult.message}
               </p>
 
-              {importResult.data && (
-                <div className="bg-white rounded p-3 border">
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {JSON.stringify(importResult.data, null, 2)}
-                  </pre>
-                </div>
-              )}
+              {importResult.details && (
+                <div className="bg-white rounded p-4 border space-y-3">
+                  <div>
+                    <p className="font-medium text-sm text-gray-700 mb-1">
+                      Customers:
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {importResult.details.customers?.created || 0} created,{" "}
+                      {importResult.details.customers?.errors?.length || 0}{" "}
+                      errors
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm text-gray-700 mb-1">
+                      Opening Balances:
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {importResult.details.balances?.created || 0} created,{" "}
+                      {importResult.details.balances?.errors?.length || 0}{" "}
+                      errors
+                    </p>
+                  </div>
 
-              {importResult.errors && importResult.errors.length > 0 && (
-                <div>
-                  <p className="text-sm text-red-600 font-medium mb-1">
-                    Errors:
-                  </p>
-                  <ul className="text-sm text-red-600 space-y-1">
-                    {importResult.errors.map((error, index) => (
-                      <li key={index}>• {error}</li>
-                    ))}
-                  </ul>
+                  {/* Show errors if any */}
+                  {importResult.details.customers?.errors &&
+                    importResult.details.customers.errors.length > 0 && (
+                      <div>
+                        <p className="text-sm text-red-600 font-medium mb-1">
+                          Customer Errors:
+                        </p>
+                        <ul className="text-sm text-red-600 space-y-1 max-h-40 overflow-y-auto">
+                          {importResult.details.customers.errors.map(
+                            (error, index) => (
+                              <li key={index}>• {error}</li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                  {importResult.details.balances?.errors &&
+                    importResult.details.balances.errors.length > 0 && (
+                      <div>
+                        <p className="text-sm text-red-600 font-medium mb-1">
+                          Balance Errors:
+                        </p>
+                        <ul className="text-sm text-red-600 space-y-1 max-h-40 overflow-y-auto">
+                          {importResult.details.balances.errors.map(
+                            (error, index) => (
+                              <li key={index}>• {error}</li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
                 </div>
               )}
             </div>

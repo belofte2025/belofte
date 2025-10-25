@@ -1,18 +1,43 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getCustomerStatement, getCustomerById } from "@/services/customerService";
+import {
+  getCustomerStatement,
+  getCustomerById,
+} from "@/services/customerService";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Calendar, Download, FileText, TrendingUp, TrendingDown, DollarSign, User } from "lucide-react";
+import {
+  Calendar,
+  Download,
+  FileText,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  User,
+  Tag,
+} from "lucide-react";
 import { formatCurrency } from "@/utils/format";
 import toast from "react-hot-toast";
 
 type StatementEntry = {
   id: string;
   date: string;
-  type: "sale" | "payment";
+  type: "credit_sale" | "payment" | "debt";
   description: string;
-  amount: number;
+  debit: number;
+  credit: number;
+  balance: number;
+  status: string;
+};
+
+type StatementResponse = {
+  statement: StatementEntry[];
+  summary: {
+    totalDebits: number;
+    totalCredits: number;
+    currentBalance: number;
+    totalTransactions: number;
+  };
 };
 
 type Props = {
@@ -20,7 +45,9 @@ type Props = {
 };
 
 export default function CustomerStatement({ customerId }: Props) {
-  const [statement, setStatement] = useState<StatementEntry[]>([]);
+  const [statementData, setStatementData] = useState<StatementResponse | null>(
+    null
+  );
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -37,7 +64,7 @@ export default function CustomerStatement({ customerId }: Props) {
         }
         // Fetch statement data
         const data = await getCustomerStatement(customerId, fromDate, toDate);
-        setStatement(data);
+        setStatementData(data);
       } catch {
         toast.error("Failed to fetch statement data");
       } finally {
@@ -48,41 +75,83 @@ export default function CustomerStatement({ customerId }: Props) {
     fetchData();
   }, [customerId, fromDate, toDate, customerName]);
 
-  // Compute running balances
-  let balance = 0;
-  const entries = statement.map((entry) => {
-    const isSale = entry.type === "sale";
-    const debit = isSale ? entry.amount : 0;
-    const credit = !isSale ? entry.amount : 0;
-    balance += isSale ? entry.amount : -entry.amount;
+  // Filter entries by date range if dates are provided
+  const entries = statementData?.statement || [];
+  const filteredEntries = entries.filter((entry) => {
+    const entryDate = new Date(entry.date);
+    const from = fromDate ? new Date(fromDate) : null;
+    const to = toDate ? new Date(toDate) : null;
 
-    return { ...entry, debit, credit, balance };
+    if (from && entryDate < from) return false;
+    if (to && entryDate > to) return false;
+    return true;
   });
 
   const exportToPDF = () => {
     const doc = new jsPDF();
+    doc.setFontSize(16);
     doc.text(`Customer Statement - ${customerName}`, 14, 14);
 
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    if (fromDate || toDate) {
+      doc.text(`Period: ${fromDate || "Start"} to ${toDate || "End"}`, 14, 28);
+    }
+
     autoTable(doc, {
-      startY: 20,
-      head: [["Date", "Description", "Debit", "Credit", "Balance"]],
-      body: entries.map((e) => [
-        e.date,
+      startY: fromDate || toDate ? 32 : 28,
+      head: [["Date", "Type", "Description", "Debit", "Credit", "Balance"]],
+      body: filteredEntries.map((e) => [
+        new Date(e.date).toLocaleDateString(),
+        e.type.replace("_", " ").toUpperCase(),
         e.description,
-        e.debit.toFixed(2),
-        e.credit.toFixed(2),
+        e.debit > 0 ? e.debit.toFixed(2) : "-",
+        e.credit > 0 ? e.credit.toFixed(2) : "-",
         e.balance.toFixed(2),
       ]),
+      headStyles: { fillColor: [59, 130, 246] },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
     });
 
-    doc.save(`statement_${customerName}.pdf`);
+    doc.save(
+      `statement_${customerName}_${new Date().toISOString().split("T")[0]}.pdf`
+    );
   };
 
-  // Calculate summary statistics
-  const totalDebits = entries.reduce((sum, entry) => sum + entry.debit, 0);
-  const totalCredits = entries.reduce((sum, entry) => sum + entry.credit, 0);
-  const finalBalance = entries.length > 0 ? entries[entries.length - 1].balance : 0;
+  // Calculate summary statistics from filtered entries
+  const totalDebits = filteredEntries.reduce(
+    (sum, entry) => sum + entry.debit,
+    0
+  );
+  const totalCredits = filteredEntries.reduce(
+    (sum, entry) => sum + entry.credit,
+    0
+  );
+  const finalBalance =
+    filteredEntries.length > 0
+      ? filteredEntries[filteredEntries.length - 1].balance
+      : 0;
   const netChange = totalDebits - totalCredits;
+
+  // Get transaction type badge
+  const getTypeBadge = (type: string) => {
+    const badges = {
+      credit_sale: { label: "Credit Sale", color: "bg-blue-100 text-blue-800" },
+      payment: { label: "Payment", color: "bg-green-100 text-green-800" },
+      debt: { label: "Debt", color: "bg-red-100 text-red-800" },
+    };
+    const badge = badges[type as keyof typeof badges] || {
+      label: type,
+      color: "bg-gray-100 text-gray-800",
+    };
+    return (
+      <span
+        className={`px-2 py-1 text-xs font-semibold rounded-full ${badge.color}`}
+      >
+        {badge.label}
+      </span>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -92,12 +161,14 @@ export default function CustomerStatement({ customerId }: Props) {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                {customerName ? customerName.charAt(0).toUpperCase() : 'C'}
+                {customerName ? customerName.charAt(0).toUpperCase() : "C"}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Customer Statement</h1>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Customer Statement
+                </h1>
                 <p className="mt-1 text-gray-600">
-                  Account activity for {customerName || 'Loading...'}
+                  Account activity for {customerName || "Loading..."}
                 </p>
               </div>
             </div>
@@ -109,34 +180,48 @@ export default function CustomerStatement({ customerId }: Props) {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Debits</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(totalDebits)}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Debits
+                </p>
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(totalDebits)}
+                </p>
               </div>
               <div className="p-3 bg-red-100 rounded-full">
                 <TrendingUp className="w-5 h-5 text-red-600" />
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Credits</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(totalCredits)}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Credits
+                </p>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(totalCredits)}
+                </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
                 <TrendingDown className="w-5 h-5 text-green-600" />
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Net Change</p>
-                <p className={`text-2xl font-bold ${
-                  netChange > 0 ? 'text-red-600' : netChange < 0 ? 'text-green-600' : 'text-gray-900'
-                }`}>
+                <p
+                  className={`text-2xl font-bold ${
+                    netChange > 0
+                      ? "text-red-600"
+                      : netChange < 0
+                      ? "text-green-600"
+                      : "text-gray-900"
+                  }`}
+                >
                   {formatCurrency(netChange)}
                 </p>
               </div>
@@ -145,14 +230,22 @@ export default function CustomerStatement({ customerId }: Props) {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Current Balance</p>
-                <p className={`text-2xl font-bold ${
-                  finalBalance > 0 ? 'text-red-600' : finalBalance < 0 ? 'text-green-600' : 'text-gray-900'
-                }`}>
+                <p className="text-sm font-medium text-gray-600">
+                  Current Balance
+                </p>
+                <p
+                  className={`text-2xl font-bold ${
+                    finalBalance > 0
+                      ? "text-red-600"
+                      : finalBalance < 0
+                      ? "text-green-600"
+                      : "text-gray-900"
+                  }`}
+                >
                   {formatCurrency(finalBalance)}
                 </p>
               </div>
@@ -197,7 +290,7 @@ export default function CustomerStatement({ customerId }: Props) {
             <div>
               <button
                 onClick={exportToPDF}
-                disabled={entries.length === 0}
+                disabled={filteredEntries.length === 0}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 <Download className="w-4 h-4" />
@@ -214,11 +307,15 @@ export default function CustomerStatement({ customerId }: Props) {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <span className="ml-3 text-gray-600">Loading statement...</span>
             </div>
-          ) : entries.length === 0 ? (
+          ) : filteredEntries.length === 0 ? (
             <div className="text-center py-16">
               <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Transactions Found</h3>
-              <p className="text-gray-600">No transactions were found for the selected date range.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Transactions Found
+              </h3>
+              <p className="text-gray-600">
+                No transactions were found for the selected date range.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -229,51 +326,103 @@ export default function CustomerStatement({ customerId }: Props) {
                       Date
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Description
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Debit
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Credit
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Balance
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {entries.map((entry, index) => (
+                  {filteredEntries.map((entry, index) => (
                     <tr
                       key={entry.id}
                       className={`hover:bg-gray-50 transition-colors duration-200 ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
                       }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {new Date(entry.date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {entry.description}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {getTypeBadge(entry.type)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                        {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div
+                          className="max-w-xs truncate"
+                          title={entry.description}
+                        >
+                          {entry.description}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                        {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-red-600">
+                        {entry.debit > 0 ? formatCurrency(entry.debit) : "-"}
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
-                        entry.balance > 0 ? 'text-red-600' : entry.balance < 0 ? 'text-green-600' : 'text-gray-900'
-                      }`}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-green-600">
+                        {entry.credit > 0 ? formatCurrency(entry.credit) : "-"}
+                      </td>
+                      <td
+                        className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
+                          entry.balance > 0
+                            ? "text-red-600"
+                            : entry.balance < 0
+                            ? "text-green-600"
+                            : "text-gray-900"
+                        }`}
+                      >
                         {formatCurrency(entry.balance)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
+                <tfoot className="bg-gray-100">
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-6 py-4 text-sm font-semibold text-gray-900"
+                    >
+                      Totals
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-right text-red-600">
+                      {formatCurrency(totalDebits)}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-right text-green-600">
+                      {formatCurrency(totalCredits)}
+                    </td>
+                    <td
+                      className={`px-6 py-4 text-sm font-bold text-right ${
+                        finalBalance > 0
+                          ? "text-red-600"
+                          : finalBalance < 0
+                          ? "text-green-600"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {formatCurrency(finalBalance)}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
         </div>
+
+        {/* Transaction Count */}
+        {filteredEntries.length > 0 && (
+          <div className="mt-4 text-center text-sm text-gray-600">
+            Showing {filteredEntries.length} transaction
+            {filteredEntries.length !== 1 ? "s" : ""}
+          </div>
+        )}
       </div>
     </div>
   );

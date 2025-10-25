@@ -90,7 +90,15 @@ const getSalesByCustomerId = async (req, res) => {
             include: { items: true },
             orderBy: { createdAt: "desc" },
         });
-        res.json(sales);
+        // Transform to match frontend expectations
+        const transformedSales = sales.map((sale) => ({
+            id: sale.id,
+            saleDate: sale.createdAt,
+            totalAmount: sale.totalAmount,
+            saleType: sale.saleType,
+            items: sale.items,
+        }));
+        res.json(transformedSales);
     }
     catch (error) {
         console.error("Error fetching sales by customer:", error);

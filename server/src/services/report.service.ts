@@ -75,24 +75,22 @@ export const getDetailedSalesReport = async (
     },
     include: {
       items: true,
+      customer: true,
+    },
+    orderBy: {
+      createdAt: "desc",
     },
   });
 
-  const totalAmount = sales.reduce(
-    (sum: any, s: { totalAmount: any }) => sum + s.totalAmount,
-    0
-  );
-  const totalQty = sales.reduce(
-    (sum: any, s: { items: any[] }) =>
-      sum +
-      s.items.reduce((qSum: any, i: { quantity: any }) => qSum + i.quantity, 0),
-    0
-  );
+  // Transform sales to include customer name
+  const transformedSales = sales.map((sale) => ({
+    id: sale.id,
+    saleType: sale.saleType,
+    customerName: sale.customer?.customerName || "Walk-in",
+    totalAmount: sale.totalAmount,
+    createdAt: sale.createdAt,
+    items: sale.items,
+  }));
 
-  return {
-    period: { startDate, endDate },
-    totalAmount,
-    totalQty,
-    sales,
-  };
+  return transformedSales;
 };

@@ -54,128 +54,134 @@ const importCustomers = async (req, res) => {
         message: "",
         details: {
             customers: { created: 0, errors: [] },
-            balances: { created: 0, errors: [] }
-        }
+            balances: { created: 0, errors: [] },
+        },
     };
     try {
         const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
-        // 1. PROCESS CUSTOMERS
-        if (workbook.SheetNames.includes('Customers')) {
-            const customersSheet = workbook.Sheets['Customers'];
+        // 1. PROCESS CUSTOMERS - BATCH INSERT
+        if (workbook.SheetNames.includes("Customers")) {
+            const customersSheet = workbook.Sheets["Customers"];
             const customersData = XLSX.utils.sheet_to_json(customersSheet);
+            // Validate and prepare data
+            const validCustomers = [];
             for (const row of customersData) {
+                const customerName = row.customerName?.toString()?.trim();
+                const phone = row.phone?.toString()?.trim();
+                if (!customerName || !phone) {
+                    result.details.customers.errors.push(`Invalid data: ${JSON.stringify(row)}`);
+                    continue;
+                }
+                validCustomers.push({ customerName, phone });
+            }
+            // Batch check for existing customers
+            const existingCustomers = await prisma_1.default.customer.findMany({
+                where: {
+                    companyId,
+                    customerName: {
+                        in: validCustomers.map((c) => c.customerName),
+                    },
+                },
+                select: { customerName: true },
+            });
+            const existingNames = new Set(existingCustomers.map((c) => c.customerName));
+            // Filter out existing customers
+            const customersToCreate = validCustomers.filter((c) => !existingNames.has(c.customerName));
+            // Batch create customers
+            if (customersToCreate.length > 0) {
                 try {
-                    const customerName = row.customerName?.toString()?.trim();
-                    const phone = row.phone?.toString()?.trim();
-                    if (!customerName || !phone) {
-                        result.details.customers.errors.push(`Invalid data: ${JSON.stringify(row)}`);
-                        continue;
-                    }
-                    // Check if customer already exists
-                    const existingCustomer = await prisma_1.default.customer.findFirst({
-                        where: {
-                            customerName,
-                            companyId
-                        }
+                    await prisma_1.default.customer.createMany({
+                        data: customersToCreate.map((c) => ({
+                            customerName: c.customerName,
+                            phone: c.phone,
+                            companyId,
+                        })),
+                        skipDuplicates: true,
                     });
-                    if (!existingCustomer) {
-                        await prisma_1.default.customer.create({
-                            data: {
-                                customerName,
-                                phone,
-                                companyId
-                            }
-                        });
-                        result.details.customers.created++;
-                    }
+                    result.details.customers.created = customersToCreate.length;
                 }
                 catch (error) {
-                    result.details.customers.errors.push(`Error processing customer ${JSON.stringify(row)}: ${error}`);
+                    result.details.customers.errors.push(`Batch create error: ${error}`);
                 }
             }
         }
-        // 2. PROCESS OPENING BALANCES
-        if (workbook.SheetNames.includes('Opening Balances')) {
-            const balancesSheet = workbook.Sheets['Opening Balances'];
+        // 2. PROCESS OPENING BALANCES - BATCH INSERT
+        if (workbook.SheetNames.includes("Opening Balances")) {
+            const balancesSheet = workbook.Sheets["Opening Balances"];
             const balancesData = XLSX.utils.sheet_to_json(balancesSheet);
+            // Validate data
+            const validBalances = [];
             for (const row of balancesData) {
+                const customerName = row.customerName?.toString()?.trim();
+                const amount = parseFloat(row.amount?.toString() || "0");
+                const notes = row.notes?.toString()?.trim();
+                if (!customerName || isNaN(amount) || amount <= 0) {
+                    result.details.balances.errors.push(`Invalid data: ${JSON.stringify(row)}`);
+                    continue;
+                }
+                validBalances.push({ customerName, amount, notes });
+            }
+            // Batch get all customers
+            const customers = await prisma_1.default.customer.findMany({
+                where: {
+                    companyId,
+                    customerName: {
+                        in: validBalances.map((b) => b.customerName),
+                    },
+                },
+            });
+            const customerMap = new Map(customers.map((c) => [c.customerName, c]));
+            // Get customer IDs for existing balances check
+            const customerIds = customers.map((c) => c.id);
+            // Batch check existing balances
+            const existingBalances = await prisma_1.default.customerDebt.findMany({
+                where: {
+                    customerId: { in: customerIds },
+                    description: "Opening Balance",
+                    debtType: "opening_balance",
+                },
+                select: { customerId: true },
+            });
+            const existingBalanceCustomerIds = new Set(existingBalances.map((b) => b.customerId));
+            // Prepare balances to create
+            const balancesToCreate = [];
+            for (const balance of validBalances) {
+                const customer = customerMap.get(balance.customerName);
+                if (!customer) {
+                    result.details.balances.errors.push(`Customer not found: ${balance.customerName}`);
+                    continue;
+                }
+                if (existingBalanceCustomerIds.has(customer.id)) {
+                    continue; // Skip if balance already exists
+                }
+                balancesToCreate.push({
+                    customerId: customer.id,
+                    companyId,
+                    amount: balance.amount,
+                    description: balance.notes || "Opening Balance",
+                    debtType: "opening_balance",
+                    status: "unpaid",
+                });
+            }
+            // Batch create balances
+            if (balancesToCreate.length > 0) {
                 try {
-                    const customerName = row.customerName?.toString()?.trim();
-                    const balanceType = row.balanceType?.toString()?.trim().toLowerCase();
-                    const amount = parseFloat(row.amount?.toString() || "0");
-                    const notes = row.notes?.toString()?.trim() || "Opening balance from import";
-                    if (!customerName || !balanceType || isNaN(amount) || amount <= 0) {
-                        result.details.balances.errors.push(`Invalid data: ${JSON.stringify(row)}`);
-                        continue;
-                    }
-                    if (balanceType !== 'debit' && balanceType !== 'credit') {
-                        result.details.balances.errors.push(`Invalid balance type "${balanceType}". Must be "debit" or "credit": ${JSON.stringify(row)}`);
-                        continue;
-                    }
-                    // Find customer
-                    const customer = await prisma_1.default.customer.findFirst({
-                        where: {
-                            customerName,
-                            companyId
-                        }
+                    await prisma_1.default.customerDebt.createMany({
+                        data: balancesToCreate,
+                        skipDuplicates: true,
                     });
-                    if (!customer) {
-                        result.details.balances.errors.push(`Customer not found: ${customerName}`);
-                        continue;
-                    }
-                    // Check if opening balance already exists
-                    const existingBalance = await prisma_1.default.customerPayment.findFirst({
-                        where: {
-                            customerId: customer.id,
-                            note: { contains: "Opening balance from import" },
-                            paymentType: "opening_balance"
-                        }
-                    });
-                    if (!existingBalance) {
-                        if (balanceType === 'debit') {
-                            // Customer owes us - create a sale (debit entry)
-                            await prisma_1.default.sale.create({
-                                data: {
-                                    customerId: customer.id,
-                                    companyId,
-                                    saleType: "Opening Balance",
-                                    sourceType: "opening_balance",
-                                    sourceId: "import",
-                                    totalAmount: amount,
-                                    items: {
-                                        create: {
-                                            itemName: "Opening Balance - Customer Owes",
-                                            quantity: 1,
-                                            unitPrice: amount
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                        else {
-                            // Customer has credit with us - create a payment (credit entry)
-                            await prisma_1.default.customerPayment.create({
-                                data: {
-                                    customerId: customer.id,
-                                    amount: amount,
-                                    note: notes,
-                                    companyId,
-                                    paymentType: "opening_balance"
-                                }
-                            });
-                        }
-                        result.details.balances.created++;
-                    }
+                    result.details.balances.created = balancesToCreate.length;
                 }
                 catch (error) {
-                    result.details.balances.errors.push(`Error processing balance ${JSON.stringify(row)}: ${error}`);
+                    result.details.balances.errors.push(`Batch create error: ${error}`);
                 }
             }
         }
         const totalCreated = result.details.customers.created + result.details.balances.created;
-        const totalErrors = result.details.customers.errors.length + result.details.balances.errors.length;
+        const totalErrors = result.details.customers.errors.length +
+            result.details.balances.errors.length;
         result.success = totalCreated > 0;
-        result.message = `Import completed: ${totalCreated} records created${totalErrors > 0 ? `, ${totalErrors} errors` : ''}`;
+        result.message = `Import completed: ${totalCreated} records created${totalErrors > 0 ? `, ${totalErrors} errors` : ""}`;
         res.status(result.success ? 200 : 207).json(result);
     }
     catch (error) {
@@ -201,99 +207,243 @@ const importSuppliers = async (req, res) => {
         message: "",
         details: {
             suppliers: { created: 0, errors: [] },
-            items: { created: 0, errors: [] }
-        }
+            items: { created: 0, errors: [] },
+            stock: { created: 0, errors: [] },
+        },
     };
     try {
         const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
-        // 1. PROCESS SUPPLIERS
-        if (workbook.SheetNames.includes('Suppliers')) {
-            const suppliersSheet = workbook.Sheets['Suppliers'];
+        // 1. PROCESS SUPPLIERS - BATCH INSERT
+        if (workbook.SheetNames.includes("Suppliers")) {
+            const suppliersSheet = workbook.Sheets["Suppliers"];
             const suppliersData = XLSX.utils.sheet_to_json(suppliersSheet);
+            const validSuppliers = [];
             for (const row of suppliersData) {
+                const supplierName = row.supplierName?.toString()?.trim();
+                const contact = row.contact?.toString()?.trim();
+                const country = row.country?.toString()?.trim();
+                if (!supplierName || !contact || !country) {
+                    result.details.suppliers.errors.push(`Invalid data: ${JSON.stringify(row)}`);
+                    continue;
+                }
+                validSuppliers.push({ supplierName, contact, country });
+            }
+            // Batch check existing suppliers
+            const existingSuppliers = await prisma_1.default.supplier.findMany({
+                where: {
+                    companyId,
+                    suppliername: {
+                        in: validSuppliers.map((s) => s.supplierName),
+                    },
+                },
+                select: { suppliername: true },
+            });
+            const existingNames = new Set(existingSuppliers.map((s) => s.suppliername));
+            const suppliersToCreate = validSuppliers.filter((s) => !existingNames.has(s.supplierName));
+            if (suppliersToCreate.length > 0) {
                 try {
-                    const supplierName = row.supplierName?.toString()?.trim();
-                    const contact = row.contact?.toString()?.trim();
-                    const country = row.country?.toString()?.trim();
-                    if (!supplierName || !contact || !country) {
-                        result.details.suppliers.errors.push(`Invalid data: ${JSON.stringify(row)}`);
-                        continue;
-                    }
-                    // Check if supplier already exists
-                    const existingSupplier = await prisma_1.default.supplier.findFirst({
-                        where: {
-                            suppliername: supplierName,
-                            companyId
-                        }
+                    await prisma_1.default.supplier.createMany({
+                        data: suppliersToCreate.map((s) => ({
+                            suppliername: s.supplierName,
+                            contact: s.contact,
+                            country: s.country,
+                            companyId,
+                        })),
+                        skipDuplicates: true,
                     });
-                    if (!existingSupplier) {
-                        await prisma_1.default.supplier.create({
-                            data: {
-                                suppliername: supplierName,
-                                contact,
-                                country,
-                                companyId
-                            }
-                        });
-                        result.details.suppliers.created++;
-                    }
+                    result.details.suppliers.created = suppliersToCreate.length;
                 }
                 catch (error) {
-                    result.details.suppliers.errors.push(`Error processing supplier ${JSON.stringify(row)}: ${error}`);
+                    result.details.suppliers.errors.push(`Batch create error: ${error}`);
                 }
             }
         }
-        // 2. PROCESS SUPPLIER ITEMS & PRICES
-        if (workbook.SheetNames.includes('Items & Prices')) {
-            const itemsSheet = workbook.Sheets['Items & Prices'];
+        // 2. PROCESS SUPPLIER ITEMS & PRICES - BATCH INSERT
+        if (workbook.SheetNames.includes("Items & Prices")) {
+            const itemsSheet = workbook.Sheets["Items & Prices"];
             const itemsData = XLSX.utils.sheet_to_json(itemsSheet);
+            const validItems = [];
             for (const row of itemsData) {
+                const supplierName = row.supplierName?.toString()?.trim();
+                const itemName = row.itemName?.toString()?.trim();
+                const price = parseFloat(row.price?.toString() || "0");
+                if (!supplierName || !itemName || isNaN(price) || price <= 0) {
+                    result.details.items.errors.push(`Invalid data: ${JSON.stringify(row)}`);
+                    continue;
+                }
+                validItems.push({ supplierName, itemName, price });
+            }
+            // Batch get suppliers
+            const suppliers = await prisma_1.default.supplier.findMany({
+                where: {
+                    companyId,
+                    suppliername: {
+                        in: validItems.map((i) => i.supplierName),
+                    },
+                },
+            });
+            const supplierMap = new Map(suppliers.map((s) => [s.suppliername, s]));
+            // Get existing items
+            const supplierIds = suppliers.map((s) => s.id);
+            const existingItems = await prisma_1.default.supplierItem.findMany({
+                where: {
+                    supplierId: { in: supplierIds },
+                },
+                select: { supplierId: true, itemName: true },
+            });
+            const existingItemKeys = new Set(existingItems.map((item) => `${item.supplierId}-${item.itemName}`));
+            const itemsToCreate = [];
+            for (const item of validItems) {
+                const supplier = supplierMap.get(item.supplierName);
+                if (!supplier) {
+                    result.details.items.errors.push(`Supplier not found: ${item.supplierName}`);
+                    continue;
+                }
+                const itemKey = `${supplier.id}-${item.itemName}`;
+                if (existingItemKeys.has(itemKey)) {
+                    continue;
+                }
+                itemsToCreate.push({
+                    supplierId: supplier.id,
+                    itemName: item.itemName,
+                    price: item.price,
+                });
+            }
+            if (itemsToCreate.length > 0) {
                 try {
-                    const supplierName = row.supplierName?.toString()?.trim();
-                    const itemName = row.itemName?.toString()?.trim();
-                    const price = parseFloat(row.price?.toString() || "0");
-                    if (!supplierName || !itemName || isNaN(price) || price <= 0) {
-                        result.details.items.errors.push(`Invalid data: ${JSON.stringify(row)}`);
-                        continue;
-                    }
+                    await prisma_1.default.supplierItem.createMany({
+                        data: itemsToCreate,
+                        skipDuplicates: true,
+                    });
+                    result.details.items.created = itemsToCreate.length;
+                }
+                catch (error) {
+                    result.details.items.errors.push(`Batch create error: ${error}`);
+                }
+            }
+        }
+        // 3. PROCESS OPENING STOCK
+        if (workbook.SheetNames.includes("Opening Stock")) {
+            const stockSheet = workbook.Sheets["Opening Stock"];
+            const stockData = XLSX.utils.sheet_to_json(stockSheet);
+            // Get or create default supplier
+            let defaultSupplier = await prisma_1.default.supplier.findFirst({
+                where: {
+                    suppliername: "Opening Stock Supplier",
+                    companyId,
+                },
+            });
+            if (!defaultSupplier) {
+                defaultSupplier = await prisma_1.default.supplier.create({
+                    data: {
+                        suppliername: "Opening Stock Supplier",
+                        contact: "N/A",
+                        country: "N/A",
+                        companyId,
+                    },
+                });
+            }
+            const validStock = [];
+            for (const row of stockData) {
+                const supplierName = row.supplierName?.toString()?.trim();
+                const itemName = row.itemName?.toString()?.trim();
+                const quantity = parseInt(row.quantity?.toString() || "0");
+                const unitPrice = parseFloat(row.unitPrice?.toString() || "0");
+                if (!itemName ||
+                    isNaN(quantity) ||
+                    quantity <= 0 ||
+                    isNaN(unitPrice) ||
+                    unitPrice <= 0) {
+                    result.details.stock.errors.push(`Invalid data: ${JSON.stringify(row)}`);
+                    continue;
+                }
+                validStock.push({ supplierName, itemName, quantity, unitPrice });
+            }
+            // Group stock by supplier
+            const stockBySupplier = new Map();
+            for (const stock of validStock) {
+                const supplierName = stock.supplierName || "Opening Stock Supplier";
+                if (!stockBySupplier.has(supplierName)) {
+                    stockBySupplier.set(supplierName, []);
+                }
+                stockBySupplier.get(supplierName).push(stock);
+            }
+            // Process each supplier's stock
+            for (const [supplierName, stocks] of stockBySupplier.entries()) {
+                try {
                     // Find supplier
                     const supplier = await prisma_1.default.supplier.findFirst({
                         where: {
                             suppliername: supplierName,
-                            companyId
-                        }
+                            companyId,
+                        },
                     });
                     if (!supplier) {
-                        result.details.items.errors.push(`Supplier not found: ${supplierName}`);
+                        result.details.stock.errors.push(`Supplier not found: ${supplierName}`);
                         continue;
                     }
-                    // Check if item already exists for this supplier
-                    const existingItem = await prisma_1.default.supplierItem.findFirst({
+                    // Create or get container
+                    const containerNo = `OPENING-STOCK-${supplier.suppliername
+                        .replace(/\s+/g, "-")
+                        .toUpperCase()}`;
+                    let container = await prisma_1.default.container.findFirst({
                         where: {
-                            supplierId: supplier.id,
-                            itemName
-                        }
+                            containerNo,
+                            companyId,
+                        },
                     });
-                    if (!existingItem) {
-                        await prisma_1.default.supplierItem.create({
+                    if (!container) {
+                        container = await prisma_1.default.container.create({
                             data: {
+                                containerNo,
+                                arrivalDate: new Date(),
+                                year: new Date().getFullYear(),
+                                status: "Received",
                                 supplierId: supplier.id,
-                                itemName,
-                                price
-                            }
+                                companyId,
+                            },
                         });
-                        result.details.items.created++;
+                    }
+                    // Get existing items in container
+                    const existingItems = await prisma_1.default.containerItem.findMany({
+                        where: {
+                            containerId: container.id,
+                        },
+                        select: { itemName: true },
+                    });
+                    const existingItemNames = new Set(existingItems.map((item) => item.itemName));
+                    // Filter items to create
+                    const itemsToCreate = stocks
+                        .filter((stock) => !existingItemNames.has(stock.itemName))
+                        .map((stock) => ({
+                        containerId: container.id,
+                        itemName: stock.itemName,
+                        quantity: stock.quantity,
+                        receivedQty: stock.quantity,
+                        unitPrice: stock.unitPrice,
+                        soldQty: 0,
+                    }));
+                    if (itemsToCreate.length > 0) {
+                        await prisma_1.default.containerItem.createMany({
+                            data: itemsToCreate,
+                            skipDuplicates: true,
+                        });
+                        result.details.stock.created += itemsToCreate.length;
                     }
                 }
                 catch (error) {
-                    result.details.items.errors.push(`Error processing item ${JSON.stringify(row)}: ${error}`);
+                    result.details.stock.errors.push(`Error processing stock for ${supplierName}: ${error}`);
                 }
             }
         }
-        const totalCreated = result.details.suppliers.created + result.details.items.created;
-        const totalErrors = result.details.suppliers.errors.length + result.details.items.errors.length;
+        const totalCreated = result.details.suppliers.created +
+            result.details.items.created +
+            result.details.stock.created;
+        const totalErrors = result.details.suppliers.errors.length +
+            result.details.items.errors.length +
+            result.details.stock.errors.length;
         result.success = totalCreated > 0;
-        result.message = `Import completed: ${totalCreated} records created${totalErrors > 0 ? `, ${totalErrors} errors` : ''}`;
+        result.message = `Import completed: ${totalCreated} records created${totalErrors > 0 ? `, ${totalErrors} errors` : ""}`;
         res.status(result.success ? 200 : 207).json(result);
     }
     catch (error) {

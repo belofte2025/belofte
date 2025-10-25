@@ -44,19 +44,43 @@ export const createCustomerPayment = async (
   await api.post(`/customers/${id}/payments`, data);
 };
 
+// Updated Statement Types to match new backend format
 export interface StatementEntry {
   id: string;
   date: string;
-  type: "sale" | "payment";
+  timestamp?: Date;
+  type: "credit_sale" | "payment" | "debt";
   description: string;
-  amount: number;
+  debit: number;
+  credit: number;
+  balance: number;
+  status: string;
+}
+
+export interface StatementResponse {
+  statement: StatementEntry[];
+  summary: {
+    totalDebits: number;
+    totalCredits: number;
+    currentBalance: number;
+    totalTransactions: number;
+  };
 }
 
 export const getCustomerStatement = async (
   customerId: string,
-  from: string | undefined,
-  to: string | undefined
-): Promise<StatementEntry[]> => {
-  const res = await api.get(`/customers/${customerId}/statement`);
+  from?: string,
+  to?: string
+): Promise<StatementResponse> => {
+  const params = new URLSearchParams();
+  if (from) params.append("fromDate", from);
+  if (to) params.append("toDate", to);
+
+  const queryString = params.toString();
+  const url = `/customers/${customerId}/statement${
+    queryString ? `?${queryString}` : ""
+  }`;
+
+  const res = await api.get(url);
   return res.data;
 };

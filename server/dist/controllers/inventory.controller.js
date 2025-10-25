@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.inventoryBySupplier = exports.inventoryByContainer = void 0;
+exports.inventoryReport = exports.inventoryBySupplier = exports.inventoryByContainer = void 0;
 const inventory_service_1 = require("../services/inventory.service");
 const inventoryByContainer = async (req, res) => {
     try {
@@ -22,3 +22,19 @@ const inventoryBySupplier = async (req, res) => {
     }
 };
 exports.inventoryBySupplier = inventoryBySupplier;
+const inventoryReport = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+        const report = await (0, inventory_service_1.getInventoryReport)(companyId);
+        res.json(report);
+    }
+    catch (error) {
+        console.error("Error fetching inventory report:", error);
+        res.status(500).json({ error: "Failed to fetch inventory report" });
+    }
+};
+exports.inventoryReport = inventoryReport;

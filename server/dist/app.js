@@ -18,6 +18,7 @@ const container_routes_1 = __importDefault(require("./routes/container.routes"))
 const offloading_routes_1 = __importDefault(require("./routes/offloading.routes"));
 const sale_routes_1 = __importDefault(require("./routes/sale.routes"));
 const customerPayment_routes_1 = __importDefault(require("./routes/customerPayment.routes"));
+const customerDebt_routes_1 = __importDefault(require("./routes/customerDebt.routes"));
 const inventory_routes_1 = __importDefault(require("./routes/inventory.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const audit_routes_1 = __importDefault(require("./routes/audit.routes"));
@@ -71,6 +72,7 @@ app.use("/api/containers", container_routes_1.default);
 app.use("/api/offloading", offloading_routes_1.default);
 app.use("/api/sales", sale_routes_1.default);
 app.use("/api/payments", customerPayment_routes_1.default);
+app.use("/api/customerdebts", customerDebt_routes_1.default);
 app.use("/api/reports", report_routes_1.default);
 app.use("/api/inventory", inventory_routes_1.default);
 app.use("/api/uploads", uploads_routes_1.default);
