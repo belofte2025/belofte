@@ -3,14 +3,34 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createCustomerPayment,
-  getCustomerById,
+  getCustomerByIdbal,
 } from "@/services/customerService";
-import { ArrowLeft, CreditCard, DollarSign, FileText, Calendar, Save } from "lucide-react";
+import { sendPaymentConfirmationSMS } from "@/services/smsService";
+import {
+  ArrowLeft,
+  CreditCard,
+  DollarSign,
+  FileText,
+  Calendar,
+  Save,
+  MessageSquare,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 type Props = {
   customerId: string;
 };
+
+interface PaymentReceipt {
+  receiptNumber: string;
+  customerName: string;
+  previousBalance: number;
+  amountPaid: number;
+  currentBalance: number;
+  paymentType: string;
+  note: string;
+  date: string;
+}
 
 export default function CustomerPaymentForm({ customerId }: Props) {
   const router = useRouter();
@@ -18,17 +38,25 @@ export default function CustomerPaymentForm({ customerId }: Props) {
   const [note, setNote] = useState("");
   const [paymentType, setPaymentType] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerBal, setCustomerBal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [sendSMS, setSendSMS] = useState(true);
 
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
-        const data = await getCustomerById(customerId);
+        const data = await getCustomerByIdbal(customerId);
+        console.log("📊 Customer data loaded:", data);
         setCustomerName(data.customerName || data.name);
-      } catch {
+        setCustomerPhone(data.phone || "");
+        const balance = parseFloat(data.customerBal || data.balance || "0");
+        setCustomerBal(balance);
+      } catch (error) {
+        console.error("❌ Failed to load customer:", error);
         toast.error("Failed to load customer info");
         router.back();
       } finally {
@@ -37,6 +65,215 @@ export default function CustomerPaymentForm({ customerId }: Props) {
     };
     fetchCustomer();
   }, [customerId, router]);
+
+  const generateReceiptPDF = (receipt: PaymentReceipt) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow pop-ups to print receipt");
+      return;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Payment Receipt - ${receipt.receiptNumber}</title>
+        <style>
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+          body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          .receipt-header {
+            text-align: center;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .receipt-header h1 {
+            color: #1e40af;
+            margin: 0 0 10px 0;
+            font-size: 32px;
+          }
+          .receipt-header p {
+            color: #64748b;
+            margin: 5px 0;
+          }
+          .receipt-number {
+            background: #eff6ff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: bold;
+            color: #1e40af;
+            margin-top: 10px;
+          }
+          .receipt-body {
+            margin: 30px 0;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          .info-row:last-child {
+            border-bottom: none;
+          }
+          .label {
+            color: #64748b;
+            font-weight: 500;
+          }
+          .value {
+            color: #1f2937;
+            font-weight: 600;
+          }
+          .amount-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+          }
+          .amount-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            font-size: 18px;
+          }
+          .amount-row.total {
+            border-top: 2px solid #2563eb;
+            margin-top: 10px;
+            padding-top: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e40af;
+          }
+          .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            color: #64748b;
+          }
+          .signature-section {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 60px;
+            padding-top: 20px;
+          }
+          .signature-box {
+            text-align: center;
+          }
+          .signature-line {
+            border-top: 2px solid #000;
+            width: 200px;
+            margin: 0 auto 10px;
+          }
+          .print-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+          }
+          .print-button:hover {
+            background: #1d4ed8;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-header">
+          <h1>PAYMENT RECEIPT</h1>
+          <p>Thank you for your payment</p>
+          <div class="receipt-number">Receipt #: ${receipt.receiptNumber}</div>
+        </div>
+
+        <div class="receipt-body">
+          <div class="info-row">
+            <span class="label">Customer Name:</span>
+            <span class="value">${receipt.customerName}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Date:</span>
+            <span class="value">${new Date(receipt.date).toLocaleDateString(
+              "en-US",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }
+            )}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Payment Method:</span>
+            <span class="value">${receipt.paymentType}</span>
+          </div>
+          ${
+            receipt.note
+              ? `
+          <div class="info-row">
+            <span class="label">Note:</span>
+            <span class="value">${receipt.note}</span>
+          </div>
+          `
+              : ""
+          }
+        </div>
+
+        <div class="amount-section">
+          <div class="amount-row">
+            <span>Previous Balance:</span>
+            <span>₵ ${receipt.previousBalance.toFixed(2)}</span>
+          </div>
+          <div class="amount-row">
+            <span>Amount Paid:</span>
+            <span style="color: #16a34a;">₵ ${receipt.amountPaid.toFixed(
+              2
+            )}</span>
+          </div>
+          <div class="amount-row total">
+            <span>Current Balance:</span>
+            <span>₵ ${receipt.currentBalance.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div class="signature-section">
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <p>Customer Signature</p>
+          </div>
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <p>Authorized Signature</p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>This is a computer-generated receipt</p>
+          <p style="margin-top: 10px; font-size: 12px;">
+            Generated on ${new Date().toLocaleString()}
+          </p>
+        </div>
+
+        <button class="print-button no-print" onclick="window.print()">
+          Print Receipt
+        </button>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
 
   const handleSubmit = async () => {
     if (!amount || isNaN(Number(amount))) {
@@ -48,16 +285,108 @@ export default function CustomerPaymentForm({ customerId }: Props) {
       return;
     }
 
+    const amountPaid = parseFloat(amount);
+    const previousBalance = customerBal;
+    const currentBalance = previousBalance - amountPaid;
+
+    console.log("💰 Payment submission:", {
+      customerId,
+      amountPaid,
+      previousBalance,
+      currentBalance,
+      paymentType,
+      note,
+      sendSMS,
+      customerPhone,
+    });
+
     setSubmitting(true);
     try {
+      // Record the payment
+      console.log("📝 Recording payment...");
       await createCustomerPayment(customerId, {
-        amount: parseFloat(amount),
+        amount: amountPaid,
         note,
         paymentType,
       });
-      toast.success(`₵ ${amount} payment recorded for ${customerName}`);
-      router.push(`/customers`);
-    } catch {
+      console.log("✅ Payment recorded successfully");
+
+      // Send SMS if checkbox is checked
+      if (sendSMS && customerPhone) {
+        console.log("📱 Attempting to send SMS...");
+        console.log("SMS Payload:", {
+          customerId,
+          amount: amountPaid,
+          balance: currentBalance,
+        });
+
+        try {
+          const smsResult = await sendPaymentConfirmationSMS(
+            customerId,
+            amountPaid,
+            currentBalance
+          );
+
+          console.log("📤 SMS Result:", smsResult);
+
+          if (smsResult.success) {
+            toast.success(`Payment recorded and SMS sent to ${customerName}`, {
+              duration: 3000,
+            });
+          } else {
+            console.error("SMS failed:", smsResult.error);
+            toast.success(
+              `Payment recorded, but SMS failed: ${smsResult.error}`,
+              {
+                duration: 4000,
+              }
+            );
+          }
+        } catch (smsError) {
+          console.error("❌ SMS error:", smsError);
+          toast.success(`Payment recorded, but SMS failed to send`, {
+            duration: 3000,
+          });
+        }
+      } else {
+        if (sendSMS && !customerPhone) {
+          toast.success(
+            `₵ ${amount} payment recorded. No phone number available for SMS.`,
+            {
+              duration: 3000,
+            }
+          );
+        } else {
+          toast.success(`₵ ${amount} payment recorded for ${customerName}`, {
+            duration: 2000,
+          });
+        }
+      }
+
+      // Ask if user wants to print receipt
+      setTimeout(() => {
+        const wantReceipt = window.confirm(
+          "Payment recorded successfully! Do you want to print the receipt?"
+        );
+
+        if (wantReceipt) {
+          const receipt: PaymentReceipt = {
+            receiptNumber: `RCP-${Date.now()}`,
+            customerName,
+            previousBalance,
+            amountPaid,
+            currentBalance,
+            paymentType,
+            note,
+            date: today,
+          };
+          generateReceiptPDF(receipt);
+        }
+
+        router.push(`/customers`);
+      }, 500);
+    } catch (error) {
+      console.error("❌ Payment error:", error);
       toast.error("Failed to record payment");
     } finally {
       setSubmitting(false);
@@ -69,7 +398,9 @@ export default function CustomerPaymentForm({ customerId }: Props) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex items-center space-x-3">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="text-gray-600 font-medium">Loading customer details...</span>
+          <span className="text-gray-600 font-medium">
+            Loading customer details...
+          </span>
         </div>
       </div>
     );
@@ -88,8 +419,12 @@ export default function CustomerPaymentForm({ customerId }: Props) {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Record Payment</h1>
-              <p className="mt-1 text-gray-600">Add a new payment for {customerName}</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Record Payment
+              </h1>
+              <p className="mt-1 text-gray-600">
+                Add a new payment for {customerName}
+              </p>
             </div>
           </div>
         </div>
@@ -102,8 +437,19 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                 <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl mb-4">
                   {customerName.charAt(0).toUpperCase()}
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">{customerName}</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {customerName}
+                </h3>
                 <p className="text-gray-600">Customer</p>
+                {customerPhone && (
+                  <p className="text-sm text-gray-500 mt-1">{customerPhone}</p>
+                )}
+                <div className="mt-3">
+                  <p className="text-sm text-gray-500">Current Balance</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    ₵ {customerBal.toFixed(2)}
+                  </p>
+                </div>
               </div>
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex items-center gap-2 text-gray-600">
@@ -121,7 +467,9 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                 <div className="p-2 bg-blue-100 rounded-full">
                   <CreditCard className="w-5 h-5 text-blue-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Payment Details</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Payment Details
+                </h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -142,6 +490,12 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     step="0.01"
                     min="0"
                   />
+                  {amount && !isNaN(Number(amount)) && (
+                    <p className="mt-2 text-sm text-gray-600">
+                      New Balance: ₵{" "}
+                      {(customerBal - parseFloat(amount)).toFixed(2)}
+                    </p>
+                  )}
                 </div>
 
                 {/* Payment Type */}
@@ -160,6 +514,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     <option value="">Select method</option>
                     <option value="CASH">Cash Payment</option>
                     <option value="BANK">Bank Transfer</option>
+                    <option value="MOMO">Mobile Money</option>
                   </select>
                 </div>
 
@@ -180,6 +535,36 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     <option value="Part Payment">Partial Payment</option>
                     <option value="Final Payment">Final Payment</option>
                   </select>
+                </div>
+
+                {/* SMS Notification Checkbox */}
+                <div className="md:col-span-2">
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={sendSMS}
+                        onChange={(e) => setSendSMS(e.target.checked)}
+                        className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-purple-600" />
+                        <span className="text-sm font-medium text-gray-900">
+                          Send SMS confirmation to customer
+                        </span>
+                      </div>
+                    </label>
+                    {sendSMS && customerPhone && (
+                      <p className="mt-2 ml-8 text-xs text-purple-700">
+                        SMS will be sent to: {customerPhone}
+                      </p>
+                    )}
+                    {sendSMS && !customerPhone && (
+                      <p className="mt-2 ml-8 text-xs text-red-600">
+                        ⚠️ No phone number available for this customer
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 

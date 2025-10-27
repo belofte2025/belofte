@@ -27,6 +27,11 @@ export const getCustomerById = async (id: string) => {
   return res.data;
 };
 
+export const getCustomerByIdbal = async (id: string) => {
+  const res = await api.get(`/customers/bal/${id}`);
+  return res.data;
+};
+
 export const createCustomer = async (data: any) => {
   const res = await api.post("/customers", data);
   return res.data;

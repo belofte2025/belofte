@@ -20,18 +20,48 @@ import userRoutes from "./routes/user.routes";
 import auditRoutes from "./routes/audit.routes";
 import reportRoutes from "./routes/report.routes";
 import uploadsRoutes from "./routes/uploads.routes";
+import smsRoutes from "./routes/sms.routes";
 
 dotenv.config();
 
 const app = express();
 
+/* ───────────────── CORS Configuration ───────────────── */
+const corsOptions = {
+  origin: function (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) {
+    const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || [
+      "https://petros-ivory.vercel.app",
+      "http://localhost:3000",
+      "http://localhost:3001",
+    ];
+
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  maxAge: 600, // Cache preflight for 10 minutes
+};
+
 /* ───────────────── Middlewares ───────────────── */
-app.use(
-  cors({
-    origin: (process.env.CORS_ORIGIN?.split(",") ?? ["*"]) as any,
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options("*", cors(corsOptions));
+
 app.use(express.json());
 
 /* ───────────────── Swagger setup ───────────────── */
@@ -86,6 +116,7 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/audit", auditRoutes);
+app.use('/api/sms', smsRoutes);
 
 // Health check
 app.get("/api/health", ((_, res) => {

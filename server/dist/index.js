@@ -21,6 +21,7 @@ const audit_routes_1 = __importDefault(require("./routes/audit.routes"));
 const report_routes_1 = __importDefault(require("./routes/report.routes"));
 const uploads_routes_1 = __importDefault(require("./routes/uploads.routes"));
 const customerDebt_routes_1 = __importDefault(require("./routes/customerDebt.routes"));
+const sms_routes_1 = __importDefault(require("./routes/sms.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 4000;
@@ -49,6 +50,7 @@ app.use("/api/inventory", inventory_routes_1.default);
 app.use("/api/uploads", uploads_routes_1.default);
 app.use("/api/users", user_routes_1.default);
 app.use("/api/audit", audit_routes_1.default);
+app.use("/api/sms", sms_routes_1.default);
 // ───────────────────── Static (Next.js export) ─────────────────────
 const clientBuildPath = path_1.default.join(__dirname, "../../client/out");
 app.use(express_1.default.static(clientBuildPath));

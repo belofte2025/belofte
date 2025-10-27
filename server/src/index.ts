@@ -1,8 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import swaggerUi from "swagger-ui-express";
-import swaggerJsdoc from "swagger-jsdoc";
+
 import path from "path";
 
 import authRoutes from "./routes/auth.routes";
@@ -19,6 +18,7 @@ import auditRoutes from "./routes/audit.routes";
 import reportRoutes from "./routes/report.routes";
 import uploadsRoutes from "./routes/uploads.routes";
 import customerDebtroutes from "./routes/customerDebt.routes";
+import smsRoutes from "./routes/sms.routes";
 dotenv.config();
 
 const app = express();
@@ -54,6 +54,7 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/audit", auditRoutes);
+app.use("/api/sms", smsRoutes);
 
 // ───────────────────── Static (Next.js export) ─────────────────────
 const clientBuildPath = path.join(__dirname, "../../client/out");

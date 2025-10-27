@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCustomerStatement = exports.getCustomerPayments = exports.createCustomerPayment = exports.updateCustomer = exports.getCustomerById = exports.getCustomers = exports.createCustomer = void 0;
+exports.getCustomerStatement = exports.getCustomerPayments = exports.createCustomerPayment = exports.updateCustomer = exports.getCustomerByIdBal = exports.getCustomerById = exports.getCustomers = exports.createCustomer = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const createCustomer = async (req, res) => {
     try {
@@ -124,6 +124,57 @@ const getCustomerById = async (req, res) => {
     }
 };
 exports.getCustomerById = getCustomerById;
+const getCustomerByIdBal = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        const { id } = req.params;
+        if (!companyId) {
+            res.status(400).json({ error: "Company ID is required" });
+            return;
+        }
+        const customer = await prisma_1.default.customer.findFirst({
+            where: { id, companyId },
+            select: {
+                id: true,
+                customerName: true,
+                phone: true,
+                sale: {
+                    where: { saleType: "credit" },
+                    select: { totalAmount: true },
+                },
+                custpayment: {
+                    select: { amount: true },
+                },
+                debts: {
+                    where: {
+                        OR: [{ status: "unpaid" }, { status: "partial" }],
+                    },
+                    select: { amount: true, status: true },
+                },
+            },
+        });
+        if (!customer) {
+            res.status(404).json({ error: "Customer not found" });
+            return;
+        }
+        // Calculate balance (same as getCustomers)
+        const totalCreditSales = customer.sale.reduce((sum, s) => sum + s.totalAmount, 0);
+        const totalPayments = customer.custpayment.reduce((sum, p) => sum + p.amount, 0);
+        const totalUnpaidDebts = customer.debts.reduce((sum, d) => sum + d.amount, 0);
+        const calculatedBalance = totalCreditSales + totalUnpaidDebts - totalPayments;
+        res.json({
+            id: customer.id,
+            name: customer.customerName,
+            phone: customer.phone,
+            balance: calculatedBalance,
+        });
+    }
+    catch (err) {
+        console.error("Failed to fetch customer:", err);
+        res.status(500).json({ error: "Failed to fetch customer", detail: err });
+    }
+};
+exports.getCustomerByIdBal = getCustomerByIdBal;
 const updateCustomer = async (req, res) => {
     try {
         const companyId = req.user?.companyId;

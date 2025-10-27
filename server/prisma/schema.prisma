@@ -20,6 +20,7 @@ model Company {
   suppliers    Supplier[]
   users        User[]
   customerDebt CustomerDebt[]
+  smsLogs    SMSLog[]
 }
 
 model User {
@@ -45,6 +46,7 @@ model Customer {
   custpayment  CustomerPayment[]
   sale         Sale[]
   debts        CustomerDebt[]
+  smsLogs    SMSLog[]
 }
 
 model Container {
@@ -150,4 +152,19 @@ model CustomerDebt {
   updatedAt   DateTime @updatedAt
   customer    Customer @relation(fields: [customerId], references: [id])
   company     Company  @relation(fields: [companyId], references: [id])
+}
+
+model SMSLog {
+  id         String    @id @default(uuid())
+  companyId  String
+  customerId String?
+  recipient  String
+  message    String
+  status     String    // sent, failed, pending
+  provider   String    // twilio, hubtel, arkesel, mnotify
+  messageId  String?
+  error      String?
+  createdAt  DateTime  @default(now())
+  company    Company   @relation(fields: [companyId], references: [id])
+  customer   Customer? @relation(fields: [customerId], references: [id])
 }

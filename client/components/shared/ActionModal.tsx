@@ -45,6 +45,12 @@ export default function ActionModal({ open, onClose, customer }: Props) {
               onClose={onClose}
             />
             <ActionLink
+              href={`/customers/${customer.id}/payments/history`}
+              label="🕰️ Payment History"
+              color="red"
+              onClose={onClose}
+            />
+            <ActionLink
               href={`/customers/${customer.id}/statement`}
               label="📄 View Statement"
               color="purple"
@@ -78,7 +84,7 @@ function ActionLink({
 }: {
   href: string;
   label: string;
-  color: "blue" | "green" | "purple" | "gray";
+  color: "red" | "blue" | "green" | "purple" | "gray";
   onClose: () => void;
 }) {
   const base = {
@@ -86,6 +92,7 @@ function ActionLink({
     green: "text-green-700 hover:bg-green-50",
     purple: "text-purple-700 hover:bg-purple-50",
     gray: "text-gray-700 hover:bg-gray-100",
+    red: "text-red-700 hover:bg-red-100",
   };
 
   return (

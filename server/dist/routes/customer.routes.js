@@ -49,6 +49,27 @@ router.post("/", customer_controller_1.createCustomer);
 router.get("/", customer_controller_1.getCustomers);
 /**
  * @openapi
+ * /customers/bal/{id}:
+ *   get:
+ *     tags: [Customers]
+ *     summary: Get a customer by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer details
+ *
+
+ */
+router.get("/bal/:id", customer_controller_1.getCustomerByIdBal);
+/**
+ * @openapi
  * /customers/{id}:
  *   get:
  *     tags: [Customers]

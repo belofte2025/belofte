@@ -3,10 +3,11 @@ import { authenticate } from "../middlewares/auth.middleware";
 import {
   createCustomer,
   getCustomers,
-  getCustomerById,
   updateCustomer,
   createCustomerPayment,
   getCustomerStatement,
+  getCustomerById,
+  getCustomerByIdBal,
 } from "../controllers/customer.controller";
 
 const router = Router();
@@ -56,6 +57,28 @@ router.post("/", createCustomer);
  *         description: List of customers
  */
 router.get("/", getCustomers);
+
+/**
+ * @openapi
+ * /customers/bal/{id}:
+ *   get:
+ *     tags: [Customers]
+ *     summary: Get a customer by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer details
+ *
+
+ */
+router.get("/bal/:id", getCustomerByIdBal);
 
 /**
  * @openapi

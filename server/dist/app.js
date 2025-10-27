@@ -24,13 +24,38 @@ const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const audit_routes_1 = __importDefault(require("./routes/audit.routes"));
 const report_routes_1 = __importDefault(require("./routes/report.routes"));
 const uploads_routes_1 = __importDefault(require("./routes/uploads.routes"));
+const sms_routes_1 = __importDefault(require("./routes/sms.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-/* ───────────────── Middlewares ───────────────── */
-app.use((0, cors_1.default)({
-    origin: (process.env.CORS_ORIGIN?.split(",") ?? ["*"]),
+/* ───────────────── CORS Configuration ───────────────── */
+const corsOptions = {
+    origin: function (origin, callback) {
+        const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || [
+            "https://petros-ivory.vercel.app",
+            "http://localhost:3000",
+            "http://localhost:3001",
+        ];
+        // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+        if (!origin) {
+            return callback(null, true);
+        }
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error(`Origin ${origin} not allowed by CORS`));
+        }
+    },
     credentials: true,
-}));
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    maxAge: 600, // Cache preflight for 10 minutes
+};
+/* ───────────────── Middlewares ───────────────── */
+app.use((0, cors_1.default)(corsOptions));
+// Handle preflight requests explicitly
+app.options("*", (0, cors_1.default)(corsOptions));
 app.use(express_1.default.json());
 /* ───────────────── Swagger setup ───────────────── */
 const swaggerSpec = (0, swagger_jsdoc_1.default)({
@@ -78,6 +103,7 @@ app.use("/api/inventory", inventory_routes_1.default);
 app.use("/api/uploads", uploads_routes_1.default);
 app.use("/api/users", user_routes_1.default);
 app.use("/api/audit", audit_routes_1.default);
+app.use('/api/sms', sms_routes_1.default);
 // Health check
 app.get("/api/health", ((_, res) => {
     res.json({ ok: true });

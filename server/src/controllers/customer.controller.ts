@@ -144,6 +144,74 @@ export const getCustomerById = async (req: Request, res: Response) => {
   }
 };
 
+export const getCustomerByIdBal = async (req: Request, res: Response) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { id } = req.params;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is required" });
+      return;
+    }
+
+    const customer = await prisma.customer.findFirst({
+      where: { id, companyId },
+      select: {
+        id: true,
+        customerName: true,
+        phone: true,
+        sale: {
+          where: { saleType: "credit" },
+          select: { totalAmount: true },
+        },
+        custpayment: {
+          select: { amount: true },
+        },
+        debts: {
+          where: {
+            OR: [{ status: "unpaid" }, { status: "partial" }],
+          },
+          select: { amount: true, status: true },
+        },
+      },
+    });
+
+    if (!customer) {
+      res.status(404).json({ error: "Customer not found" });
+      return;
+    }
+
+    // Calculate balance (same as getCustomers)
+    const totalCreditSales = customer.sale.reduce(
+      (sum, s) => sum + s.totalAmount,
+      0
+    );
+
+    const totalPayments = customer.custpayment.reduce(
+      (sum, p) => sum + p.amount,
+      0
+    );
+
+    const totalUnpaidDebts = customer.debts.reduce(
+      (sum, d) => sum + d.amount,
+      0
+    );
+
+    const calculatedBalance = totalCreditSales + totalUnpaidDebts - totalPayments;
+
+    res.json({
+      id: customer.id,
+      name: customer.customerName,
+      phone: customer.phone,
+      balance: calculatedBalance,
+    });
+  } catch (err) {
+    console.error("Failed to fetch customer:", err);
+    res.status(500).json({ error: "Failed to fetch customer", detail: err });
+  }
+};
+
+
 export const updateCustomer = async (req: Request, res: Response) => {
   try {
     const companyId = req.user?.companyId;
