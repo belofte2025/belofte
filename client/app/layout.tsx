@@ -3,6 +3,7 @@ import "./globals.css";
 import { ReactNode } from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "react-hot-toast";
+import { OffloadProvider } from "@/context/offloadContext";
 
 export const metadata = {
   title: "PETROS Admin",
@@ -13,7 +14,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <OffloadProvider>{children}</OffloadProvider>
+        </AuthProvider>
         <Toaster position="top-right" />
       </body>
     </html>

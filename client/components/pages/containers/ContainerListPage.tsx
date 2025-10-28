@@ -10,15 +10,15 @@ import {
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
 import { Dialog } from "@headlessui/react";
-import { 
-  Container, 
-  Plus, 
-  MoreVertical, 
-  Truck, 
-  CheckCircle, 
-  Clock, 
+import {
+  Container,
+  Plus,
+  MoreVertical,
+  Truck,
+  CheckCircle,
+  Clock,
   Building,
-  Calendar
+  Calendar,
 } from "lucide-react";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
@@ -71,7 +71,7 @@ export default function ContainerListPage() {
         prev.map((c) => (c.id === id ? { ...c, status: "Received" } : c))
       );
       toast.success("Marked as received");
-      window.location.href = `/offload/${id}`;
+      window.location.href = `/offload/container/${id}`;
     } catch {
       toast.error("Failed to update status");
     }
@@ -116,9 +116,13 @@ export default function ContainerListPage() {
   };
 
   const totalContainers = containers.length;
-  const pendingContainers = containers.filter(c => c.status === "Pending").length;
-  const receivedContainers = containers.filter(c => c.status === "Received").length;
-  const doneContainers = containers.filter(c => c.status === "Done").length;
+  const pendingContainers = containers.filter(
+    (c) => c.status === "Pending"
+  ).length;
+  const receivedContainers = containers.filter(
+    (c) => c.status === "Received"
+  ).length;
+  const doneContainers = containers.filter((c) => c.status === "Done").length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -128,7 +132,9 @@ export default function ContainerListPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Containers</h1>
-              <p className="mt-1 text-gray-600">Track and manage your container shipments</p>
+              <p className="mt-1 text-gray-600">
+                Track and manage your container shipments
+              </p>
             </div>
             <Link
               href="/containers/new"
@@ -144,29 +150,39 @@ export default function ContainerListPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Containers</p>
-              <p className="text-3xl font-bold text-gray-900">{totalContainers}</p>
+              <p className="text-sm font-medium text-gray-600">
+                Total Containers
+              </p>
+              <p className="text-3xl font-bold text-gray-900">
+                {totalContainers}
+              </p>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-3xl font-bold text-yellow-600">{pendingContainers}</p>
+              <p className="text-3xl font-bold text-yellow-600">
+                {pendingContainers}
+              </p>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Received</p>
-              <p className="text-3xl font-bold text-green-600">{receivedContainers}</p>
+              <p className="text-3xl font-bold text-green-600">
+                {receivedContainers}
+              </p>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-3xl font-bold text-blue-600">{doneContainers}</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {doneContainers}
+              </p>
             </div>
           </div>
         </div>
@@ -196,8 +212,12 @@ export default function ContainerListPage() {
               {paginated.length === 0 ? (
                 <div className="text-center py-16">
                   <Container className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">No containers found</h3>
-                  <p className="mt-2 text-gray-500">Get started by adding your first container.</p>
+                  <h3 className="mt-4 text-lg font-medium text-gray-900">
+                    No containers found
+                  </h3>
+                  <p className="mt-2 text-gray-500">
+                    Get started by adding your first container.
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -239,7 +259,8 @@ export default function ContainerListPage() {
                                   #{item.number}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  Container {(page - 1) * ITEMS_PER_PAGE + i + 1}
+                                  Container{" "}
+                                  {(page - 1) * ITEMS_PER_PAGE + i + 1}
                                 </div>
                               </div>
                             </div>
@@ -247,17 +268,31 @@ export default function ContainerListPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <Building className="w-4 h-4 text-gray-400 mr-2" />
-                              <div className="text-sm text-gray-900">{item.company}</div>
+                              <div className="text-sm text-gray-900">
+                                {item.company}
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                             <div className="flex items-center text-sm text-gray-900">
                               <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                              {format(new Date(item.deliveryDate), "MMM dd, yyyy")}
+                              {format(
+                                new Date(item.deliveryDate),
+                                "MMM dd, yyyy"
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge variant={getStatusVariant(item.status) as "default" | "success" | "warning" | "danger" | "info"}>
+                            <Badge
+                              variant={
+                                getStatusVariant(item.status) as
+                                  | "default"
+                                  | "success"
+                                  | "warning"
+                                  | "danger"
+                                  | "info"
+                              }
+                            >
                               <div className="flex items-center gap-1">
                                 {getStatusIcon(item.status)}
                                 {item.status}
@@ -284,11 +319,16 @@ export default function ContainerListPage() {
                 <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-700">
-                      Showing <span className="font-medium">{(page - 1) * ITEMS_PER_PAGE + 1}</span> to{" "}
+                      Showing{" "}
+                      <span className="font-medium">
+                        {(page - 1) * ITEMS_PER_PAGE + 1}
+                      </span>{" "}
+                      to{" "}
                       <span className="font-medium">
                         {Math.min(page * ITEMS_PER_PAGE, filtered.length)}
                       </span>{" "}
-                      of <span className="font-medium">{filtered.length}</span> containers
+                      of <span className="font-medium">{filtered.length}</span>{" "}
+                      containers
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
@@ -298,29 +338,46 @@ export default function ContainerListPage() {
                       >
                         Previous
                       </button>
-                      
+
                       <div className="flex space-x-1">
-                        {Array.from({ length: Math.min(Math.ceil(filtered.length / ITEMS_PER_PAGE), 5) }, (_, i) => {
-                          const pageNum = i + 1;
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => setPage(pageNum)}
-                              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                                page === pageNum
-                                  ? "bg-blue-600 text-white"
-                                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
+                        {Array.from(
+                          {
+                            length: Math.min(
+                              Math.ceil(filtered.length / ITEMS_PER_PAGE),
+                              5
+                            ),
+                          },
+                          (_, i) => {
+                            const pageNum = i + 1;
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setPage(pageNum)}
+                                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                                  page === pageNum
+                                    ? "bg-blue-600 text-white"
+                                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          }
+                        )}
                       </div>
-                      
+
                       <button
-                        onClick={() => setPage((p) => Math.min(p + 1, Math.ceil(filtered.length / ITEMS_PER_PAGE)))}
-                        disabled={page === Math.ceil(filtered.length / ITEMS_PER_PAGE)}
+                        onClick={() =>
+                          setPage((p) =>
+                            Math.min(
+                              p + 1,
+                              Math.ceil(filtered.length / ITEMS_PER_PAGE)
+                            )
+                          )
+                        }
+                        disabled={
+                          page === Math.ceil(filtered.length / ITEMS_PER_PAGE)
+                        }
                         className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                       >
                         Next
@@ -339,7 +396,10 @@ export default function ContainerListPage() {
         onClose={() => setSelectedId(null)}
         className="relative z-50"
       >
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          aria-hidden="true"
+        />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl border border-gray-200">
             <Dialog.Title className="text-xl font-bold text-gray-900 mb-6 text-center">
@@ -365,6 +425,16 @@ export default function ContainerListPage() {
               >
                 <CheckCircle className="w-4 h-4" />
                 Perform Offload
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedId(null);
+                  window.location.href = `/reports/sales/container/${selectedId}`;
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-purple-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors duration-200"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Container Sales Report
               </button>
               <button
                 onClick={() => {
