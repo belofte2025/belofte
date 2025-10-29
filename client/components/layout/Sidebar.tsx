@@ -21,6 +21,8 @@ import {
   Settings,
   UserPlus,
   Truck,
+  ShoppingBag,
+  FileText,
 } from "lucide-react";
 
 const navItems = [
@@ -34,13 +36,28 @@ const navItems = [
 
 const utilityItems = [
   { name: "Overview", href: "/utilities", icon: Settings },
-  { name: "Customer Import", href: "/utilities/customer-import", icon: UserPlus },
+  {
+    name: "Customer Import",
+    href: "/utilities/customer-import",
+    icon: UserPlus,
+  },
   { name: "Supplier Import", href: "/utilities/supplier-import", icon: Truck },
+];
+
+const salesReportItems = [
+  { name: "Sales Summary", href: "/reports/sales", icon: ShoppingBag },
+  { name: "Sales Details", href: "/reports/sales/saledetails", icon: FileText },
+  { name: "Supplier Sales", href: "", icon: Factory },
 ];
 
 const reportItems = [
   { name: "Overview", href: "/reports", icon: BarChart3 },
-  { name: "Sales", href: "/reports/sales", icon: TrendingUp },
+  {
+    name: "Sales",
+    href: "/reports/sales",
+    icon: TrendingUp,
+    submenu: salesReportItems,
+  },
   { name: "Customers", href: "/reports/customers", icon: Users },
   { name: "Suppliers", href: "/reports/suppliers", icon: Factory },
   { name: "Containers", href: "/reports/containers", icon: Container },
@@ -55,8 +72,15 @@ type SidebarProps = {
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [reportsOpen, setReportsOpen] = useState(pathname.startsWith('/reports'));
-  const [utilitiesOpen, setUtilitiesOpen] = useState(pathname.startsWith('/utilities'));
+  const [reportsOpen, setReportsOpen] = useState(
+    pathname.startsWith("/reports")
+  );
+  const [utilitiesOpen, setUtilitiesOpen] = useState(
+    pathname.startsWith("/utilities")
+  );
+  const [salesReportsOpen, setSalesReportsOpen] = useState(
+    pathname.startsWith("/reports/sales")
+  );
 
   return (
     <>
@@ -87,8 +111,8 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
               <h1 className="text-lg font-semibold text-gray-900">PETROS</h1>
             </div>
           </div>
-          <button 
-            className="md:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors" 
+          <button
+            className="md:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors"
             onClick={() => setOpen(false)}
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -100,7 +124,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
           <div className="px-3 space-y-1">
             {/* Main navigation items */}
             {navItems.map(({ name, href, icon: Icon }) => {
-              const isActive = pathname.startsWith(href) && href !== '/reports';
+              const isActive = pathname.startsWith(href) && href !== "/reports";
               return (
                 <Link
                   key={name}
@@ -113,22 +137,26 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                   )}
                   onClick={() => setOpen(false)}
                 >
-                  <Icon className={clsx(
-                    "mr-3 h-5 w-5 flex-shrink-0",
-                    isActive ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"
-                  )} />
+                  <Icon
+                    className={clsx(
+                      "mr-3 h-5 w-5 flex-shrink-0",
+                      isActive
+                        ? "text-blue-600"
+                        : "text-gray-400 group-hover:text-gray-500"
+                    )}
+                  />
                   {name}
                 </Link>
               );
             })}
-            
+
             {/* Reports dropdown */}
             <div className="mt-4">
               <button
                 onClick={() => setReportsOpen(!reportsOpen)}
                 className={clsx(
                   "flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg",
-                  pathname.startsWith('/reports')
+                  pathname.startsWith("/reports")
                     ? "bg-blue-600 text-white"
                     : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 )}
@@ -139,12 +167,13 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                   <BarChart3 className="mr-3 h-5 w-5" />
                   Reports
                 </span>
-                <ChevronRight className={clsx(
-                  "h-4 w-4 transition-transform",
-                  reportsOpen && "rotate-90"
-                )} />
+                <ChevronRight
+                  className={clsx(
+                    "h-4 w-4 transition-transform",
+                    reportsOpen && "rotate-90"
+                  )}
+                />
               </button>
-
               {/* Reports submenu */}
               <div
                 id="reports-submenu"
@@ -153,8 +182,86 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                   reportsOpen ? "block" : "hidden"
                 )}
               >
-                {reportItems.map(({ name, href, icon: Icon }) => {
+                {reportItems.map(({ name, href, icon: Icon, submenu }) => {
                   const isActive = pathname === href;
+                  const hasSubmenu = !!submenu;
+                  const isParentActive =
+                    hasSubmenu && pathname.startsWith(href);
+                  if (hasSubmenu) {
+                    return (
+                      <div key={name}>
+                        <button
+                          onClick={() => setSalesReportsOpen(!salesReportsOpen)}
+                          className={clsx(
+                            "flex w-full items-center justify-between px-2.5 py-2 text-sm rounded-md",
+                            isParentActive
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                          )}
+                        >
+                          <span className="flex items-center">
+                            <Icon
+                              className={clsx(
+                                "mr-3 h-4 w-4",
+                                isParentActive
+                                  ? "text-blue-600"
+                                  : "text-gray-400"
+                              )}
+                            />
+                            {name}
+                          </span>
+                          <ChevronRight
+                            className={clsx(
+                              "h-3 w-3 transition-transform",
+                              salesReportsOpen && "rotate-90"
+                            )}
+                          />
+                        </button>
+
+                        {/* Sales submenu */}
+                        <div
+                          className={clsx(
+                            "mt-1 ml-6 space-y-1",
+                            salesReportsOpen ? "block" : "hidden"
+                          )}
+                        >
+                          {submenu.map(
+                            ({
+                              name: subName,
+                              href: subHref,
+                              icon: SubIcon,
+                            }) => {
+                              const isSubActive = pathname === subHref;
+                              return (
+                                <Link
+                                  key={subName}
+                                  href={subHref}
+                                  className={clsx(
+                                    "flex items-center px-2 py-1.5 text-xs rounded-md",
+                                    isSubActive
+                                      ? "bg-blue-100 text-blue-800 font-medium"
+                                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                  )}
+                                  onClick={() => setOpen(false)}
+                                >
+                                  <SubIcon
+                                    className={clsx(
+                                      "mr-2 h-3.5 w-3.5",
+                                      isSubActive
+                                        ? "text-blue-700"
+                                        : "text-gray-400"
+                                    )}
+                                  />
+                                  {subName}
+                                </Link>
+                              );
+                            }
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <Link
                       key={name}
@@ -167,24 +274,26 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                       )}
                       onClick={() => setOpen(false)}
                     >
-                      <Icon className={clsx(
-                        "mr-3 h-4 w-4",
-                        isActive ? "text-blue-600" : "text-gray-400"
-                      )} />
+                      <Icon
+                        className={clsx(
+                          "mr-3 h-4 w-4",
+                          isActive ? "text-blue-600" : "text-gray-400"
+                        )}
+                      />
                       {name}
                     </Link>
                   );
                 })}
               </div>
             </div>
-            
+
             {/* Utilities dropdown */}
             <div className="mt-4">
               <button
                 onClick={() => setUtilitiesOpen(!utilitiesOpen)}
                 className={clsx(
                   "flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg",
-                  pathname.startsWith('/utilities')
+                  pathname.startsWith("/utilities")
                     ? "bg-green-600 text-white"
                     : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 )}
@@ -195,10 +304,12 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                   <Settings className="mr-3 h-5 w-5" />
                   Utilities
                 </span>
-                <ChevronRight className={clsx(
-                  "h-4 w-4 transition-transform",
-                  utilitiesOpen && "rotate-90"
-                )} />
+                <ChevronRight
+                  className={clsx(
+                    "h-4 w-4 transition-transform",
+                    utilitiesOpen && "rotate-90"
+                  )}
+                />
               </button>
 
               {/* Utilities submenu */}
@@ -223,10 +334,12 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                       )}
                       onClick={() => setOpen(false)}
                     >
-                      <Icon className={clsx(
-                        "mr-3 h-4 w-4",
-                        isActive ? "text-green-600" : "text-gray-400"
-                      )} />
+                      <Icon
+                        className={clsx(
+                          "mr-3 h-4 w-4",
+                          isActive ? "text-green-600" : "text-gray-400"
+                        )}
+                      />
                       {name}
                     </Link>
                   );
@@ -241,17 +354,17 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
           <div className="flex items-center px-2 py-3 rounded-lg hover:bg-gray-50">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-white font-medium text-sm">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
+                {user?.email?.charAt(0).toUpperCase() || "U"}
               </span>
             </div>
             <div className="ml-3 flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.userName || 'User'}
+                {user?.userName || "User"}
               </p>
               <p className="text-xs text-gray-500 truncate">{user?.role}</p>
             </div>
           </div>
-          
+
           <button
             onClick={logout}
             className="w-full mt-2 flex items-center px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors"
