@@ -439,9 +439,9 @@ export default function ContainerListPage() {
               <button
                 onClick={() => {
                   setSelectedId(null);
-                  window.location.href = `/offload/summary/${selectedId}`;
+                  window.location.href = `/offload/parkinglist/${selectedId}`;
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-purple-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-yellow-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors duration-200"
               >
                 <CheckCircle className="w-4 h-4" />
                 Container Parking list

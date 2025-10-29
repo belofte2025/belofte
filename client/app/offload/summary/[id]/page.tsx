@@ -54,7 +54,6 @@ export default function OffloadSummaryPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      // Load container details
       const containerData = await getContainerById(id);
       setContainerMeta({
         containerNo: containerData.containerNo || "",
@@ -64,7 +63,6 @@ export default function OffloadSummaryPage() {
         status: containerData.status || "",
       });
 
-      // Load summary data
       const summaryData = await getOffloadSummary(id);
       const processedSummary = summaryData.map(
         (item: {
@@ -98,7 +96,6 @@ export default function OffloadSummaryPage() {
     if (id) {
       loadData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const getStatusInfo = (expected: number, received: number) => {
@@ -133,12 +130,7 @@ export default function OffloadSummaryPage() {
     const overallPercentage =
       totalExpected > 0 ? (totalReceived / totalExpected) * 100 : 0;
 
-    return {
-      totalExpected,
-      totalReceived,
-      totalVariance,
-      overallPercentage,
-    };
+    return { totalExpected, totalReceived, totalVariance, overallPercentage };
   };
 
   const exportToPDF = async () => {
@@ -195,9 +187,6 @@ export default function OffloadSummaryPage() {
             <p><strong>Total Variance:</strong> ${
               totals.totalVariance
             } items</p>
-            <p><strong>Overall Completion:</strong> ${totals.overallPercentage.toFixed(
-              1
-            )}%</p>
           </div>
 
           <table>
@@ -207,7 +196,6 @@ export default function OffloadSummaryPage() {
                 <th>Expected</th>
                 <th>Received</th>
                 <th>Variance</th>
-                <th>Completion %</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -221,7 +209,6 @@ export default function OffloadSummaryPage() {
                     <td>${item.expected}</td>
                     <td>${item.received}</td>
                     <td>${item.variance >= 0 ? "+" : ""}${item.variance}</td>
-                    <td>${item.percentage.toFixed(1)}%</td>
                     <td class="${status.text.toLowerCase()}">${status.text}</td>
                   </tr>
                 `;
@@ -372,7 +359,7 @@ export default function OffloadSummaryPage() {
                 </button>
               </div>
 
-              {/* Item Details Section */}
+              {/* Item Details Table */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-900">
@@ -391,83 +378,137 @@ export default function OffloadSummaryPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="p-6 space-y-4">
-                    {summary.map((item) => {
-                      const status = getStatusInfo(
-                        item.expected,
-                        item.received
-                      );
-                      const StatusIcon = status.icon;
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Item Name
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Expected
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Received
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Variance
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {summary.map((item) => {
+                          const status = getStatusInfo(
+                            item.expected,
+                            item.received
+                          );
+                          const StatusIcon = status.icon;
 
-                      return (
-                        <div
-                          key={item.id}
-                          className="bg-gray-50 p-5 rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200"
-                        >
-                          <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {item.name}
-                            </h3>
-                            <div
-                              className={`flex items-center gap-2 px-3 py-1 rounded-full ${status.bgColor}`}
+                          return (
+                            <tr
+                              key={item.id}
+                              className="hover:bg-gray-50 transition-colors"
                             >
-                              <StatusIcon
-                                className={`w-4 h-4 ${status.color}`}
-                              />
-                              <span
-                                className={`text-sm font-semibold ${status.color}`}
-                              >
-                                {status.text}
-                              </span>
-                            </div>
-                          </div>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {item.name}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {item.expected}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {item.received}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div
+                                  className={`text-sm font-semibold ${
+                                    item.variance === 0
+                                      ? "text-gray-900"
+                                      : item.variance > 0
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {item.variance >= 0 ? "+" : ""}
+                                  {item.variance}
+                                </div>
+                              </td>
 
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="text-center">
-                              <p className="text-sm text-gray-500 mb-1">
-                                Expected
-                              </p>
-                              <p className="text-xl font-semibold text-gray-900">
-                                {item.expected}
-                              </p>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${status.bgColor} ${status.color}`}
+                                >
+                                  <StatusIcon className="w-3.5 h-3.5" />
+                                  {status.text}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="bg-gray-100">
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-bold text-gray-900">
+                              TOTAL
                             </div>
-                            <div className="text-center">
-                              <p className="text-sm text-gray-500 mb-1">
-                                Received
-                              </p>
-                              <p className="text-xl font-semibold text-gray-900">
-                                {item.received}
-                              </p>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <div className="text-sm font-bold text-gray-900">
+                              {totals.totalExpected}
                             </div>
-                            <div className="text-center">
-                              <p className="text-sm text-gray-500 mb-1">
-                                Variance
-                              </p>
-                              <p
-                                className={`text-xl font-semibold ${
-                                  item.variance === 0
-                                    ? "text-gray-900"
-                                    : item.variance > 0
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }`}
-                              >
-                                {item.variance >= 0 ? "+" : ""}
-                                {item.variance}
-                              </p>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <div className="text-sm font-bold text-gray-900">
+                              {totals.totalReceived}
                             </div>
-                            <div className="text-center">
-                              <p className="text-sm text-gray-500 mb-1">
-                                Completion
-                              </p>
-                              <p className="text-xl font-semibold text-blue-600">
-                                {item.percentage.toFixed(1)}%
-                              </p>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <div
+                              className={`text-sm font-bold ${
+                                totals.totalVariance === 0
+                                  ? "text-gray-900"
+                                  : totals.totalVariance > 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {totals.totalVariance >= 0 ? "+" : ""}
+                              {totals.totalVariance}
                             </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <div className="text-sm font-bold text-gray-900">
+                              -
+                            </div>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
                 )}
               </div>
