@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { 
+import {
   ArrowLeft,
   Search,
   Package,
@@ -12,14 +12,14 @@ import {
   Plus,
   Minus,
   Save,
-  CheckSquare
+  CheckSquare,
 } from "lucide-react";
 import {
   getContainerItems,
   getContainerById,
   saveOffload,
-} from '@/services/containerService';
-import { useOffloadContext } from '@/context/offloadContext';
+} from "@/services/containerService";
+import { useOffloadContext } from "@/context/offloadContext";
 import toast from "react-hot-toast";
 
 interface Item {
@@ -41,15 +41,18 @@ export default function OffloadPage() {
   const containerId = params?.id as string;
 
   // State management
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [container, setContainer] = useState<Container | null>(null);
-  const [receivedCounts, setReceivedCounts] = useState<Record<string, number>>({});
+  const [receivedCounts, setReceivedCounts] = useState<Record<string, number>>(
+    {}
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const { offloadState, saveOffloadState, clearOffloadState } = useOffloadContext();
+  const { offloadState, saveOffloadState, clearOffloadState } =
+    useOffloadContext();
 
   // Load data on mount and from offload context
   const loadData = async () => {
@@ -57,7 +60,8 @@ export default function OffloadPage() {
       setLoading(true);
       // Check if we have saved state
       if (offloadState[containerId]) {
-        const { receivedCounts: savedCounts, items: savedItems } = offloadState[containerId];
+        const { receivedCounts: savedCounts, items: savedItems } =
+          offloadState[containerId];
         setItems(savedItems);
         setReceivedCounts(savedCounts);
       } else {
@@ -74,8 +78,8 @@ export default function OffloadPage() {
       setContainer(containerData);
       setIsInitialLoad(false);
     } catch (error) {
-      console.error('Failed to load offload data:', error);
-      toast.error('Failed to load container data. Please try again.');
+      console.error("Failed to load offload data:", error);
+      toast.error("Failed to load container data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -97,12 +101,12 @@ export default function OffloadPage() {
     setReceivedCounts((prev) => {
       const current = prev[itemId] || 0;
       const maxQty = items.find((i) => i.id === itemId)?.quantity ?? 0;
-      
+
       if (current >= maxQty) {
-        toast.error('Cannot exceed expected quantity');
+        toast.error("Cannot exceed expected quantity");
         return prev;
       }
-      
+
       return { ...prev, [itemId]: current + 1 };
     });
   };
@@ -118,7 +122,7 @@ export default function OffloadPage() {
   const setDirectQty = (itemId: string, quantity: number) => {
     const maxQty = items.find((i) => i.id === itemId)?.quantity ?? 0;
     const validQty = Math.max(0, Math.min(quantity, maxQty));
-    
+
     setReceivedCounts((prev) => ({
       ...prev,
       [itemId]: validQty,
@@ -126,9 +130,11 @@ export default function OffloadPage() {
   };
 
   const handleComplete = async () => {
-    if (!confirm(
-      `Complete Offload?\n\nExpected: ${totalExpected} items\nReceived: ${totalReceived} items\n\nAre you sure you want to complete the offload?`
-    )) {
+    if (
+      !confirm(
+        `Complete Offload?\n\nExpected: ${totalExpected} items\nReceived: ${totalReceived} items\n\nAre you sure you want to complete the offload?`
+      )
+    ) {
       return;
     }
 
@@ -138,15 +144,15 @@ export default function OffloadPage() {
         ...item,
         receivedQty: receivedCounts[item.id] ?? item.receivedQty,
       }));
-      
+
       await saveOffload(containerId, updatedItems, true);
       clearOffloadState(containerId);
-      
-      toast.success('Offload completed successfully!');
-      router.push(`/containers/summary/${containerId}`);
+
+      toast.success("Offload completed successfully!");
+      router.push(`/offload/summary/${containerId}`);
     } catch (error) {
-      console.error('Failed to complete offload:', error);
-      toast.error('Failed to complete offload. Please try again.');
+      console.error("Failed to complete offload:", error);
+      toast.error("Failed to complete offload. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -159,36 +165,41 @@ export default function OffloadPage() {
         ...item,
         receivedQty: receivedCounts[item.id] ?? item.receivedQty,
       }));
-      
+
       await saveOffload(containerId, updatedItems, false);
       clearOffloadState(containerId);
-      
-      toast.success('Progress saved successfully!');
+
+      toast.success("Progress saved successfully!");
       router.back();
     } catch (error) {
-      console.error('Failed to save offload:', error);
-      toast.error('Failed to save progress. Please try again.');
+      console.error("Failed to save offload:", error);
+      toast.error("Failed to save progress. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
   // Filter items based on search
-  const filteredItems = useMemo(() => 
-    items.filter((item) =>
-      item.itemName.toLowerCase().includes(search.toLowerCase())
-    ), [items, search]
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) =>
+        item.itemName.toLowerCase().includes(search.toLowerCase())
+      ),
+    [items, search]
   );
 
   // Calculate progress
   const { totalExpected, totalReceived, progressPercentage } = useMemo(() => {
     const expected = items.reduce((sum, item) => sum + item.quantity, 0);
-    const received = Object.values(receivedCounts).reduce((sum, qty) => sum + qty, 0);
+    const received = Object.values(receivedCounts).reduce(
+      (sum, qty) => sum + qty,
+      0
+    );
     const percentage = expected > 0 ? (received / expected) * 100 : 0;
     return {
       totalExpected: expected,
       totalReceived: received,
-      progressPercentage: percentage
+      progressPercentage: percentage,
     };
   }, [items, receivedCounts]);
 
@@ -207,9 +218,11 @@ export default function OffloadPage() {
               </button>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Offload: {container?.containerNo || 'Container'}
+                  Offload: {container?.containerNo || "Container"}
                 </h1>
-                <p className="mt-1 text-gray-600">Track and record received inventory</p>
+                <p className="mt-1 text-gray-600">
+                  Track and record received inventory
+                </p>
               </div>
             </div>
           </div>
@@ -217,21 +230,26 @@ export default function OffloadPage() {
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">Loading container items...</span>
+              <span className="ml-3 text-gray-600">
+                Loading container items...
+              </span>
             </div>
           ) : (
             <>
               {/* Progress Card */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Offload Progress</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Offload Progress
+                </h2>
                 <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-3">
-                  <div 
+                  <div
                     className="absolute top-0 left-0 h-full bg-blue-600 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min(progressPercentage, 100)}%` }}
                   />
                 </div>
                 <p className="text-center text-gray-600">
-                  {totalReceived} of {totalExpected} items ({progressPercentage.toFixed(0)}%)
+                  {totalReceived} of {totalExpected} items (
+                  {progressPercentage.toFixed(0)}%)
                 </p>
               </div>
 
@@ -254,22 +272,27 @@ export default function OffloadPage() {
                 {filteredItems.length === 0 ? (
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center">
                     <Package className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">No Items Found</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      No Items Found
+                    </h3>
                     <p className="text-gray-600">
-                      {search ? 'Try adjusting your search' : 'No items available for offloading'}
+                      {search
+                        ? "Try adjusting your search"
+                        : "No items available for offloading"}
                     </p>
                   </div>
                 ) : (
                   filteredItems.map((item) => {
-                    const currentQty = receivedCounts[item.id] ?? item.receivedQty;
+                    const currentQty =
+                      receivedCounts[item.id] ?? item.receivedQty;
                     const isComplete = currentQty === item.quantity;
                     const hasVariance = currentQty !== item.quantity;
 
                     return (
-                      <div 
-                        key={item.id} 
+                      <div
+                        key={item.id}
                         className={`bg-white p-6 rounded-xl shadow-sm border-2 transition-all duration-200 ${
-                          isComplete ? 'border-green-500' : 'border-gray-200'
+                          isComplete ? "border-green-500" : "border-gray-200"
                         }`}
                       >
                         {/* Item Header */}
@@ -280,26 +303,40 @@ export default function OffloadPage() {
                             </h3>
                             <div className="space-y-1">
                               <p className="text-sm text-gray-600">
-                                Expected: <span className="font-semibold text-gray-900">{item.quantity}</span>
+                                Expected:{" "}
+                                <span className="font-semibold text-gray-900">
+                                  {item.quantity}
+                                </span>
                               </p>
                               <p className="text-sm text-gray-600">
-                                Received: <span className={`font-semibold ${
-                                  hasVariance ? 'text-yellow-600' : 'text-green-600'
-                                }`}>{currentQty}</span>
+                                Received:{" "}
+                                <span
+                                  className={`font-semibold ${
+                                    hasVariance
+                                      ? "text-yellow-600"
+                                      : "text-green-600"
+                                  }`}
+                                >
+                                  {currentQty}
+                                </span>
                               </p>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
                             {isComplete ? (
                               <div className="flex flex-col items-center gap-1">
                                 <CheckCircle2 className="w-6 h-6 text-green-600" />
-                                <span className="text-xs font-semibold text-green-600">Complete</span>
+                                <span className="text-xs font-semibold text-green-600">
+                                  Complete
+                                </span>
                               </div>
                             ) : hasVariance ? (
                               <div className="flex items-center gap-1">
                                 <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                                <span className="text-xs font-semibold text-yellow-600">Variance</span>
+                                <span className="text-xs font-semibold text-yellow-600">
+                                  Variance
+                                </span>
                               </div>
                             ) : null}
                           </div>
@@ -315,11 +352,13 @@ export default function OffloadPage() {
                             >
                               <Minus className="w-5 h-5" />
                             </button>
-                            
+
                             <div className="min-w-[40px] text-center">
-                              <span className="text-2xl font-bold text-gray-900">{currentQty}</span>
+                              <span className="text-2xl font-bold text-gray-900">
+                                {currentQty}
+                              </span>
                             </div>
-                            
+
                             <button
                               onClick={() => incrementQty(item.id)}
                               disabled={currentQty >= item.quantity}
@@ -351,7 +390,7 @@ export default function OffloadPage() {
                     className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     <Save className="w-5 h-5" />
-                    {saving ? 'Saving...' : 'Save Progress'}
+                    {saving ? "Saving..." : "Save Progress"}
                   </button>
                   <button
                     onClick={handleComplete}
@@ -359,7 +398,7 @@ export default function OffloadPage() {
                     className="flex-[2] inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-lg hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     <CheckSquare className="w-5 h-5" />
-                    {saving ? 'Completing...' : 'Complete Offload'}
+                    {saving ? "Completing..." : "Complete Offload"}
                   </button>
                 </div>
               </div>

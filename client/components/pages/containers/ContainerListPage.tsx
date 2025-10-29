@@ -438,6 +438,16 @@ export default function ContainerListPage() {
               </button>
               <button
                 onClick={() => {
+                  setSelectedId(null);
+                  window.location.href = `/offload/summary/${selectedId}`;
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-purple-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors duration-200"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Container Parking list
+              </button>
+              <button
+                onClick={() => {
                   handleDelete(selectedId!);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl text-sm font-medium transition-colors duration-200"
