@@ -5,6 +5,7 @@ import {
   getCustomerStatement,
   deleteCustomerPayment,
   getCustomerPayments,
+  getAllCustomerPayments,
 } from "../controllers/customerPayment.controller";
 
 const router = Router();
@@ -88,5 +89,7 @@ router.delete("/:id/customerpayments", deleteCustomerPayment);
  *         description: Server error
  */
 router.get("/:id/payments", getCustomerPayments);
+
+router.get("/all", getAllCustomerPayments);
 
 export default router;

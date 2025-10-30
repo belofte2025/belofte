@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCustomerPayments = exports.deleteCustomerPayment = exports.getCustomerStatement = exports.recordCustomerPayment = void 0;
+exports.getAllCustomerPayments = exports.getCustomerPayments = exports.deleteCustomerPayment = exports.getCustomerStatement = exports.recordCustomerPayment = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const recordCustomerPayment = async (req, res) => {
     const { customerId, amount, note, paymentType } = req.body;
@@ -175,3 +175,90 @@ const getCustomerPayments = async (req, res) => {
     }
 };
 exports.getCustomerPayments = getCustomerPayments;
+// GET ALL PAYMENTS WITH DATE FILTERING AND PAGINATION
+const getAllCustomerPayments = async (req, res) => {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+        res.status(400).json({ error: "Company ID missing" });
+        return;
+    }
+    try {
+        // Extract query parameters
+        const { startDate, endDate, customerId, paymentType, page = "1", limit = "50", } = req.query;
+        // Build filter conditions
+        const where = {
+            companyId,
+        };
+        // Date filtering
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) {
+                where.createdAt.gte = new Date(startDate);
+            }
+            if (endDate) {
+                // Add 1 day and set to start of day to include the entire end date
+                const endDateTime = new Date(endDate);
+                endDateTime.setDate(endDateTime.getDate() + 1);
+                endDateTime.setHours(0, 0, 0, 0);
+                where.createdAt.lt = endDateTime;
+            }
+        }
+        // Customer filtering
+        if (customerId) {
+            where.customerId = customerId;
+        }
+        // Payment type filtering
+        if (paymentType) {
+            where.paymentType = paymentType;
+        }
+        // Pagination
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
+        // Fetch payments with customer details
+        const [payments, totalCount] = await Promise.all([
+            prisma_1.default.customerPayment.findMany({
+                where,
+                include: {
+                    customer: {
+                        select: {
+                            id: true,
+                            customerName: true,
+                            phone: true,
+                        },
+                    },
+                },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limitNum,
+            }),
+            prisma_1.default.customerPayment.count({ where }),
+        ]);
+        // Calculate summary statistics
+        const summary = await prisma_1.default.customerPayment.aggregate({
+            where,
+            _sum: {
+                amount: true,
+            },
+            _count: true,
+        });
+        res.json({
+            payments,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(totalCount / limitNum),
+                totalCount,
+                limit: limitNum,
+            },
+            summary: {
+                totalAmount: summary._sum.amount || 0,
+                totalPayments: summary._count,
+            },
+        });
+    }
+    catch (error) {
+        console.error("Error fetching all payments:", error);
+        res.status(500).json({ error: "Failed to fetch payments" });
+    }
+};
+exports.getAllCustomerPayments = getAllCustomerPayments;

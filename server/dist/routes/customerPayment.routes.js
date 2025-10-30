@@ -80,4 +80,5 @@ router.delete("/:id/customerpayments", customerPayment_controller_1.deleteCustom
  *         description: Server error
  */
 router.get("/:id/payments", customerPayment_controller_1.getCustomerPayments);
+router.get("/all", customerPayment_controller_1.getAllCustomerPayments);
 exports.default = router;

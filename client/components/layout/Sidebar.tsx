@@ -23,6 +23,7 @@ import {
   Truck,
   ShoppingBag,
   FileText,
+  List,
 } from "lucide-react";
 
 const navItems = [
@@ -58,6 +59,7 @@ const reportItems = [
     icon: TrendingUp,
     submenu: salesReportItems,
   },
+  { name: "Payments", href: "/reports/payments", icon: List },
   { name: "Customers", href: "/reports/customers", icon: Users },
   { name: "Suppliers", href: "/reports/suppliers", icon: Factory },
   { name: "Containers", href: "/reports/containers", icon: Container },

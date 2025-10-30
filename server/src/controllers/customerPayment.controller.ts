@@ -184,3 +184,106 @@ export const getCustomerPayments = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch customer payments" });
   }
 };
+
+// GET ALL PAYMENTS WITH DATE FILTERING AND PAGINATION
+export const getAllCustomerPayments = async (req: Request, res: Response) => {
+  const companyId = req.user?.companyId;
+
+  if (!companyId) {
+    res.status(400).json({ error: "Company ID missing" });
+    return;
+  }
+
+  try {
+    // Extract query parameters
+    const {
+      startDate,
+      endDate,
+      customerId,
+      paymentType,
+      page = "1",
+      limit = "50",
+    } = req.query;
+
+    // Build filter conditions
+    const where: any = {
+      companyId,
+    };
+
+    // Date filtering
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        // Add 1 day and set to start of day to include the entire end date
+        const endDateTime = new Date(endDate as string);
+        endDateTime.setDate(endDateTime.getDate() + 1);
+        endDateTime.setHours(0, 0, 0, 0);
+        where.createdAt.lt = endDateTime;
+      }
+    }
+
+    // Customer filtering
+    if (customerId) {
+      where.customerId = customerId as string;
+    }
+
+    // Payment type filtering
+    if (paymentType) {
+      where.paymentType = paymentType as string;
+    }
+
+    // Pagination
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Fetch payments with customer details
+    const [payments, totalCount] = await Promise.all([
+      prisma.customerPayment.findMany({
+        where,
+        include: {
+          customer: {
+            select: {
+              id: true,
+              customerName: true,
+              phone: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limitNum,
+      }),
+      prisma.customerPayment.count({ where }),
+    ]);
+
+    // Calculate summary statistics
+    const summary = await prisma.customerPayment.aggregate({
+      where,
+      _sum: {
+        amount: true,
+      },
+      _count: true,
+    });
+
+    res.json({
+      payments,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(totalCount / limitNum),
+        totalCount,
+        limit: limitNum,
+      },
+      summary: {
+        totalAmount: summary._sum.amount || 0,
+        totalPayments: summary._count,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching all payments:", error);
+    res.status(500).json({ error: "Failed to fetch payments" });
+  }
+};
