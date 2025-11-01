@@ -4,6 +4,7 @@ import {
   supplierReport,
   detailedSalesReport,
   getSalesSummaryBySupplier,
+  getCashSalesAndPaymentsReport,
 } from "../controllers/report.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 
@@ -74,5 +75,8 @@ router.get("/supplier/:supplierId", supplierReport);
 router.get("/detailed", detailedSalesReport);
 
 router.get("/salessummary/supplier", getSalesSummaryBySupplier);
+
+// New route for cash sales and payments
+router.get("/cashtransactions", getCashSalesAndPaymentsReport);
 
 export default router;

@@ -30,3 +30,12 @@ export const getSalesSummaryBySupplier = async (
 
   return res.data; // returns array of sales with items, customerName, saleType, etc.
 };
+export const getCashSalesAndPayments = async (
+  startDate: string,
+  endDate: string
+) => {
+  const res = await api.get("/reports/cashtransactions", {
+    params: { startDate, endDate },
+  });
+  return res.data;
+};

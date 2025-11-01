@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDetailedSalesReport = exports.getSupplierReport = exports.getContainerReport = void 0;
+exports.getCashSalesAndPayments = exports.getDetailedSalesReport = exports.getSupplierReport = exports.getContainerReport = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const getContainerReport = async (containerId) => {
     const container = await prisma_1.default.container.findUnique({
@@ -79,3 +79,109 @@ const getDetailedSalesReport = async (startDate, endDate) => {
     return transformedSales;
 };
 exports.getDetailedSalesReport = getDetailedSalesReport;
+// ... existing services ...
+const getCashSalesAndPayments = async (startDate, endDate, companyId) => {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    // Fetch all cash sales within date range
+    const cashSales = await prisma_1.default.sale.findMany({
+        where: {
+            companyId,
+            saleType: "cash",
+            createdAt: {
+                gte: start,
+                lte: end,
+            },
+        },
+        include: {
+            items: true,
+            customer: {
+                select: {
+                    id: true,
+                    customerName: true,
+                    phone: true,
+                },
+            },
+        },
+        orderBy: {
+            createdAt: "desc",
+        },
+    });
+    // Fetch all customer payments within date range
+    const payments = await prisma_1.default.customerPayment.findMany({
+        where: {
+            companyId,
+            createdAt: {
+                gte: start,
+                lte: end,
+            },
+        },
+        include: {
+            customer: {
+                select: {
+                    id: true,
+                    customerName: true,
+                    phone: true,
+                },
+            },
+        },
+        orderBy: {
+            createdAt: "desc",
+        },
+    });
+    // Calculate totals
+    const totalCashSales = cashSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    const totalRevenue = totalCashSales + totalPayments;
+    // Format cash sales for display
+    const formattedCashSales = cashSales.map((sale) => ({
+        id: sale.id,
+        type: "cash_sale",
+        date: sale.createdAt,
+        customerName: sale.customer?.customerName || "Walk-in",
+        customerPhone: sale.customer?.phone || "N/A",
+        amount: sale.totalAmount,
+        itemCount: sale.items.length,
+        items: sale.items.map((item) => ({
+            itemName: item.itemName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.quantity * item.unitPrice,
+        })),
+        sourceType: sale.sourceType,
+    }));
+    // Format payments for display
+    const formattedPayments = payments.map((payment) => ({
+        id: payment.id,
+        type: "payment",
+        date: payment.createdAt,
+        customerName: payment.customer?.customerName || "Unknown",
+        customerPhone: payment.customer?.phone || "N/A",
+        amount: payment.amount,
+        paymentType: payment.paymentType || "cash",
+        note: payment.note,
+    }));
+    // Combine and sort by date
+    const allTransactions = [
+        ...formattedCashSales,
+        ...formattedPayments,
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return {
+        transactions: allTransactions,
+        summary: {
+            totalCashSales,
+            cashSalesCount: cashSales.length,
+            totalPayments,
+            paymentsCount: payments.length,
+            totalRevenue,
+            totalTransactions: cashSales.length + payments.length,
+        },
+        dateRange: {
+            start: start.toISOString(),
+            end: end.toISOString(),
+        },
+    };
+};
+exports.getCashSalesAndPayments = getCashSalesAndPayments;

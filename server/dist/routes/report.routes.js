@@ -65,4 +65,6 @@ router.get("/supplier/:supplierId", report_controller_1.supplierReport);
  */
 router.get("/detailed", report_controller_1.detailedSalesReport);
 router.get("/salessummary/supplier", report_controller_1.getSalesSummaryBySupplier);
+// New route for cash sales and payments
+router.get("/cashtransactions", report_controller_1.getCashSalesAndPaymentsReport);
 exports.default = router;

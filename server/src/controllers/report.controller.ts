@@ -2,9 +2,11 @@ import { Request, Response } from "express";
 import {
   getContainerReport as getContainerReportService,
   getSupplierReport,
-  getDetailedSalesReport,
+  getDetailedSalesReport,  getCashSalesAndPayments,
+
 } from "../services/report.service";
 import prisma from "../utils/prisma";
+
 
 export const getContainerReport = async (req: Request, res: Response) => {
   try {
@@ -111,6 +113,44 @@ export const getSalesSummaryBySupplier = async (
   } catch (error) {
     console.error("Error fetching sales summary with supplier names:", error);
     res.status(500).json({ message: "Internal server error" });
+    return;
+  }
+};
+export const getCashSalesAndPaymentsReport = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const companyId = req.user?.companyId; // Assuming user is attached via auth middleware
+
+    if (!startDate || !endDate) {
+      res.status(400).json({ 
+        message: "Start date and end date are required" 
+      });
+      return;
+    }
+
+    if (!companyId) {
+      res.status(401).json({ 
+        message: "Unauthorized: Company ID not found" 
+      });
+      return;
+    }
+
+    const report = await getCashSalesAndPayments(
+      startDate as string,
+      endDate as string,
+      companyId
+    );
+
+    res.json(report);
+    return;
+  } catch (error) {
+    console.error("Error fetching cash sales and payments:", error);
+    res.status(500).json({ 
+      message: "Failed to generate cash sales and payments report" 
+    });
     return;
   }
 };

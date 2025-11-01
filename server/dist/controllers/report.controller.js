@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSalesSummaryBySupplier = exports.detailedSalesReport = exports.supplierReport = exports.getContainerReport = void 0;
+exports.getCashSalesAndPaymentsReport = exports.getSalesSummaryBySupplier = exports.detailedSalesReport = exports.supplierReport = exports.getContainerReport = void 0;
 const report_service_1 = require("../services/report.service");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const getContainerReport = async (req, res) => {
@@ -96,3 +96,32 @@ const getSalesSummaryBySupplier = async (req, res) => {
     }
 };
 exports.getSalesSummaryBySupplier = getSalesSummaryBySupplier;
+const getCashSalesAndPaymentsReport = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        const companyId = req.user?.companyId; // Assuming user is attached via auth middleware
+        if (!startDate || !endDate) {
+            res.status(400).json({
+                message: "Start date and end date are required"
+            });
+            return;
+        }
+        if (!companyId) {
+            res.status(401).json({
+                message: "Unauthorized: Company ID not found"
+            });
+            return;
+        }
+        const report = await (0, report_service_1.getCashSalesAndPayments)(startDate, endDate, companyId);
+        res.json(report);
+        return;
+    }
+    catch (error) {
+        console.error("Error fetching cash sales and payments:", error);
+        res.status(500).json({
+            message: "Failed to generate cash sales and payments report"
+        });
+        return;
+    }
+};
+exports.getCashSalesAndPaymentsReport = getCashSalesAndPaymentsReport;

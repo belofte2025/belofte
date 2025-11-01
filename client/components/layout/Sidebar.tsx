@@ -24,6 +24,7 @@ import {
   ShoppingBag,
   FileText,
   List,
+  PiggyBankIcon,
 } from "lucide-react";
 
 const navItems = [
@@ -64,6 +65,8 @@ const reportItems = [
   { name: "Suppliers", href: "/reports/suppliers", icon: Factory },
   { name: "Containers", href: "/reports/containers", icon: Container },
   { name: "Inventory", href: "/reports/inventory", icon: Package },
+    { name: "Cash Recieved", href: "/reports/dailycash", icon: PiggyBankIcon },
+
 ];
 
 type SidebarProps = {

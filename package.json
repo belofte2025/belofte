@@ -14,11 +14,20 @@
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
     "clean": "rimraf client/.next client/out server/dist"
   },
-  "keywords": ["express", "nextjs", "typescript", "fullstack"],
+  "keywords": [
+    "express",
+    "nextjs",
+    "typescript",
+    "fullstack"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.0",
     "rimraf": "^5.0.0"
+  },
+  "dependencies": {
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2"
   }
 }
