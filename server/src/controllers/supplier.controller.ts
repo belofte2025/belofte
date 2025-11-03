@@ -77,6 +77,11 @@ export const getSupplierById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const companyId = req.user?.companyId;
 
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
     const supplier = await prisma.supplier.findFirst({
       where: { id, companyId },
       include: { items: true },
@@ -98,6 +103,22 @@ export const updateSupplier = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { suppliername, contact, country } = req.body;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const existingSupplier = await prisma.supplier.findFirst({
+      where: { id, companyId },
+    });
+
+    if (!existingSupplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
 
     const supplier = await prisma.supplier.update({
       where: { id },
@@ -114,6 +135,22 @@ export const updateSupplier = async (req: Request, res: Response) => {
 export const deleteSupplier = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const existingSupplier = await prisma.supplier.findFirst({
+      where: { id, companyId },
+    });
+
+    if (!existingSupplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
 
     await prisma.supplier.delete({ where: { id } });
 
@@ -132,6 +169,22 @@ export const addSupplierItem = async (req: Request, res: Response) => {
   try {
     const { supplierId } = req.params;
     const { itemName, price } = req.body;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
 
     const item = await prisma.supplierItem.create({
       data: {
@@ -152,6 +205,22 @@ export const addMultipleSupplierItems = async (req: Request, res: Response) => {
   try {
     const { supplierId } = req.params;
     const { items } = req.body; // [{ itemName, price }, ...]
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
 
     const created = await prisma.supplierItem.createMany({
       data: items.map((item: any) => ({ ...item, supplierId })),
@@ -168,6 +237,11 @@ export const getSupplierItems = async (req: Request, res: Response) => {
   try {
     const { id: supplierId } = req.params;
     const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
 
     const supplier = await prisma.supplier.findFirst({
       where: { id: supplierId, companyId },
@@ -199,6 +273,27 @@ export const updateSupplierItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { itemName, price } = req.body;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify item's supplier belongs to company
+    const existingItem = await prisma.supplierItem.findFirst({
+      where: {
+        id,
+        supplier: {
+          companyId,
+        },
+      },
+    });
+
+    if (!existingItem) {
+      res.status(404).json({ error: "Supplier item not found" });
+      return;
+    }
 
     const item = await prisma.supplierItem.update({
       where: { id },
@@ -215,6 +310,27 @@ export const updateSupplierItem = async (req: Request, res: Response) => {
 export const deleteSupplierItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify item's supplier belongs to company
+    const existingItem = await prisma.supplierItem.findFirst({
+      where: {
+        id,
+        supplier: {
+          companyId,
+        },
+      },
+    });
+
+    if (!existingItem) {
+      res.status(404).json({ error: "Supplier item not found" });
+      return;
+    }
 
     await prisma.supplierItem.delete({ where: { id } });
 
@@ -251,8 +367,20 @@ export const listSupplierItemsWithSales = async (
   res: Response
 ) => {
   try {
-    // Step 1: Fetch all supplier items with supplier info
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Step 1: Fetch supplier items for this company only
     const supplierItems = await prisma.supplierItem.findMany({
+      where: {
+        supplier: {
+          companyId,
+        },
+      },
       include: {
         supplier: true,
       },
@@ -273,8 +401,13 @@ export const listSupplierItemsWithSales = async (
       price: item.price,
     }));
 
-    // Step 3: Fetch all relevant container items in bulk
+    // Step 3: Fetch container items for this company only
     const allContainerItems = await prisma.containerItem.findMany({
+      where: {
+        container: {
+          companyId,
+        },
+      },
       include: {
         container: {
           select: {
@@ -286,8 +419,13 @@ export const listSupplierItemsWithSales = async (
       },
     });
 
-    // Step 4: Fetch all sale items in bulk
+    // Step 4: Fetch sale items for this company only
     const allSaleItems = await prisma.saleItem.findMany({
+      where: {
+        sale: {
+          companyId,
+        },
+      },
       select: {
         itemName: true,
         quantity: true,
@@ -322,17 +460,11 @@ export const listSupplierItemsWithSales = async (
         0
       );
 
-      const relatedCompanyIds = relatedContainers.map(
-        (c: { container: { companyId: string } | null }) => c.container?.companyId
-      );
-
       const relatedSales = allSaleItems.filter(
         (s: {
           itemName: string;
           sale: { companyId: string };
-        }) =>
-          s.itemName === sItem.itemName &&
-          relatedCompanyIds.includes(s.sale.companyId)
+        }) => s.itemName === sItem.itemName
       );
 
       const soldQty = relatedSales.reduce(
