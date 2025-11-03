@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { register, login } from "../controllers/auth.controller";
+import {
+  register,
+  login,
+  updatePassword,
+} from "../controllers/auth.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -58,5 +62,7 @@ router.post("/register", register);
  *         description: Authenticated
  */
 router.post("/login", login);
+
+router.put("/updatepassword",authenticate, updatePassword);
 
 export default router;

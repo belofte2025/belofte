@@ -1,39 +1,72 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { register } from "@/services/authService";
+import { getCompanies, Company } from "@/services/companyService";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  User, 
-  Mail, 
-  Lock, 
-  Building, 
-  Eye, 
-  EyeOff, 
+import {
+  User,
+  Mail,
+  Lock,
+  Building,
+  Eye,
+  EyeOff,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function RegisterForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [companyId, setCompanyId] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { setUser } = useAuth();
   const router = useRouter();
+
+  const [formData, setFormData] = useState({
+    userName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    companyId: "",
+  });
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    loadCompanies();
+  }, []);
+
+  const loadCompanies = async () => {
+    try {
+      const data = await getCompanies();
+      setCompanies(data);
+    } catch (error) {
+      toast.error("Failed to load companies");
+      console.error(error);
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
-    if (!name.trim()) newErrors.name = "Name is required";
-    if (!email.trim()) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Email is invalid";
-    if (!password) newErrors.password = "Password is required";
-    else if (password.length < 6) newErrors.password = "Password must be at least 6 characters";
-    if (!companyId.trim()) newErrors.companyId = "Company ID is required";
-    
+
+    if (!formData.userName.trim()) newErrors.userName = "Name is required";
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = "Email is invalid";
+    if (!formData.password) newErrors.password = "Password is required";
+    else if (formData.password.length < 6)
+      newErrors.password = "Password must be at least 6 characters";
+    if (!formData.confirmPassword)
+      newErrors.confirmPassword = "Please confirm your password";
+    else if (formData.password !== formData.confirmPassword)
+      newErrors.confirmPassword = "Passwords do not match";
+    if (!formData.companyId) newErrors.companyId = "Please select a company";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -41,13 +74,39 @@ export default function RegisterForm() {
   const handleRegister = async () => {
     if (!validateForm()) return;
 
+    setLoading(true);
     try {
-      setLoading(true);
-      await register(name, email, password, companyId);
-      // Success - redirect to login with success message
-      router.push("/login?message=Account created successfully. Please login.");
-    } catch {
-      setErrors({ general: "Registration failed. Please try again." });
+      const response = await register({
+        userName: formData.userName,
+        email: formData.email,
+        password: formData.password,
+        companyId: formData.companyId,
+      });
+
+      // Store token and user in localStorage
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
+
+      // Update auth context
+      setUser(response.user);
+
+      toast.success(`Welcome, ${response.user.userName}!`);
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      let errorMessage = "Registration failed. Please try again.";
+
+      if (error && typeof error === "object" && "response" in error) {
+        const response = (
+          error as { response?: { data?: { error?: string; detail?: string } } }
+        ).response;
+        errorMessage =
+          response?.data?.error || response?.data?.detail || errorMessage;
+      }
+
+      setErrors({ general: errorMessage });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -79,7 +138,7 @@ export default function RegisterForm() {
                 {errors.general}
               </div>
             )}
-            
+
             <div className="space-y-4">
               {/* Name Input */}
               <div className="space-y-2">
@@ -91,15 +150,20 @@ export default function RegisterForm() {
                   type="text"
                   placeholder="Enter your full name"
                   className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                    errors.name ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
+                    errors.userName
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-200"
                   }`}
-                  value={name}
+                  value={formData.userName}
                   onChange={(e) => {
-                    setName(e.target.value);
-                    if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
+                    setFormData({ ...formData, userName: e.target.value });
+                    if (errors.userName)
+                      setErrors((prev) => ({ ...prev, userName: "" }));
                   }}
                 />
-                {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+                {errors.userName && (
+                  <p className="text-red-500 text-xs">{errors.userName}</p>
+                )}
               </div>
 
               {/* Email Input */}
@@ -112,15 +176,56 @@ export default function RegisterForm() {
                   type="email"
                   placeholder="Enter your email address"
                   className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                    errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
+                    errors.email
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-200"
                   }`}
-                  value={email}
+                  value={formData.email}
                   onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                    setFormData({ ...formData, email: e.target.value });
+                    if (errors.email)
+                      setErrors((prev) => ({ ...prev, email: "" }));
                   }}
                 />
-                {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-red-500 text-xs">{errors.email}</p>
+                )}
+              </div>
+
+              {/* Company Dropdown */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Building className="w-4 h-4" />
+                  Company
+                </label>
+                <select
+                  className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 appearance-none ${
+                    errors.companyId
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-200"
+                  }`}
+                  value={formData.companyId}
+                  onChange={(e) => {
+                    setFormData({ ...formData, companyId: e.target.value });
+                    if (errors.companyId)
+                      setErrors((prev) => ({ ...prev, companyId: "" }));
+                  }}
+                  disabled={loadingCompanies}
+                >
+                  <option value="">
+                    {loadingCompanies
+                      ? "Loading companies..."
+                      : "Select your company"}
+                  </option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.companyName}
+                    </option>
+                  ))}
+                </select>
+                {errors.companyId && (
+                  <p className="text-red-500 text-xs">{errors.companyId}</p>
+                )}
               </div>
 
               {/* Password Input */}
@@ -134,12 +239,15 @@ export default function RegisterForm() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a secure password"
                     className={`w-full px-4 py-3 pr-12 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                      errors.password ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
+                      errors.password
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-200"
                     }`}
-                    value={password}
+                    value={formData.password}
                     onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                      setFormData({ ...formData, password: e.target.value });
+                      if (errors.password)
+                        setErrors((prev) => ({ ...prev, password: "" }));
                     }}
                   />
                   <button
@@ -147,38 +255,67 @@ export default function RegisterForm() {
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
-                {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
+                {errors.password && (
+                  <p className="text-red-500 text-xs">{errors.password}</p>
+                )}
               </div>
 
-              {/* Company ID Input */}
+              {/* Confirm Password Input */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Building className="w-4 h-4" />
-                  Company ID
+                  <Lock className="w-4 h-4" />
+                  Confirm Password
                 </label>
-                <input
-                  type="text"
-                  placeholder="Enter your company identifier"
-                  className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                    errors.companyId ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
-                  }`}
-                  value={companyId}
-                  onChange={(e) => {
-                    setCompanyId(e.target.value);
-                    if (errors.companyId) setErrors(prev => ({ ...prev, companyId: '' }));
-                  }}
-                />
-                {errors.companyId && <p className="text-red-500 text-xs">{errors.companyId}</p>}
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    className={`w-full px-4 py-3 pr-12 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                      errors.confirmPassword
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-200"
+                    }`}
+                    value={formData.confirmPassword}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        confirmPassword: e.target.value,
+                      });
+                      if (errors.confirmPassword)
+                        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-xs">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Register Button */}
             <button
               onClick={handleRegister}
-              disabled={loading}
+              disabled={loading || loadingCompanies}
               className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group"
             >
               <span className="flex items-center justify-center gap-2">
@@ -227,13 +364,13 @@ export default function RegisterForm() {
               Privacy Policy
             </Link>
           </div>
-          
+
           {/* Login Link */}
           <div className="pt-6 border-t border-gray-100 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
-              <Link 
-                href="/login" 
+              <Link
+                href="/login"
                 className="text-green-600 font-semibold hover:text-green-700 transition-colors"
               >
                 Sign In
