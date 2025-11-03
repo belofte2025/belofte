@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCashSalesAndPayments = exports.getDetailedSalesReport = exports.getSupplierReport = exports.getContainerReport = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
-const getContainerReport = async (containerId) => {
+const getContainerReport = async (containerId, companyId) => {
     const container = await prisma_1.default.container.findUnique({
         where: { id: containerId },
         include: {
@@ -30,7 +30,7 @@ const getContainerReport = async (containerId) => {
     };
 };
 exports.getContainerReport = getContainerReport;
-const getSupplierReport = async (supplierId) => {
+const getSupplierReport = async (supplierId, companyId) => {
     const items = await prisma_1.default.containerItem.findMany({
         where: {
             container: {
@@ -51,7 +51,7 @@ const getSupplierReport = async (supplierId) => {
     };
 };
 exports.getSupplierReport = getSupplierReport;
-const getDetailedSalesReport = async (startDate, endDate) => {
+const getDetailedSalesReport = async (startDate, endDate, companyId) => {
     const sales = await prisma_1.default.sale.findMany({
         where: {
             createdAt: {

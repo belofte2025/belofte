@@ -8,7 +8,14 @@ const report_service_1 = require("../services/report.service");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const getContainerReport = async (req, res) => {
     try {
-        const report = await (0, report_service_1.getContainerReport)(req.params.containerId);
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            res.status(401).json({
+                message: "Unauthorized: Company ID not found"
+            });
+            return;
+        }
+        const report = await (0, report_service_1.getContainerReport)(req.params.containerId, companyId);
         res.json(report);
     }
     catch (err) {
@@ -18,7 +25,14 @@ const getContainerReport = async (req, res) => {
 exports.getContainerReport = getContainerReport;
 const supplierReport = async (req, res) => {
     try {
-        const report = await (0, report_service_1.getSupplierReport)(req.params.supplierId);
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            res.status(401).json({
+                message: "Unauthorized: Company ID not found"
+            });
+            return;
+        }
+        const report = await (0, report_service_1.getSupplierReport)(req.params.supplierId, companyId);
         res.json(report);
     }
     catch (err) {
@@ -29,7 +43,20 @@ exports.supplierReport = supplierReport;
 const detailedSalesReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        const report = await (0, report_service_1.getDetailedSalesReport)(startDate, endDate);
+        const companyId = req.user?.companyId;
+        if (!startDate || !endDate) {
+            res.status(400).json({
+                message: "Start date and end date are required"
+            });
+            return;
+        }
+        if (!companyId) {
+            res.status(401).json({
+                message: "Unauthorized: Company ID not found"
+            });
+            return;
+        }
+        const report = await (0, report_service_1.getDetailedSalesReport)(startDate, endDate, companyId);
         res.json(report);
     }
     catch (err) {
@@ -40,15 +67,23 @@ exports.detailedSalesReport = detailedSalesReport;
 const getSalesSummaryBySupplier = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
+        const companyId = req.user?.companyId;
         if (!startDate || !endDate) {
             res.status(400).json({ message: "Start and end dates are required." });
             return;
         }
+        if (!companyId) {
+            res.status(401).json({
+                message: "Unauthorized: Company ID not found"
+            });
+            return;
+        }
         const start = new Date(startDate);
         const end = new Date(endDate);
-        // Fetch sales with items and customer info
+        // Fetch sales with items and customer info - filtered by companyId
         const sales = await prisma_1.default.sale.findMany({
             where: {
+                companyId: companyId,
                 createdAt: {
                     gte: start,
                     lte: end,
@@ -60,8 +95,13 @@ const getSalesSummaryBySupplier = async (req, res) => {
             },
             orderBy: { createdAt: "asc" },
         });
-        // Fetch supplier items with supplier names
+        // Fetch supplier items with supplier names - filtered by companyId through supplier relation
         const supplierItems = await prisma_1.default.supplierItem.findMany({
+            where: {
+                supplier: {
+                    companyId: companyId,
+                },
+            },
             include: {
                 supplier: true,
             },
@@ -99,7 +139,7 @@ exports.getSalesSummaryBySupplier = getSalesSummaryBySupplier;
 const getCashSalesAndPaymentsReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        const companyId = req.user?.companyId; // Assuming user is attached via auth middleware
+        const companyId = req.user?.companyId;
         if (!startDate || !endDate) {
             res.status(400).json({
                 message: "Start date and end date are required"

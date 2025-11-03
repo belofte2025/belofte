@@ -1,6 +1,6 @@
 import prisma from "../utils/prisma";
 
-export const getContainerReport = async (containerId: string) => {
+export const getContainerReport = async (containerId: string, companyId: string) => {
   const container = await prisma.container.findUnique({
     where: { id: containerId },
     include: {
@@ -33,7 +33,7 @@ export const getContainerReport = async (containerId: string) => {
     itemSummary,
   };
 };
-export const getSupplierReport = async (supplierId: string) => {
+export const getSupplierReport = async (supplierId: string, companyId: string) => {
   const items = await prisma.containerItem.findMany({
     where: {
       container: {
@@ -63,9 +63,7 @@ export const getSupplierReport = async (supplierId: string) => {
 };
 
 export const getDetailedSalesReport = async (
-  startDate: string,
-  endDate: string
-) => {
+startDate: string, endDate: string, companyId: string) => {
   const sales = await prisma.sale.findMany({
     where: {
       createdAt: {

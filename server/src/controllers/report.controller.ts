@@ -2,15 +2,26 @@ import { Request, Response } from "express";
 import {
   getContainerReport as getContainerReportService,
   getSupplierReport,
-  getDetailedSalesReport,  getCashSalesAndPayments,
-
+  getDetailedSalesReport,
+  getCashSalesAndPayments,
 } from "../services/report.service";
 import prisma from "../utils/prisma";
 
-
 export const getContainerReport = async (req: Request, res: Response) => {
   try {
-    const report = await getContainerReportService(req.params.containerId);
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(401).json({ 
+        message: "Unauthorized: Company ID not found" 
+      });
+      return;
+    }
+
+    const report = await getContainerReportService(
+      req.params.containerId,
+      companyId
+    );
     res.json(report);
   } catch (err) {
     res.status(500).json({ error: "Failed to generate container report" });
@@ -19,7 +30,16 @@ export const getContainerReport = async (req: Request, res: Response) => {
 
 export const supplierReport = async (req: Request, res: Response) => {
   try {
-    const report = await getSupplierReport(req.params.supplierId);
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(401).json({ 
+        message: "Unauthorized: Company ID not found" 
+      });
+      return;
+    }
+
+    const report = await getSupplierReport(req.params.supplierId, companyId);
     res.json(report);
   } catch (err) {
     res.status(500).json({ error: "Failed to generate supplier report" });
@@ -29,9 +49,26 @@ export const supplierReport = async (req: Request, res: Response) => {
 export const detailedSalesReport = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
+    const companyId = req.user?.companyId;
+
+    if (!startDate || !endDate) {
+      res.status(400).json({ 
+        message: "Start date and end date are required" 
+      });
+      return;
+    }
+
+    if (!companyId) {
+      res.status(401).json({ 
+        message: "Unauthorized: Company ID not found" 
+      });
+      return;
+    }
+
     const report = await getDetailedSalesReport(
       startDate as string,
-      endDate as string
+      endDate as string,
+      companyId
     );
     res.json(report);
   } catch (err) {
@@ -45,18 +82,27 @@ export const getSalesSummaryBySupplier = async (
 ) => {
   try {
     const { startDate, endDate } = req.query;
+    const companyId = req.user?.companyId;
 
     if (!startDate || !endDate) {
       res.status(400).json({ message: "Start and end dates are required." });
       return;
     }
 
+    if (!companyId) {
+      res.status(401).json({ 
+        message: "Unauthorized: Company ID not found" 
+      });
+      return;
+    }
+
     const start = new Date(startDate as string);
     const end = new Date(endDate as string);
 
-    // Fetch sales with items and customer info
+    // Fetch sales with items and customer info - filtered by companyId
     const sales = await prisma.sale.findMany({
       where: {
+        companyId: companyId,
         createdAt: {
           gte: start,
           lte: end,
@@ -69,8 +115,13 @@ export const getSalesSummaryBySupplier = async (
       orderBy: { createdAt: "asc" },
     });
 
-    // Fetch supplier items with supplier names
+    // Fetch supplier items with supplier names - filtered by companyId through supplier relation
     const supplierItems = await prisma.supplierItem.findMany({
+      where: {
+        supplier: {
+          companyId: companyId,
+        },
+      },
       include: {
         supplier: true,
       },
@@ -116,13 +167,14 @@ export const getSalesSummaryBySupplier = async (
     return;
   }
 };
+
 export const getCashSalesAndPaymentsReport = async (
   req: Request,
   res: Response
 ) => {
   try {
     const { startDate, endDate } = req.query;
-    const companyId = req.user?.companyId; // Assuming user is attached via auth middleware
+    const companyId = req.user?.companyId;
 
     if (!startDate || !endDate) {
       res.status(400).json({ 
