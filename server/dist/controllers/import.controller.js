@@ -326,35 +326,22 @@ const importSuppliers = async (req, res) => {
         if (workbook.SheetNames.includes("Opening Stock")) {
             const stockSheet = workbook.Sheets["Opening Stock"];
             const stockData = XLSX.utils.sheet_to_json(stockSheet);
-            // Get or create default supplier
-            let defaultSupplier = await prisma_1.default.supplier.findFirst({
-                where: {
-                    suppliername: "Opening Stock Supplier",
-                    companyId,
-                },
-            });
-            if (!defaultSupplier) {
-                defaultSupplier = await prisma_1.default.supplier.create({
-                    data: {
-                        suppliername: "Opening Stock Supplier",
-                        contact: "N/A",
-                        country: "N/A",
-                        companyId,
-                    },
-                });
-            }
             const validStock = [];
             for (const row of stockData) {
                 const supplierName = row.supplierName?.toString()?.trim();
                 const itemName = row.itemName?.toString()?.trim();
                 const quantity = parseInt(row.quantity?.toString() || "0");
                 const unitPrice = parseFloat(row.unitPrice?.toString() || "0");
+                if (!supplierName) {
+                    result.details.stock.errors.push(`Missing supplier name for item: ${itemName || 'unknown'}`);
+                    continue;
+                }
                 if (!itemName ||
                     isNaN(quantity) ||
                     quantity <= 0 ||
                     isNaN(unitPrice) ||
                     unitPrice <= 0) {
-                    result.details.stock.errors.push(`Invalid data: ${JSON.stringify(row)}`);
+                    result.details.stock.errors.push(`Invalid data for ${supplierName}: ${JSON.stringify(row)}`);
                     continue;
                 }
                 validStock.push({ supplierName, itemName, quantity, unitPrice });
@@ -362,11 +349,10 @@ const importSuppliers = async (req, res) => {
             // Group stock by supplier
             const stockBySupplier = new Map();
             for (const stock of validStock) {
-                const supplierName = stock.supplierName || "Opening Stock Supplier";
-                if (!stockBySupplier.has(supplierName)) {
-                    stockBySupplier.set(supplierName, []);
+                if (!stockBySupplier.has(stock.supplierName)) {
+                    stockBySupplier.set(stock.supplierName, []);
                 }
-                stockBySupplier.get(supplierName).push(stock);
+                stockBySupplier.get(stock.supplierName).push(stock);
             }
             // Process each supplier's stock
             for (const [supplierName, stocks] of stockBySupplier.entries()) {

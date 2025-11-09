@@ -755,3 +755,4 @@ export const getSupplierItemsForQuantityManagement = async (req: Request, res: R
     res.status(500).json({ error: "Failed to fetch items", detail: error });
   }
 };
+9

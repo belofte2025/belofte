@@ -441,25 +441,6 @@ export const importSuppliers = async (
         unitPrice: number;
       }>(stockSheet);
 
-      // Get or create default supplier
-      let defaultSupplier = await prisma.supplier.findFirst({
-        where: {
-          suppliername: "Opening Stock Supplier",
-          companyId,
-        },
-      });
-
-      if (!defaultSupplier) {
-        defaultSupplier = await prisma.supplier.create({
-          data: {
-            suppliername: "Opening Stock Supplier",
-            contact: "N/A",
-            country: "N/A",
-            companyId,
-          },
-        });
-      }
-
       const validStock: Array<{
         supplierName: string;
         itemName: string;
@@ -473,6 +454,13 @@ export const importSuppliers = async (
         const quantity = parseInt(row.quantity?.toString() || "0");
         const unitPrice = parseFloat(row.unitPrice?.toString() || "0");
 
+        if (!supplierName) {
+          result.details.stock.errors.push(
+            `Missing supplier name for item: ${itemName || 'unknown'}`
+          );
+          continue;
+        }
+
         if (
           !itemName ||
           isNaN(quantity) ||
@@ -481,7 +469,7 @@ export const importSuppliers = async (
           unitPrice <= 0
         ) {
           result.details.stock.errors.push(
-            `Invalid data: ${JSON.stringify(row)}`
+            `Invalid data for ${supplierName}: ${JSON.stringify(row)}`
           );
           continue;
         }
@@ -493,11 +481,10 @@ export const importSuppliers = async (
       const stockBySupplier = new Map<string, typeof validStock>();
 
       for (const stock of validStock) {
-        const supplierName = stock.supplierName || "Opening Stock Supplier";
-        if (!stockBySupplier.has(supplierName)) {
-          stockBySupplier.set(supplierName, []);
+        if (!stockBySupplier.has(stock.supplierName)) {
+          stockBySupplier.set(stock.supplierName, []);
         }
-        stockBySupplier.get(supplierName)!.push(stock);
+        stockBySupplier.get(stock.supplierName)!.push(stock);
       }
 
       // Process each supplier's stock
