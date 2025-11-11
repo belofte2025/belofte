@@ -50,20 +50,9 @@ router.use(authenticate);
  *       201:
  *         description: Sale recorded
  */
-
 router.post("/", authorizeRoles("admin", "staff"), recordSale);
 
 router.get("/", getSales);
-
-router.get("/:id/items", getContainerItemsBySupplier);
-
-router.get("/customer/:id", getSalesByCustomerId);
-
-router.get("/:id", getSaleById);
-
-router.put("/:id", updateSale);
-
-router.put("/:id/total", updateSaleTotalAmount);
 
 /**
  * @swagger
@@ -91,25 +80,8 @@ router.put("/:id/total", updateSaleTotalAmount);
  *     responses:
  *       200:
  *         description: A list of sales
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   saleType:
- *                     type: string
- *                   customerId:
- *                     type: string
- *                   totalAmount:
- *                     type: number
- *                   createdAt:
- *                     type: string
- *                     format: date-time
  */
+// IMPORTANT: This must come BEFORE /:id route
 router.get("/listsales", listSales);
 
 /**
@@ -133,7 +105,16 @@ router.get("/listsales", listSales);
  *       404:
  *         description: Sale not found
  */
-
+// IMPORTANT: This must come BEFORE /:id route
 router.delete("/deletesales/:id", deleteSaleById);
+
+// Get sales by customer - specific route before dynamic :id
+router.get("/customer/:id", getSalesByCustomerId);
+
+// Dynamic routes come last
+router.get("/:id/items", getContainerItemsBySupplier);
+router.get("/:id", getSaleById);
+router.put("/:id", updateSale);
+router.put("/:id/total", updateSaleTotalAmount);
 
 export default router;

@@ -213,10 +213,23 @@ const importSuppliers = async (req, res) => {
     };
     try {
         const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+        // Validate workbook has expected sheets
+        const requiredSheets = ["Suppliers", "Items & Prices", "Opening Stock"];
+        const missingSheets = requiredSheets.filter(sheet => !workbook.SheetNames.includes(sheet));
+        if (missingSheets.length > 0) {
+            result.success = false;
+            result.message = `Missing required sheets: ${missingSheets.join(", ")}`;
+            result.details.suppliers.errors.push(`Template must contain sheets: ${requiredSheets.join(", ")}. Found: ${workbook.SheetNames.join(", ")}`);
+            res.status(400).json(result);
+            return;
+        }
         // 1. PROCESS SUPPLIERS - BATCH INSERT
         if (workbook.SheetNames.includes("Suppliers")) {
             const suppliersSheet = workbook.Sheets["Suppliers"];
             const suppliersData = XLSX.utils.sheet_to_json(suppliersSheet);
+            if (suppliersData.length === 0) {
+                result.details.suppliers.errors.push("Suppliers sheet is empty. Please add supplier data.");
+            }
             const validSuppliers = [];
             for (const row of suppliersData) {
                 const supplierName = row.supplierName?.toString()?.trim();
@@ -262,12 +275,15 @@ const importSuppliers = async (req, res) => {
         if (workbook.SheetNames.includes("Items & Prices")) {
             const itemsSheet = workbook.Sheets["Items & Prices"];
             const itemsData = XLSX.utils.sheet_to_json(itemsSheet);
+            if (itemsData.length === 0) {
+                result.details.items.errors.push("Items & Prices sheet is empty. Please add item data.");
+            }
             const validItems = [];
             for (const row of itemsData) {
                 const supplierName = row.supplierName?.toString()?.trim();
                 const itemName = row.itemName?.toString()?.trim();
                 const price = parseFloat(row.price?.toString() || "0");
-                if (!supplierName || !itemName || isNaN(price) || price <= 0) {
+                if (!supplierName || !itemName || isNaN(price) || price < 0) {
                     result.details.items.errors.push(`Invalid data: ${JSON.stringify(row)}`);
                     continue;
                 }
@@ -326,6 +342,9 @@ const importSuppliers = async (req, res) => {
         if (workbook.SheetNames.includes("Opening Stock")) {
             const stockSheet = workbook.Sheets["Opening Stock"];
             const stockData = XLSX.utils.sheet_to_json(stockSheet);
+            if (stockData.length === 0) {
+                result.details.stock.errors.push("Opening Stock sheet is empty. Please add stock data.");
+            }
             const validStock = [];
             for (const row of stockData) {
                 const supplierName = row.supplierName?.toString()?.trim();
@@ -338,9 +357,9 @@ const importSuppliers = async (req, res) => {
                 }
                 if (!itemName ||
                     isNaN(quantity) ||
-                    quantity <= 0 ||
+                    quantity < 0 ||
                     isNaN(unitPrice) ||
-                    unitPrice <= 0) {
+                    unitPrice < 0) {
                     result.details.stock.errors.push(`Invalid data for ${supplierName}: ${JSON.stringify(row)}`);
                     continue;
                 }
@@ -435,7 +454,8 @@ const importSuppliers = async (req, res) => {
     catch (error) {
         console.error("Supplier import failed:", error);
         result.success = false;
-        result.message = "Import failed due to unexpected error";
+        result.message = `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        result.details.suppliers.errors.push(`System error: ${error instanceof Error ? error.message : String(error)}`);
         res.status(500).json(result);
     }
 };

@@ -22,10 +22,14 @@ import {
   User,
   CheckCircle,
   AlertCircle,
+  Calendar,
+  UserPlus,
+  X,
   Container as ContainerIcon,
 } from "lucide-react";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
+import CustomerForm from "@/components/pages/customers/CustomerForm";
 
 type Item = {
   id: string;
@@ -68,6 +72,9 @@ export default function ContainerSalesForm() {
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerOption | null>(null);
   const [saleType, setSaleType] = useState<"cash" | "credit">("cash");
+  const [saleDate, setSaleDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [containerNo, setContainerNo] = useState<string | null>(null);
@@ -75,6 +82,7 @@ export default function ContainerSalesForm() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPrintPrompt, setShowPrintPrompt] = useState(false);
   const [showCreditPrompt, setShowCreditPrompt] = useState(false);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -93,7 +101,7 @@ export default function ContainerSalesForm() {
         setContainerNo(itemData[0].containerNo);
       }
     } catch {
-      toast.error("Failed to load sales data");
+      toast.error("Failed to load data.");
     }
   }, [containerId]);
 
@@ -200,6 +208,7 @@ export default function ContainerSalesForm() {
         sourceId: containerId,
         customerId,
         saleType,
+        saleDate,
         items: cart.map((item) => ({
           itemName: item.itemName,
           quantity: item.qty,
@@ -208,8 +217,6 @@ export default function ContainerSalesForm() {
       });
 
       toast.success("Sale recorded");
-
-      // Prompt user to print receipt
       setShowPrintPrompt(true);
     } catch (error) {
       toast.error("Failed to record sale");
@@ -222,11 +229,9 @@ export default function ContainerSalesForm() {
   const handlePrint = () => {
     setShowPrintPrompt(false);
 
-    // Clone state first
     const clonedCart = [...cart];
     const clonedCustomer = selectedCustomer;
 
-    // Trigger receipt generation with the cloned data
     printReceiptHTML({
       customer: clonedCustomer?.label || "N/A",
       items: clonedCart.map((i) => ({
@@ -238,11 +243,25 @@ export default function ContainerSalesForm() {
       saleType,
     });
 
-    // Then clear state
     setCart([]);
 
     if (saleType === "credit") {
       setShowCreditPrompt(true);
+    }
+  };
+
+  const handleCustomerModalClose = async () => {
+    setShowCustomerModal(false);
+    try {
+      const custData = await getCustomers();
+      setCustomers(
+        custData.map((c: Customer) => ({
+          label: `${c.name} (${c.phone})`,
+          value: c.id,
+        }))
+      );
+    } catch {
+      toast.error("Failed to reload customers.");
     }
   };
 
@@ -257,10 +276,12 @@ export default function ContainerSalesForm() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Container Sale
+                Container Sales
               </h1>
               <p className="text-gray-600">
-                Container: {containerNo || "Loading..."}
+                {containerNo
+                  ? `Container: ${containerNo}`
+                  : "Process sales from container inventory"}
               </p>
             </div>
           </div>
@@ -269,11 +290,35 @@ export default function ContainerSalesForm() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Sale Configuration */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Customer Selection */}
+            {/* Sale Date */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
               <div className="flex items-center gap-2 mb-4">
-                <User className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Customer</h3>
+                <Calendar className="w-5 h-5 text-purple-600" />
+                <h3 className="font-semibold text-gray-900">Sale Date</h3>
+              </div>
+              <input
+                type="date"
+                value={saleDate}
+                onChange={(e) => setSaleDate(e.target.value)}
+                max={new Date().toISOString().split("T")[0]}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white transition-all duration-200"
+              />
+            </div>
+
+            {/* Customer Selection */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold text-gray-900">Customer</h3>
+                </div>
+                <button
+                  onClick={() => setShowCustomerModal(true)}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Add new customer"
+                >
+                  <UserPlus className="w-5 h-5" />
+                </button>
               </div>
               <Select
                 options={customers}
@@ -554,6 +599,36 @@ export default function ContainerSalesForm() {
         </div>
       </div>
 
+      {/* Customer Modal */}
+      <Dialog
+        open={showCustomerModal}
+        onClose={handleCustomerModalClose}
+        className="relative z-50"
+      >
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          aria-hidden="true"
+        />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <Dialog.Title className="text-xl font-bold text-gray-900">
+                Add New Customer
+              </Dialog.Title>
+              <button
+                onClick={handleCustomerModalClose}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <CustomerForm mode="create" />
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
       {/* Confirmation Modal */}
       <Dialog
         open={showConfirmModal}
@@ -578,6 +653,10 @@ export default function ContainerSalesForm() {
                   Are you sure you want to finalize this sale?
                 </p>
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Date:</span>
+                    <span className="font-medium">{saleDate}</span>
+                  </div>
                   <div className="flex justify-between text-sm">
                     <span>Customer:</span>
                     <span className="font-medium">

@@ -17,7 +17,8 @@ import {
   Factory,
   Calendar,
   Minus,
-  Plus
+  Plus,
+  Search
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
@@ -62,6 +63,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [adjustments, setAdjustments] = useState<Record<string, QuantityAdjustment>>({});
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -194,6 +196,12 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
     return { status: 'good', color: 'text-green-600', bg: 'bg-green-100' };
   };
 
+  // Filter items based on search query
+  const filteredItems = data?.items.filter(item => 
+    item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.container.containerNo.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -270,7 +278,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
         {/* Items Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Item Quantities</h3>
                 <p className="text-sm text-gray-500 mt-1">
@@ -291,6 +299,40 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                 </button>
               )}
             </div>
+            
+            {/* Search Filter */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Search by item name or container number..."
+              />
+              {searchQuery && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <span className="sr-only">Clear search</span>
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Search Results Count */}
+            {searchQuery && (
+              <div className="mt-3 text-sm text-gray-600">
+                Found {filteredItems.length} of {data?.items.length || 0} items
+              </div>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -327,7 +369,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {data.items.map((item) => {
+                {filteredItems.map((item) => {
                   const stockStatus = getStockStatus(item);
                   const remaining = item.quantity - item.soldQty;
                   const adjustment = adjustments[item.itemName];
@@ -444,6 +486,22 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
               </tbody>
             </table>
           </div>
+
+          {filteredItems.length === 0 && searchQuery && (
+            <div className="text-center py-16">
+              <Search className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No items match &quot;{searchQuery}&quot;. Try a different search term.
+              </p>
+              <button
+                onClick={() => setSearchQuery("")}
+                className="mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Clear search
+              </button>
+            </div>
+          )}
 
           {data.items.length === 0 && (
             <div className="text-center py-16">

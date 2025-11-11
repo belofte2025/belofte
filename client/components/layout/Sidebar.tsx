@@ -49,7 +49,7 @@ const utilityItems = [
 const salesReportItems = [
   { name: "Sales Summary", href: "/reports/sales", icon: ShoppingBag },
   { name: "Sales Details", href: "/reports/sales/saledetails", icon: FileText },
-  { name: "Supplier Sales", href: "", icon: Factory },
+  { name: "Supplier List", href: "/reports/sales/saleslist", icon: Factory },
 ];
 
 const reportItems = [
@@ -65,8 +65,7 @@ const reportItems = [
   { name: "Suppliers", href: "/reports/suppliers", icon: Factory },
   { name: "Containers", href: "/reports/containers", icon: Container },
   { name: "Inventory", href: "/reports/inventory", icon: Package },
-    { name: "Cash Recieved", href: "/reports/dailycash", icon: PiggyBankIcon },
-
+  { name: "Cash Recieved", href: "/reports/dailycash", icon: PiggyBankIcon },
 ];
 
 type SidebarProps = {

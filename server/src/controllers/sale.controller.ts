@@ -9,7 +9,8 @@ export const recordSale = async (req: Request, res: Response) => {
     return;
   }
   const totalAmount = items.reduce(
-    (sum: number, i: { unitPrice: number; quantity: number }) => sum + i.unitPrice * i.quantity,
+    (sum: number, i: { unitPrice: number; quantity: number }) =>
+      sum + i.unitPrice * i.quantity,
     0
   );
 
@@ -24,11 +25,17 @@ export const recordSale = async (req: Request, res: Response) => {
         totalAmount,
         items: {
           createMany: {
-            data: items.map((i: { itemName: string; quantity: number; unitPrice: number }) => ({
-              itemName: i.itemName,
-              quantity: i.quantity,
-              unitPrice: i.unitPrice,
-            })),
+            data: items.map(
+              (i: {
+                itemName: string;
+                quantity: number;
+                unitPrice: number;
+              }) => ({
+                itemName: i.itemName,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+              })
+            ),
           },
         },
       },
@@ -67,31 +74,34 @@ export const getContainerItemsBySupplier = async (
       },
     });
 
-    const allItems = containers.flatMap((c: {
-      id: string;
-      containerNo: string;
-      items: {
+    const allItems = containers.flatMap(
+      (c: {
         id: string;
-        itemName: string;
-        quantity: number;
-        soldQty: number;
-        unitPrice: number;
-      }[];
-    }) =>
-      c.items.map((i: {
-        id: string;
-        itemName: string;
-        quantity: number;
-        soldQty: number;
-        unitPrice: number;
-      }) => ({
-        id: i.id,
-        itemName: i.itemName,
-        available: i.quantity - i.soldQty,
-        unitPrice: i.unitPrice,
-        containerId: c.id,
-        containerNo: c.containerNo,
-      }))
+        containerNo: string;
+        items: {
+          id: string;
+          itemName: string;
+          quantity: number;
+          soldQty: number;
+          unitPrice: number;
+        }[];
+      }) =>
+        c.items.map(
+          (i: {
+            id: string;
+            itemName: string;
+            quantity: number;
+            soldQty: number;
+            unitPrice: number;
+          }) => ({
+            id: i.id,
+            itemName: i.itemName,
+            available: i.quantity - i.soldQty,
+            unitPrice: i.unitPrice,
+            containerId: c.id,
+            containerNo: c.containerNo,
+          })
+        )
     );
 
     res.json(allItems);
@@ -128,6 +138,7 @@ export const getSalesByCustomerId = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 // Get a specific sale by ID
 export const getSaleById = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -143,15 +154,17 @@ export const getSaleById = async (req: Request, res: Response) => {
 
     if (!sale) {
       res.status(404).json({ error: "Sale not found" });
+      return; // ADD THIS RETURN STATEMENT
     }
 
     res.json(sale);
+    return; // OPTIONAL: Add this for consistency
   } catch (error) {
     console.error("Error fetching sale:", error);
     res.status(500).json({ error: "Internal server error" });
+    return; // OPTIONAL: Add this for consistency
   }
 };
-
 // Update sale and items
 export const updateSale = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -165,11 +178,17 @@ export const updateSale = async (req: Request, res: Response) => {
         items: {
           deleteMany: {},
           createMany: {
-            data: items.map((item: { itemName: string; quantity: number; unitPrice: number }) => ({
-              itemName: item.itemName,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-            })),
+            data: items.map(
+              (item: {
+                itemName: string;
+                quantity: number;
+                unitPrice: number;
+              }) => ({
+                itemName: item.itemName,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+              })
+            ),
           },
         },
       },
@@ -198,7 +217,7 @@ export const updateSaleTotalAmount = async (req: Request, res: Response) => {
   }
 };
 
-// GET /sales
+// GET /sales/list
 export const listSales = async (req: Request, res: Response) => {
   try {
     const companyId = req.user?.companyId;
@@ -229,22 +248,17 @@ export const listSales = async (req: Request, res: Response) => {
       orderBy: { createdAt: "desc" },
     });
 
-    const response = sales.map((sale: {
-      id: string;
-      saleType: string;
-      sourceType: string;
-      customer: { customerName: string };
-      totalAmount: number;
-      createdAt: Date;
-      items: { itemName: string; quantity: number; unitPrice: number }[];
-    }) => ({
+    // FIXED: Return customer object instead of just customerName string
+    const response = sales.map((sale) => ({
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      customerName: sale.customer.customerName,
+      customer: {
+        customerName: sale.customer.customerName,
+      },
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
-      items: sale.items.map((i: { itemName: string; quantity: number; unitPrice: number }) => ({
+      items: sale.items.map((i) => ({
         itemName: i.itemName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
@@ -252,12 +266,13 @@ export const listSales = async (req: Request, res: Response) => {
     }));
 
     res.json(response);
+    return;
   } catch (error) {
     console.error("Failed to list sales", error);
     res.status(500).json({ error: "Internal Server Error" });
+    return;
   }
 };
-
 // DELETE /sales/:id
 export const deleteSaleById = async (req: Request, res: Response) => {
   const { id } = req.params;

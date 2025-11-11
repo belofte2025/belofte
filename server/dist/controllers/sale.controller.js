@@ -119,12 +119,15 @@ const getSaleById = async (req, res) => {
         });
         if (!sale) {
             res.status(404).json({ error: "Sale not found" });
+            return; // ADD THIS RETURN STATEMENT
         }
         res.json(sale);
+        return; // OPTIONAL: Add this for consistency
     }
     catch (error) {
         console.error("Error fetching sale:", error);
         res.status(500).json({ error: "Internal server error" });
+        return; // OPTIONAL: Add this for consistency
     }
 };
 exports.getSaleById = getSaleById;
@@ -173,7 +176,7 @@ const updateSaleTotalAmount = async (req, res) => {
     }
 };
 exports.updateSaleTotalAmount = updateSaleTotalAmount;
-// GET /sales
+// GET /sales/list
 const listSales = async (req, res) => {
     try {
         const companyId = req.user?.companyId;
@@ -200,11 +203,14 @@ const listSales = async (req, res) => {
             },
             orderBy: { createdAt: "desc" },
         });
+        // FIXED: Return customer object instead of just customerName string
         const response = sales.map((sale) => ({
             id: sale.id,
             saleType: sale.saleType,
             sourceType: sale.sourceType,
-            customerName: sale.customer.customerName,
+            customer: {
+                customerName: sale.customer.customerName,
+            },
             totalAmount: sale.totalAmount,
             createdAt: sale.createdAt,
             items: sale.items.map((i) => ({
@@ -214,10 +220,12 @@ const listSales = async (req, res) => {
             })),
         }));
         res.json(response);
+        return;
     }
     catch (error) {
         console.error("Failed to list sales", error);
         res.status(500).json({ error: "Internal Server Error" });
+        return;
     }
 };
 exports.listSales = listSales;
