@@ -22,7 +22,7 @@ export const getContainerReport = async (containerId: string, companyId: string)
       expected: item.quantity,
       received: item.receivedQty,
       sold: item.soldQty,
-      remaining: item.receivedQty - item.soldQty,
+      remaining: item.quantity - item.soldQty,
     })
   );
 
@@ -51,12 +51,12 @@ export const getSupplierReport = async (supplierId: string, companyId: string) =
       (item: {
         id: any;
         itemName: any;
-        receivedQty: number;
+        quantity: number;
         soldQty: number;
       }) => ({
         itemId: item.id,
         name: item.itemName,
-        remaining: item.receivedQty - item.soldQty,
+        remaining: item.quantity - item.soldQty,
       })
     ),
   };

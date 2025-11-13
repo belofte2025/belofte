@@ -20,7 +20,7 @@ const getContainerReport = async (containerId, companyId) => {
         expected: item.quantity,
         received: item.receivedQty,
         sold: item.soldQty,
-        remaining: item.receivedQty - item.soldQty,
+        remaining: item.quantity - item.soldQty,
     }));
     return {
         containerNo: container.containerNo,
@@ -46,7 +46,7 @@ const getSupplierReport = async (supplierId, companyId) => {
         items: items.map((item) => ({
             itemId: item.id,
             name: item.itemName,
-            remaining: item.receivedQty - item.soldQty,
+            remaining: item.quantity - item.soldQty,
         })),
     };
 };
