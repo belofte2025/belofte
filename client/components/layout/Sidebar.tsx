@@ -91,7 +91,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
       {/* Mobile sidebar overlay */}
       <div
         className={clsx(
-          "fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 md:hidden",
+          "fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 lg:hidden",
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={() => setOpen(false)}
@@ -100,9 +100,9 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={clsx(
-          "fixed top-0 left-0 z-50 w-64 h-screen bg-white shadow-lg border-r border-gray-200 transform transition-transform duration-300 md:translate-x-0",
+          "fixed top-0 left-0 z-50 w-64 h-screen bg-white shadow-lg border-r border-gray-200 transform transition-transform duration-300 lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
-          "md:static md:block"
+          "lg:static lg:block"
         )}
       >
         {/* Header */}
@@ -116,7 +116,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
             </div>
           </div>
           <button
-            className="md:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors"
             onClick={() => setOpen(false)}
           >
             <X className="w-5 h-5 text-gray-500" />

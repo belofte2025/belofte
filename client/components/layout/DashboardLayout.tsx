@@ -17,12 +17,12 @@ export default function DashboardLayout({
 
       <div className="flex-1 flex flex-col">
         {/* Topbar */}
-        <div className="fixed top-0 left-0 right-0 z-30 md:left-72">
+        <div className="fixed top-0 left-0 right-0 z-30 lg:left-72">
           <Topbar onMenuClick={() => setSidebarOpen((prev) => !prev)} />
         </div>
 
         {/* Page content */}
-        <main className="mt-20 p-6 md:p-8 animate-fade-in">
+        <main className="mt-20 p-6 lg:p-8 animate-fade-in">
           <div className="max-w-7xl w-full mx-auto">{children}</div>
         </main>
       </div>

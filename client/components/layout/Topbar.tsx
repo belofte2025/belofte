@@ -22,14 +22,14 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         <div className="flex items-center space-x-4">
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
             onClick={onMenuClick}
           >
             <Menu className="w-5 h-5 text-gray-600" />
           </button>
 
           {/* Search bar - hidden on mobile */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden lg:flex items-center">
             <div className="relative">
               <div className="inline-flex items-center bg-blue-700 text-white px-5 py-2 rounded-lg shadow-md">
                 <span className="text-base font-semibold">
@@ -49,7 +49,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           </button>
 
           {/* User info - desktop only */}
-          <div className="hidden md:block relative">
+          <div className="hidden lg:block relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg p-2 transition-colors"
