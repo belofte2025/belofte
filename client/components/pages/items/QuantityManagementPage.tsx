@@ -309,7 +309,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Search by item name or container number..."
               />
               {searchQuery && (
@@ -445,7 +445,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                                   type="number"
                                   value={adjustment.quantityChange}
                                   onChange={(e) => handleAdjustmentChange(item.itemName, "quantityChange", parseInt(e.target.value) || 0)}
-                                  className="block w-20 text-center py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  className="block w-20 text-center py-1 text-sm border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                   placeholder="0"
                                 />
                                 <button
@@ -471,7 +471,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                                 type="text"
                                 value={adjustment.reason}
                                 onChange={(e) => handleAdjustmentChange(item.itemName, "reason", e.target.value)}
-                                className="block w-full py-1 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="block w-full py-1 px-2 text-sm border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="Adjustment reason..."
                               />
                             ) : (

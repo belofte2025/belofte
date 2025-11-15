@@ -169,7 +169,7 @@ export default function AllPaymentsReport() {
                     onChange={(e) =>
                       setFilters({ ...filters, startDate: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
 
@@ -183,7 +183,7 @@ export default function AllPaymentsReport() {
                     onChange={(e) =>
                       setFilters({ ...filters, endDate: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
 
@@ -196,7 +196,7 @@ export default function AllPaymentsReport() {
                     onChange={(e) =>
                       setFilters({ ...filters, paymentType: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
                     <option value="">All Types</option>
                     <option value="CASH">Cash</option>

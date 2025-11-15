@@ -257,7 +257,7 @@ export default function LoginForm() {
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -272,7 +272,7 @@ export default function LoginForm() {
                   <input
                     type={secure ? "password" : "text"}
                     placeholder="Enter your password"
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />

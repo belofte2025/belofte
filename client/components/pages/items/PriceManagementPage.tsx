@@ -355,7 +355,7 @@ export default function PriceManagementPage({ supplierId }: PriceManagementPageP
                               type="number"
                               value={editedPrices[item.id] ?? item.price}
                               onChange={(e) => handleBulkPriceChange(item.id, parseFloat(e.target.value) || 0)}
-                              className="block w-32 pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="block w-32 pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               min="0"
                               step="0.01"
                             />
@@ -378,7 +378,7 @@ export default function PriceManagementPage({ supplierId }: PriceManagementPageP
                                   ...prev,
                                   [item.id]: parseFloat(e.target.value) || 0
                                 }))}
-                                className="block w-24 pl-6 pr-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="block w-24 pl-6 pr-2 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 min="0"
                                 step="0.01"
                                 autoFocus

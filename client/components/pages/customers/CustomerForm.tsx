@@ -147,7 +147,7 @@ export default function CustomerForm({ mode, customerId }: Props) {
                 if (errors.name)
                   setErrors((prev) => ({ ...prev, name: undefined }));
               }}
-              className={`w-full px-4 py-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all duration-200 ${
+              className={`w-full px-4 py-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all duration-200 text-gray-900 placeholder:text-gray-400 ${
                 errors.name
                   ? "border-red-300 focus:ring-red-500"
                   : "border-gray-200"
@@ -178,7 +178,7 @@ export default function CustomerForm({ mode, customerId }: Props) {
                 if (errors.phone)
                   setErrors((prev) => ({ ...prev, phone: undefined }));
               }}
-              className={`w-full px-4 py-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all duration-200 ${
+              className={`w-full px-4 py-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all duration-200 text-gray-900 placeholder:text-gray-400 ${
                 errors.phone
                   ? "border-red-300 focus:ring-red-500"
                   : "border-gray-200"

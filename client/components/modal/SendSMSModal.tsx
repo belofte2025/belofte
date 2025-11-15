@@ -77,7 +77,7 @@ export default function SendSMSModal({
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="0244123456"
               disabled={!!recipient}
             />
@@ -92,7 +92,7 @@ export default function SendSMSModal({
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
               maxLength={160}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Type your message..."
             />
             <p className="text-sm text-gray-500 mt-1">

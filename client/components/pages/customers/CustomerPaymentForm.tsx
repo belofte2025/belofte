@@ -485,7 +485,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-gray-900 placeholder:text-gray-400"
                     placeholder="0.00"
                     step="0.01"
                     min="0"
@@ -509,7 +509,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                   <select
                     value={paymentType}
                     onChange={(e) => setPaymentType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
                   >
                     <option value="">Select method</option>
                     <option value="CASH">Cash Payment</option>
@@ -529,7 +529,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                   <select
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
                   >
                     <option value="">Select note type</option>
                     <option value="Part Payment">Partial Payment</option>

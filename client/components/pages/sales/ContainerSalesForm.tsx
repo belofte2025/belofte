@@ -301,7 +301,7 @@ export default function ContainerSalesForm() {
                 value={saleDate}
                 onChange={(e) => setSaleDate(e.target.value)}
                 max={new Date().toISOString().split("T")[0]}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white transition-all duration-200"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:bg-white transition-all duration-200"
               />
             </div>
 
@@ -562,7 +562,7 @@ export default function ContainerSalesForm() {
                                   onChange={(e) =>
                                     updatePriceInCart(item.id, e.target.value)
                                   }
-                                  className="w-20 px-2 py-1 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  className="w-20 px-2 py-1 text-sm border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   step="0.01"
                                   min="0"
                                 />

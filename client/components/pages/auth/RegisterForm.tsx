@@ -149,7 +149,7 @@ export default function RegisterForm() {
                 <input
                   type="text"
                   placeholder="Enter your full name"
-                  className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                  className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder:text-gray-400 ${
                     errors.userName
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-200"
@@ -175,7 +175,7 @@ export default function RegisterForm() {
                 <input
                   type="email"
                   placeholder="Enter your email address"
-                  className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                  className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder:text-gray-400 ${
                     errors.email
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-200"
@@ -199,7 +199,7 @@ export default function RegisterForm() {
                   Company
                 </label>
                 <select
-                  className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 appearance-none ${
+                  className={`w-full px-4 py-3 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 appearance-none text-gray-900 ${
                     errors.companyId
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-200"
@@ -238,7 +238,7 @@ export default function RegisterForm() {
                   <input
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a secure password"
-                    className={`w-full px-4 py-3 pr-12 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                    className={`w-full px-4 py-3 pr-12 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder:text-gray-400 ${
                       errors.password
                         ? "border-red-300 focus:ring-red-500"
                         : "border-gray-200"
@@ -277,7 +277,7 @@ export default function RegisterForm() {
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
-                    className={`w-full px-4 py-3 pr-12 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                    className={`w-full px-4 py-3 pr-12 border rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder:text-gray-400 ${
                       errors.confirmPassword
                         ? "border-red-300 focus:ring-red-500"
                         : "border-gray-200"
