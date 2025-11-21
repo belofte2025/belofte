@@ -7,6 +7,8 @@ export interface User {
   email: string;
   userName: string;
   role: string;
+  roleId?: string | null;
+  permissions: string[];
   companyId: string;
   company: {
     companyName: string;
@@ -27,7 +29,7 @@ export interface RegisterData {
   userName: string;
   email: string;
   password: string;
-  role?: string;
+  roleId?: string;
   companyId: string;
 }
 
@@ -61,7 +63,7 @@ export const register = async (
     userName: data.userName,
     email: data.email,
     password: data.password,
-    role: data.role || "user",
+    roleId: data.roleId,
     companyId: data.companyId,
   });
   return res.data;

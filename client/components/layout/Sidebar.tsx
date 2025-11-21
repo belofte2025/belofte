@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useState } from "react";
 import {
   Home,
@@ -25,25 +26,28 @@ import {
   FileText,
   List,
   PiggyBankIcon,
+  Shield,
+  UserCog,
 } from "lucide-react";
 
 const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Customers", href: "/customers", icon: Users },
-  { name: "Suppliers", href: "/suppliers", icon: Factory },
-  { name: "Items", href: "/items", icon: Package },
-  { name: "Containers", href: "/containers", icon: Container },
-  { name: "Sales", href: "/sales", icon: ShoppingCart },
+  { name: "Dashboard", href: "/dashboard", icon: Home, permission: "dashboard.view" },
+  { name: "Customers", href: "/customers", icon: Users, permission: "customers.view" },
+  { name: "Suppliers", href: "/suppliers", icon: Factory, permission: "suppliers.view" },
+  { name: "Items", href: "/items", icon: Package, permission: "items.view" },
+  { name: "Containers", href: "/containers", icon: Container, permission: "containers.view" },
+  { name: "Sales", href: "/sales", icon: ShoppingCart, permission: "sales.view" },
 ];
 
 const utilityItems = [
-  { name: "Overview", href: "/utilities", icon: Settings },
+  { name: "Overview", href: "/utilities", icon: Settings, permission: "utilities.view" },
   {
     name: "Customer Import",
     href: "/utilities/customer-import",
     icon: UserPlus,
+    permission: "utilities.import",
   },
-  { name: "Supplier Import", href: "/utilities/supplier-import", icon: Truck },
+  { name: "Supplier Import", href: "/utilities/supplier-import", icon: Truck, permission: "utilities.import" },
 ];
 
 const salesReportItems = [
@@ -53,19 +57,25 @@ const salesReportItems = [
 ];
 
 const reportItems = [
-  { name: "Overview", href: "/reports", icon: BarChart3 },
+  { name: "Overview", href: "/reports", icon: BarChart3, permission: "reports.view" },
   {
     name: "Sales",
     href: "/reports/sales",
     icon: TrendingUp,
     submenu: salesReportItems,
+    permission: "reports.view",
   },
-  { name: "Payments", href: "/reports/payments", icon: List },
-  { name: "Customers", href: "/reports/customers", icon: Users },
-  { name: "Suppliers", href: "/reports/suppliers", icon: Factory },
-  { name: "Containers", href: "/reports/containers", icon: Container },
-  { name: "Inventory", href: "/reports/inventory", icon: Package },
-  { name: "Cash Recieved", href: "/reports/dailycash", icon: PiggyBankIcon },
+  { name: "Payments", href: "/reports/payments", icon: List, permission: "reports.view" },
+  { name: "Customers", href: "/reports/customers", icon: Users, permission: "reports.view" },
+  { name: "Suppliers", href: "/reports/suppliers", icon: Factory, permission: "reports.view" },
+  { name: "Containers", href: "/reports/containers", icon: Container, permission: "reports.view" },
+  { name: "Inventory", href: "/reports/inventory", icon: Package, permission: "reports.view" },
+  { name: "Cash Recieved", href: "/reports/dailycash", icon: PiggyBankIcon, permission: "reports.view" },
+];
+
+const settingsItems = [
+  { name: "Role Management", href: "/settings/roles", icon: Shield, permission: "roles.manage" },
+  { name: "User Management", href: "/settings/users", icon: UserCog, permission: "users.view" },
 ];
 
 type SidebarProps = {
@@ -76,6 +86,7 @@ type SidebarProps = {
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { hasPermission } = usePermissions();
   const [reportsOpen, setReportsOpen] = useState(
     pathname.startsWith("/reports")
   );
@@ -85,6 +96,15 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const [salesReportsOpen, setSalesReportsOpen] = useState(
     pathname.startsWith("/reports/sales")
   );
+  const [settingsOpen, setSettingsOpen] = useState(
+    pathname.startsWith("/settings")
+  );
+
+  // Filter navigation items based on permissions
+  const visibleNavItems = navItems.filter(item => hasPermission(item.permission));
+  const visibleUtilityItems = utilityItems.filter(item => hasPermission(item.permission));
+  const visibleReportItems = reportItems.filter(item => hasPermission(item.permission));
+  const visibleSettingsItems = settingsItems.filter(item => hasPermission(item.permission));
 
   return (
     <>
@@ -127,7 +147,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto py-4">
           <div className="px-3 space-y-1">
             {/* Main navigation items */}
-            {navItems.map(({ name, href, icon: Icon }) => {
+            {visibleNavItems.map(({ name, href, icon: Icon }) => {
               const isActive = pathname.startsWith(href) && href !== "/reports";
               return (
                 <Link
@@ -186,7 +206,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                   reportsOpen ? "block" : "hidden"
                 )}
               >
-                {reportItems.map(({ name, href, icon: Icon, submenu }) => {
+                {visibleReportItems.map(({ name, href, icon: Icon, submenu }) => {
                   const isActive = pathname === href;
                   const hasSubmenu = !!submenu;
                   const isParentActive =
@@ -324,7 +344,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                   utilitiesOpen ? "block" : "hidden"
                 )}
               >
-                {utilityItems.map(({ name, href, icon: Icon }) => {
+                {visibleUtilityItems.map(({ name, href, icon: Icon }) => {
                   const isActive = pathname === href;
                   return (
                     <Link
@@ -350,6 +370,68 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                 })}
               </div>
             </div>
+
+            {/* Settings dropdown */}
+            {visibleSettingsItems.length > 0 && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                  className={clsx(
+                    "flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg",
+                    pathname.startsWith("/settings")
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  )}
+                  aria-expanded={settingsOpen}
+                  aria-controls="settings-submenu"
+                >
+                  <span className="flex items-center">
+                    <Settings className="mr-3 h-5 w-5" />
+                    Settings
+                  </span>
+                  <ChevronRight
+                    className={clsx(
+                      "h-4 w-4 transition-transform",
+                      settingsOpen && "rotate-90"
+                    )}
+                  />
+                </button>
+
+                {/* Settings submenu */}
+                <div
+                  id="settings-submenu"
+                  className={clsx(
+                    "mt-1 ml-6 space-y-1",
+                    settingsOpen ? "block" : "hidden"
+                  )}
+                >
+                  {visibleSettingsItems.map(({ name, href, icon: Icon }) => {
+                    const isActive = pathname === href;
+                    return (
+                      <Link
+                        key={name}
+                        href={href}
+                        className={clsx(
+                          "flex items-center px-2.5 py-2 text-sm rounded-md",
+                          isActive
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                        )}
+                        onClick={() => setOpen(false)}
+                      >
+                        <Icon
+                          className={clsx(
+                            "mr-3 h-4 w-4",
+                            isActive ? "text-blue-600" : "text-gray-400"
+                          )}
+                        />
+                        {name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </nav>
 

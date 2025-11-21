@@ -7,6 +7,7 @@ import { recordSale } from "@/services/salesService";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import Select from "react-select";
 import { Dialog } from "@headlessui/react";
 import { printReceiptHTML } from "@/lib/printReceipts";
@@ -25,6 +26,7 @@ import {
   Calendar,
   UserPlus,
   X,
+  Lock,
 } from "lucide-react";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
@@ -60,8 +62,8 @@ type Customer = {
 
 export default function RegularSaleComponent() {
   const router = useRouter();
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const { hasPermission } = usePermissions();
+  const canEditPrice = hasPermission("sales.edit_price");
 
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -286,7 +288,7 @@ export default function RegularSaleComponent() {
           {/* Left Column - Sale Configuration */}
           <div className="lg:col-span-1 space-y-6">
             {/* Sale Date */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white p-6 shadow-sm border border-gray-200">
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-purple-600" />
                 <h3 className="font-semibold text-gray-900">Sale Date</h3>
@@ -301,7 +303,7 @@ export default function RegularSaleComponent() {
             </div>
 
             {/* Customer Selection */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-blue-600" />
@@ -337,7 +339,7 @@ export default function RegularSaleComponent() {
             </div>
 
             {/* Sale Type */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white p-6 shadow-sm border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-4">
                 Payment Method
               </h3>
@@ -388,7 +390,7 @@ export default function RegularSaleComponent() {
             </div>
 
             {/* Cart Summary */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Cart Summary</h3>
                 <Badge variant="info">{cart.length} items</Badge>
@@ -416,7 +418,7 @@ export default function RegularSaleComponent() {
           {/* Right Column - Items and Cart */}
           <div className="lg:col-span-2 space-y-6">
             {/* Items List */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -489,7 +491,7 @@ export default function RegularSaleComponent() {
             </div>
 
             {/* Shopping Cart */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -552,10 +554,15 @@ export default function RegularSaleComponent() {
                             </div>
 
                             <div className="text-center min-w-[100px]">
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
                                 Unit Price
+                                {!canEditPrice && (
+                                  <span title="You don't have permission to edit prices">
+                                    <Lock className="w-3 h-3 text-gray-400" />
+                                  </span>
+                                )}
                               </div>
-                              {isAdmin ? (
+                              {canEditPrice ? (
                                 <input
                                   type="number"
                                   value={item.unitPrice}
@@ -565,9 +572,13 @@ export default function RegularSaleComponent() {
                                   className="w-20 px-2 py-1 text-sm border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   step="0.01"
                                   min="0"
+                                  title="Edit price"
                                 />
                               ) : (
-                                <div className="font-medium">
+                                <div
+                                  className="font-medium text-gray-700"
+                                  title="Price editing is restricted. Contact an admin or manager."
+                                >
                                   ₵ {item.unitPrice.toFixed(2)}
                                 </div>
                               )}
