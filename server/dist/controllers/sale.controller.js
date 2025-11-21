@@ -8,12 +8,42 @@ const prisma_1 = __importDefault(require("../utils/prisma"));
 const recordSale = async (req, res) => {
     const { saleType, sourceType, sourceId, customerId, items } = req.body;
     const companyId = req.user?.companyId;
+    const userPermissions = req.user?.permissions || [];
+    const canEditPrice = userPermissions.includes("sales.edit_price");
     if (!companyId) {
         res.status(400).json({ error: "Company ID missing" });
         return;
     }
-    const totalAmount = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
     try {
+        // If user cannot edit prices, validate that submitted prices match current prices
+        if (!canEditPrice) {
+            // Get all supplier items for the company to check current prices
+            const itemNames = items.map((i) => i.itemName);
+            const supplierItems = await prisma_1.default.supplierItem.findMany({
+                where: {
+                    itemName: { in: itemNames },
+                    supplier: { companyId },
+                },
+                select: {
+                    itemName: true,
+                    price: true,
+                },
+            });
+            // Create a map of item prices
+            const priceMap = new Map(supplierItems.map((item) => [item.itemName, item.price]));
+            // Check if any submitted price differs from current price
+            for (const item of items) {
+                const currentPrice = priceMap.get(item.itemName);
+                if (currentPrice !== undefined && item.unitPrice !== currentPrice) {
+                    res.status(403).json({
+                        error: "Forbidden: You don't have permission to modify prices",
+                        detail: `Item "${item.itemName}" has a different price than the current price. Contact an admin or manager to override prices.`,
+                    });
+                    return;
+                }
+            }
+        }
+        const totalAmount = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
         const sale = await prisma_1.default.sale.create({
             data: {
                 saleType,

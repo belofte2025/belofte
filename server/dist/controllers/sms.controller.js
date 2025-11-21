@@ -19,12 +19,21 @@ const sendSingleSMS = async (req, res) => {
             res.status(400).json({ error: "Phone number and message required" });
             return;
         }
+        // Get company name for sender ID
+        const company = await prisma_1.default.company.findUnique({
+            where: { id: companyId },
+            select: { companyName: true },
+        });
         // Validate message length
         const validation = sms_service_1.default.validateMessageLength(message);
         if (validation.smsCount > 1) {
             console.warn(`Message will be sent as ${validation.smsCount} SMS parts`);
         }
-        const result = await sms_service_1.default.sendSMS({ to, message });
+        const result = await sms_service_1.default.sendSMS({
+            to,
+            message,
+            senderId: company?.companyName,
+        });
         // Log SMS in database
         await prisma_1.default.sMSLog.create({
             data: {
@@ -79,6 +88,11 @@ const sendPaymentConfirmationSMS = async (req, res) => {
             res.status(400).json({ error: "Customer has no phone number" });
             return;
         }
+        // Get company name for sender ID
+        const company = await prisma_1.default.company.findUnique({
+            where: { id: companyId },
+            select: { companyName: true },
+        });
         // Generate message
         const message = sms_service_1.default.generatePaymentConfirmation(customer.customerName, amount, balance);
         console.log("💬 Generated message:", message);
@@ -87,6 +101,7 @@ const sendPaymentConfirmationSMS = async (req, res) => {
         const result = await sms_service_1.default.sendSMS({
             to: customer.phone,
             message,
+            senderId: company?.companyName,
         });
         console.log("📤 SMS Result:", result);
         // Log SMS
@@ -121,6 +136,11 @@ const sendBulkDebtReminders = async (req, res) => {
             res.status(400).json({ error: "Company ID required" });
             return;
         }
+        // Get company name for sender ID
+        const company = await prisma_1.default.company.findUnique({
+            where: { id: companyId },
+            select: { companyName: true },
+        });
         // Get all customers with unpaid debts
         const customers = await prisma_1.default.customer.findMany({
             where: {
@@ -147,6 +167,7 @@ const sendBulkDebtReminders = async (req, res) => {
             const result = await sms_service_1.default.sendSMS({
                 to: customer.phone,
                 message,
+                senderId: company?.companyName,
             });
             // Log SMS
             await prisma_1.default.sMSLog.create({

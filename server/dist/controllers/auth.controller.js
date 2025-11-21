@@ -10,19 +10,69 @@ const jwt_1 = require("../utils/jwt");
 // 🔐 REGISTER
 const register = async (req, res) => {
     try {
-        const { userName, email, password, role, companyId } = req.body;
+        const { userName, email, password, roleId, companyId } = req.body;
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
+        // If no roleId provided, assign default role for the company
+        let finalRoleId = roleId;
+        if (!finalRoleId) {
+            const defaultRole = await prisma_1.default.role.findFirst({
+                where: {
+                    companyId,
+                    isDefault: true
+                }
+            });
+            finalRoleId = defaultRole?.id || null;
+        }
         const user = await prisma_1.default.user.create({
-            data: { userName, email, role, password: hashedPassword, companyId },
+            data: {
+                userName,
+                email,
+                roleId: finalRoleId,
+                password: hashedPassword,
+                companyId
+            },
+            include: {
+                role: {
+                    include: {
+                        permissions: {
+                            include: {
+                                permission: true
+                            }
+                        }
+                    }
+                },
+                company: {
+                    select: {
+                        companyName: true
+                    }
+                }
+            }
         });
+        // Extract permission codes from role
+        const permissions = user.role?.permissions.map(rp => rp.permission.code) || [];
+        const roleName = user.role?.name || 'user';
         const token = (0, jwt_1.generateToken)({
             userId: user.id,
             email: user.email,
             userName: user.userName,
             companyId: user.companyId,
-            role: user.role,
+            role: roleName,
+            roleId: user.roleId,
+            permissions,
         });
-        res.status(201).json({ user, token });
+        res.status(201).json({
+            user: {
+                id: user.id,
+                email: user.email,
+                userName: user.userName,
+                role: roleName,
+                roleId: user.roleId,
+                permissions,
+                companyId: user.companyId,
+                company: user.company,
+            },
+            token
+        });
     }
     catch (err) {
         console.error("❌ Registration error:", err);
@@ -45,25 +95,41 @@ const login = async (req, res) => {
                         companyName: true,
                     },
                 },
+                role: {
+                    include: {
+                        permissions: {
+                            include: {
+                                permission: true
+                            }
+                        }
+                    }
+                }
             },
         });
         if (!user || !(await bcrypt_1.default.compare(password, user.password))) {
             res.status(401).json({ error: "Invalid credentials" });
             return;
         }
+        // Extract permission codes from role
+        const permissions = user.role?.permissions.map(rp => rp.permission.code) || [];
+        const roleName = user.role?.name || 'user';
         const token = (0, jwt_1.generateToken)({
             userId: user.id,
             email: user.email,
             userName: user.userName,
             companyId: user.companyId,
-            role: user.role,
+            role: roleName,
+            roleId: user.roleId,
+            permissions,
         });
         res.json({
             user: {
                 id: user.id,
                 email: user.email,
                 userName: user.userName,
-                role: user.role,
+                role: roleName,
+                roleId: user.roleId,
+                permissions,
                 companyId: user.companyId,
                 company: user.company,
             },

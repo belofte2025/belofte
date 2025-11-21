@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 import authRoutes from "./routes/auth.routes";
+import onboardRoutes from "./routes/onboard.routes";
 import companyRoutes from "./routes/company.routes";
 import customerRoutes from "./routes/customer.routes";
 import supplierRoutes from "./routes/supplier.routes";
@@ -19,6 +20,7 @@ import reportRoutes from "./routes/report.routes";
 import uploadsRoutes from "./routes/uploads.routes";
 import customerDebtroutes from "./routes/customerDebt.routes";
 import smsRoutes from "./routes/sms.routes";
+import roleRoutes from "./routes/role.routes";
 dotenv.config();
 
 const app = express();
@@ -40,6 +42,7 @@ app.get("/health", (req, res) => {
 });
 
 // ───────────────────── API Routes ─────────────────────
+app.use("/api/onboard", onboardRoutes); // Public route - no auth required
 app.use("/api/auth", authRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/customers", customerRoutes);
@@ -55,6 +58,7 @@ app.use("/api/uploads", uploadsRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/sms", smsRoutes);
+app.use("/api/roles", roleRoutes);
 
 // ───────────────────── Static (Next.js export) ─────────────────────
 const clientBuildPath = path.join(__dirname, "../../client/out");

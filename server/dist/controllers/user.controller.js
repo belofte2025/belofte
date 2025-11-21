@@ -18,7 +18,13 @@ const listUsers = async (req, res) => {
             id: true,
             userName: true,
             email: true,
-            role: true,
+            roleId: true,
+            role: {
+                select: {
+                    id: true,
+                    name: true,
+                },
+            },
             createdAt: true,
         },
     });
@@ -26,7 +32,7 @@ const listUsers = async (req, res) => {
 };
 exports.listUsers = listUsers;
 const createUser = async (req, res) => {
-    const { userName, email, password, role } = req.body;
+    const { userName, email, password, roleId } = req.body;
     const companyId = req.user?.companyId;
     if (!companyId) {
         res.status(400).json({ error: "Company ID is missing." });
@@ -34,27 +40,45 @@ const createUser = async (req, res) => {
     }
     const hashed = await bcrypt_1.default.hash(password, 10);
     const user = await prisma_1.default.user.create({
-        data: { userName, email, password: hashed, role, companyId },
+        data: { userName, email, password: hashed, roleId, companyId },
+        include: {
+            role: {
+                select: {
+                    id: true,
+                    name: true,
+                },
+            },
+        },
     });
     res.status(201).json({
         id: user.id,
         userName: user.userName,
         email: user.email,
+        roleId: user.roleId,
         role: user.role,
     });
 };
 exports.createUser = createUser;
 const updateUser = async (req, res) => {
     const { id } = req.params;
-    const { userName, email, role } = req.body;
+    const { userName, email, roleId } = req.body;
     const user = await prisma_1.default.user.update({
         where: { id },
-        data: { userName, email, role },
+        data: { userName, email, roleId },
+        include: {
+            role: {
+                select: {
+                    id: true,
+                    name: true,
+                },
+            },
+        },
     });
     res.json({
         id: user.id,
         userName: user.userName,
         email: user.email,
+        roleId: user.roleId,
         role: user.role,
     });
 };

@@ -8,6 +8,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
+const onboard_routes_1 = __importDefault(require("./routes/onboard.routes"));
 const company_routes_1 = __importDefault(require("./routes/company.routes"));
 const customer_routes_1 = __importDefault(require("./routes/customer.routes"));
 const supplier_routes_1 = __importDefault(require("./routes/supplier.routes"));
@@ -22,6 +23,7 @@ const report_routes_1 = __importDefault(require("./routes/report.routes"));
 const uploads_routes_1 = __importDefault(require("./routes/uploads.routes"));
 const customerDebt_routes_1 = __importDefault(require("./routes/customerDebt.routes"));
 const sms_routes_1 = __importDefault(require("./routes/sms.routes"));
+const role_routes_1 = __importDefault(require("./routes/role.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 4000;
@@ -36,6 +38,7 @@ app.get("/health", (req, res) => {
     res.status(200).json({ status: "OK", timestamp: new Date().toISOString() });
 });
 // ───────────────────── API Routes ─────────────────────
+app.use("/api/onboard", onboard_routes_1.default); // Public route - no auth required
 app.use("/api/auth", auth_routes_1.default);
 app.use("/api/companies", company_routes_1.default);
 app.use("/api/customers", customer_routes_1.default);
@@ -51,6 +54,7 @@ app.use("/api/uploads", uploads_routes_1.default);
 app.use("/api/users", user_routes_1.default);
 app.use("/api/audit", audit_routes_1.default);
 app.use("/api/sms", sms_routes_1.default);
+app.use("/api/roles", role_routes_1.default);
 // ───────────────────── Static (Next.js export) ─────────────────────
 const clientBuildPath = path_1.default.join(__dirname, "../../client/out");
 app.use(express_1.default.static(clientBuildPath));

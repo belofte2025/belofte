@@ -6,6 +6,8 @@ interface TokenPayload {
   userName: string;
   email: string;
   role: string;
+  roleId?: string | null;
+  permissions?: string[];
 }
 
 export const generateToken = ({
@@ -14,13 +16,27 @@ export const generateToken = ({
   userName,
   email,
   role,
+  roleId,
+  permissions = [],
 }: TokenPayload) => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new Error("JWT_SECRET is not set in environment variables");
   }
 
-  return jwt.sign({ userId, companyId, email, userName, role }, secret, {
-    expiresIn: "7d",
-  });
+  return jwt.sign(
+    {
+      userId,
+      companyId,
+      email,
+      userName,
+      role,
+      roleId,
+      permissions
+    },
+    secret,
+    {
+      expiresIn: "7d",
+    }
+  );
 };

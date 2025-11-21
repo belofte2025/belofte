@@ -20,7 +20,8 @@ model Company {
   suppliers    Supplier[]
   users        User[]
   customerDebt CustomerDebt[]
-  smsLogs    SMSLog[]
+  smsLogs      SMSLog[]
+  roles        Role[]
 }
 
 model User {
@@ -29,10 +30,11 @@ model User {
   password  String
   companyId String
   createdAt DateTime   @default(now())
-  role      String     @default("user")
+  roleId    String?
   userName  String
   auditLog  AuditLog[]
   company   Company    @relation(fields: [companyId], references: [id])
+  role      Role?      @relation(fields: [roleId], references: [id])
 }
 
 model Customer {
@@ -168,4 +170,36 @@ model SMSLog {
   createdAt  DateTime  @default(now())
   company    Company   @relation(fields: [companyId], references: [id])
   customer   Customer? @relation(fields: [customerId], references: [id])
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String
+  description String?
+  companyId   String
+  isDefault   Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  permissions RolePermission[]
+  users       User[]
+  company     Company          @relation(fields: [companyId], references: [id])
+
+  @@unique([name, companyId])
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  name        String
+  category    String
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
 }

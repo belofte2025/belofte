@@ -11,6 +11,8 @@ declare global {
         email: string;
         companyId: string;
         role: string;
+        roleId?: string | null;
+        permissions?: string[];
       };
     }
   }
@@ -36,6 +38,8 @@ export const authenticate = async (
       companyId: string;
       email: string;
       role: string;
+      roleId?: string | null;
+      permissions?: string[];
     };
 
     // Optional: Validate user still exists in DB
@@ -53,6 +57,8 @@ export const authenticate = async (
       email: decoded.email,
       companyId: decoded.companyId,
       role: decoded.role,
+      roleId: decoded.roleId,
+      permissions: decoded.permissions || [],
     };
 
     next();

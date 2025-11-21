@@ -28,6 +28,8 @@ const authenticate = async (req, res, next) => {
             email: decoded.email,
             companyId: decoded.companyId,
             role: decoded.role,
+            roleId: decoded.roleId,
+            permissions: decoded.permissions || [],
         };
         next();
     }
