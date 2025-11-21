@@ -7,7 +7,7 @@ import {
 import { getCustomerById } from "@/services/customerService";
 import { useCallback } from "react";
 import { formatCurrency } from "@/utils/format";
-import { CreditCard, Calendar, DollarSign, Trash2, Receipt, User, FileText } from "lucide-react";
+import { CreditCard, Calendar, Trash2, Receipt, User, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 
 type Props = {
@@ -108,9 +108,6 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                 <p className="text-sm font-medium text-gray-600">Total Amount</p>
                 <p className="text-3xl font-bold text-green-600">{formatCurrency(totalAmount)}</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <DollarSign className="w-6 h-6 text-green-600" />
-              </div>
             </div>
           </div>
           
@@ -177,12 +174,9 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                         #{index + 1}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          <p className="text-xl font-bold text-green-600">
-                            {formatCurrency(payment.amount)}
-                          </p>
-                        </div>
+                        <p className="text-xl font-bold text-green-600 mb-1">
+                          {formatCurrency(payment.amount)}
+                        </p>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <CreditCard className="w-4 h-4" />

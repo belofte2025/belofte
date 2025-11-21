@@ -49,7 +49,7 @@ const utilityItems = [
 const salesReportItems = [
   { name: "Sales Summary", href: "/reports/sales", icon: ShoppingBag },
   { name: "Sales Details", href: "/reports/sales/saledetails", icon: FileText },
-  { name: "Supplier List", href: "/reports/sales/saleslist", icon: Factory },
+  { name: "Sales List", href: "/reports/sales/saleslist", icon: Factory },
 ];
 
 const reportItems = [

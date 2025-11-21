@@ -4,7 +4,6 @@ import { useState } from "react";
 import { getCashSalesAndPayments } from "@/services/reportService";
 import { toast } from "react-hot-toast";
 import {
-  DollarSign,
   TrendingUp,
   CreditCard,
   Receipt,
@@ -467,9 +466,6 @@ export default function DailyCash() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                <DollarSign className="w-6 h-6 text-white" />
-              </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
                   Daily Cash Report
@@ -579,11 +575,6 @@ export default function DailyCash() {
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-orange-100 rounded-lg">
-                    <DollarSign className="w-6 h-6 text-orange-600" />
-                  </div>
-                </div>
                 <h3 className="text-sm font-medium text-gray-600 mb-1">
                   Average Transaction
                 </h3>
@@ -736,7 +727,6 @@ export default function DailyCash() {
                   </table>
                 ) : (
                   <div className="p-12 text-center">
-                    <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                     <p className="text-gray-600 text-lg font-medium mb-2">
                       No transactions found
                     </p>

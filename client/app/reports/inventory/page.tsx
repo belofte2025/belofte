@@ -181,9 +181,9 @@ export default function InventoryReportPage() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-4">
             <div className="flex items-center gap-4 mb-4">
               <button
                 onClick={() => router.back()}
@@ -199,7 +199,7 @@ export default function InventoryReportPage() {
                 <button
                   onClick={exportToPDF}
                   disabled={loading || inventory.length === 0}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-lg hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4" />
                   Export PDF
@@ -210,7 +210,7 @@ export default function InventoryReportPage() {
 
 
           {/* Filters */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+          <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -250,7 +250,7 @@ export default function InventoryReportPage() {
           </div>
 
           {/* Inventory Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">
                 Inventory Items ({filteredInventory.length})

@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback } from "react";
 import { formatCurrency } from "@/utils/format";
 import {
   Plus,
-  DollarSign,
   Calendar,
   FileText,
   CheckCircle,
@@ -287,7 +286,6 @@ export default function CustomerDebtsSection({
           </div>
         ) : debts.length === 0 ? (
           <div className="text-center py-12">
-            <DollarSign className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Debts</h3>
             <p className="text-gray-600">This customer has no debt entries.</p>
           </div>

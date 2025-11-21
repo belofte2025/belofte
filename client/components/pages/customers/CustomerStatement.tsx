@@ -12,7 +12,6 @@ import {
   FileText,
   TrendingUp,
   TrendingDown,
-  DollarSign,
   User,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/format";
@@ -154,9 +153,9 @@ export default function CustomerStatement({ customerId }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
@@ -175,8 +174,8 @@ export default function CustomerStatement({ customerId }: Props) {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
@@ -192,7 +191,7 @@ export default function CustomerStatement({ customerId }: Props) {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
@@ -208,7 +207,7 @@ export default function CustomerStatement({ customerId }: Props) {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Net Change</p>
@@ -224,13 +223,10 @@ export default function CustomerStatement({ customerId }: Props) {
                   {formatCurrency(netChange)}
                 </p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <DollarSign className="w-5 h-5 text-blue-600" />
-              </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
@@ -256,7 +252,7 @@ export default function CustomerStatement({ customerId }: Props) {
         </div>
 
         {/* Filters and Export */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -290,7 +286,7 @@ export default function CustomerStatement({ customerId }: Props) {
               <button
                 onClick={exportToPDF}
                 disabled={filteredEntries.length === 0}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
                 Export PDF
@@ -300,7 +296,7 @@ export default function CustomerStatement({ customerId }: Props) {
         </div>
 
         {/* Statement Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

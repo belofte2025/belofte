@@ -22,7 +22,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Page content */}
-        <main className="mt-20 p-6 lg:p-8 animate-fade-in">
+        <main className="mt-16 p-4 lg:p-6 animate-fade-in">
           <div className="max-w-7xl w-full mx-auto">{children}</div>
         </main>
       </div>

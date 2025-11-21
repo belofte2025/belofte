@@ -78,7 +78,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-3 text-gray-600">Loading supplier details...</span>
@@ -91,7 +91,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
   if (!supplier) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="text-center py-16">
             <h3 className="text-lg font-medium text-gray-900">Supplier not found</h3>
             <p className="mt-2 text-gray-500">The supplier you&apos;re looking for doesn&apos;t exist.</p>
@@ -109,9 +109,9 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Link
@@ -160,7 +160,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
               
               {editing ? (
@@ -320,7 +320,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
@@ -345,7 +345,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
           {/* Stats Sidebar */}
           <div className="space-y-6">
             {/* Statistics */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -371,7 +371,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
               <div className="space-y-3 text-sm text-gray-500">
                 <p>Supplier created on {new Date(supplier.createdAt).toLocaleDateString()}</p>

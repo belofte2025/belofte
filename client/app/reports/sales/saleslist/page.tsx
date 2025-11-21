@@ -10,14 +10,16 @@ import {
   Trash2,
   Receipt,
   User,
-  List,
-  DollarSign,
   X,
+  Edit,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
-import { listSales, deleteSaleById } from "@/services/salesService";
+import { listSales, deleteSaleById, updateSale } from "@/services/salesService";
 import toast from "react-hot-toast";
+import { Dialog } from "@headlessui/react";
 
 interface SaleItem {
   itemName: string;
@@ -61,6 +63,14 @@ export default function SalesListPage() {
 
   const [startDate, setStartDate] = useState(getStartOfWeek());
   const [endDate, setEndDate] = useState(getEndOfWeek());
+
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [editForm, setEditForm] = useState<{
+    saleType: string;
+    items: SaleItem[];
+  }>({ saleType: "", items: [] });
 
   const loadSales = useCallback(async () => {
     setLoading(true);
@@ -129,6 +139,66 @@ export default function SalesListPage() {
     loadSales();
   };
 
+  const handleOpenEditModal = (sale: Sale) => {
+    setEditingSale(sale);
+    setEditForm({
+      saleType: sale.saleType,
+      items: sale.items.map(item => ({ ...item })),
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditSale = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSale) return;
+
+    if (editForm.items.length === 0) {
+      toast.error("Sale must have at least one item");
+      return;
+    }
+
+    try {
+      await updateSale(editingSale.id, {
+        saleType: editForm.saleType,
+        items: editForm.items,
+      });
+      toast.success("Sale updated successfully");
+      setShowEditModal(false);
+      setEditingSale(null);
+      loadSales();
+    } catch (err) {
+      console.error("Error updating sale:", err);
+      toast.error("Failed to update sale");
+    }
+  };
+
+  const updateEditItem = (index: number, field: keyof SaleItem, value: string | number) => {
+    setEditForm(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  };
+
+  const removeEditItem = (index: number) => {
+    setEditForm(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index),
+    }));
+  };
+
+  const addEditItem = () => {
+    setEditForm(prev => ({
+      ...prev,
+      items: [...prev.items, { itemName: "", quantity: 1, unitPrice: 0 }],
+    }));
+  };
+
+  const calculateEditTotal = () => {
+    return editForm.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  };
+
   const formatDateTime = (dateString: string): string => {
     const date = new Date(dateString);
     return (
@@ -147,12 +217,12 @@ export default function SalesListPage() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-4">
             <button
               onClick={() => router.back()}
-              className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
@@ -166,7 +236,7 @@ export default function SalesListPage() {
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="bg-white shadow-sm border border-gray-200 p-6 mb-6">
             {/* Search Bar */}
             <div className="mb-6">
               <div className="relative">
@@ -176,7 +246,7 @@ export default function SalesListPage() {
                   value={searchQuery}
                   onChange={(e) => filterSales(e.target.value)}
                   placeholder="Search by customer, type, or ID..."
-                  className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  className="w-full pl-12 pr-12 py-3 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                 />
                 {searchQuery && (
                   <button
@@ -217,7 +287,7 @@ export default function SalesListPage() {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
                 <div>
@@ -231,7 +301,7 @@ export default function SalesListPage() {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
               </div>
@@ -240,14 +310,14 @@ export default function SalesListPage() {
 
           {/* Sales List */}
           {loading ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16">
+            <div className="bg-white shadow-sm border border-gray-200 p-16">
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <span className="ml-3 text-gray-600">Loading sales...</span>
               </div>
             </div>
           ) : filteredSales.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16">
+            <div className="bg-white shadow-sm border border-gray-200 p-16">
               <div className="text-center">
                 <Receipt className="mx-auto h-16 w-16 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -265,86 +335,82 @@ export default function SalesListPage() {
               {filteredSales.map((sale) => (
                 <div
                   key={sale.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200"
+                  className="bg-white shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200"
                 >
-                  {/* Sale Header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`p-3 rounded-lg ${
-                          sale.saleType?.toLowerCase() === "cash"
-                            ? "bg-green-100"
-                            : "bg-blue-100"
-                        }`}
+                  {/* Header Row */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`px-2 py-0.5 text-xs font-medium ${getSaleTypeColor(sale.saleType)}`}
                       >
-                        <DollarSign
-                          className={`w-6 h-6 ${
-                            sale.saleType?.toLowerCase() === "cash"
-                              ? "text-green-600"
-                              : "text-blue-600"
-                          }`}
-                        />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-3 py-1 text-xs font-semibold rounded-full ${getSaleTypeColor(
-                              sale.saleType
-                            )}`}
-                          >
-                            {sale.saleType?.toUpperCase() || "SALE"}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            #{sale.id.slice(-8)}
-                          </span>
-                        </div>
-                      </div>
+                        {sale.saleType?.toUpperCase() || "SALE"}
+                      </span>
+                      <span className="text-sm text-gray-500">#{sale.id.slice(-8)}</span>
+                      <span className="text-sm text-gray-400">{formatDateTime(sale.createdAt)}</span>
                     </div>
-
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => router.push(`/sales/${sale.id}`)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="View Details"
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        title="View"
                       >
-                        <Eye className="w-5 h-5" />
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenEditModal(sale)}
+                        className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(sale.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete Sale"
+                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Delete"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Sale Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-900">
-                        {sale.customer.customerName}
-                      </span>
-                    </div>
-
-                    <div className="text-right md:text-left">
-                      <p className="text-xs text-gray-500 mb-1">Total Amount</p>
-                      <p className="text-xl font-bold text-green-600">
-                        {formatCurrency(sale.totalAmount)}
-                      </p>
-                    </div>
+                  {/* Customer */}
+                  <div className="mb-3">
+                    <span className="text-sm font-medium text-gray-900">{sale.customer.customerName}</span>
                   </div>
 
-                  {/* Sale Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <List className="w-4 h-4" />
-                      <span>{sale.items.length} item(s)</span>
+                  {/* Items Table */}
+                  <div className="border border-gray-200 mb-3">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-left">
+                        <tr>
+                          <th className="px-3 py-2 text-xs font-medium text-gray-500">Item</th>
+                          <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">Qty</th>
+                          <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">Price</th>
+                          <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {sale.items.map((item, idx) => (
+                          <tr key={idx}>
+                            <td className="px-3 py-2 text-gray-900">{item.itemName}</td>
+                            <td className="px-3 py-2 text-gray-600 text-right">{item.quantity}</td>
+                            <td className="px-3 py-2 text-gray-600 text-right">{formatCurrency(item.unitPrice)}</td>
+                            <td className="px-3 py-2 text-gray-900 font-medium text-right">
+                              {formatCurrency(item.quantity * item.unitPrice)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Total */}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                    <span className="text-sm text-gray-500">{sale.items.length} item(s)</span>
+                    <div className="text-right">
+                      <span className="text-sm text-gray-500 mr-2">Total:</span>
+                      <span className="text-lg font-bold text-gray-900">{formatCurrency(sale.totalAmount)}</span>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {formatDateTime(sale.createdAt)}
-                    </span>
                   </div>
                 </div>
               ))}
@@ -352,6 +418,140 @@ export default function SalesListPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Sale Modal */}
+      <Dialog open={showEditModal} onClose={() => {}} className="relative z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-2xl bg-white p-6 shadow-2xl border border-gray-200 max-h-[90vh] overflow-y-auto">
+            <Dialog.Title className="text-xl font-bold text-gray-900 mb-6">
+              Edit Sale
+            </Dialog.Title>
+
+            <form onSubmit={handleEditSale} className="space-y-6">
+              {/* Customer Info - Read Only */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-600">{editingSale?.customer.customerName}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Customer cannot be changed</p>
+              </div>
+
+              {/* Sale Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sale Type
+                </label>
+                <select
+                  value={editForm.saleType}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, saleType: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="credit">Credit</option>
+                </select>
+              </div>
+
+              {/* Items */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Items
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addEditItem}
+                    className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Item
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {editForm.items.map((item, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-gray-50">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={item.itemName}
+                          onChange={(e) => updateEditItem(index, "itemName", e.target.value)}
+                          placeholder="Item name"
+                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="w-24">
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateEditItem(index, "quantity", parseInt(e.target.value) || 0)}
+                          placeholder="Qty"
+                          min="1"
+                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="w-32">
+                        <input
+                          type="number"
+                          value={item.unitPrice}
+                          onChange={(e) => updateEditItem(index, "unitPrice", parseFloat(e.target.value) || 0)}
+                          placeholder="Price"
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="w-24 text-right text-sm font-medium text-gray-700">
+                        {formatCurrency(item.quantity * item.unitPrice)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeEditItem(index)}
+                        className="p-2 text-red-500 hover:bg-red-50 transition-colors"
+                        disabled={editForm.items.length === 1}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total */}
+                <div className="mt-4 flex items-center justify-between p-3 bg-green-50">
+                  <span className="font-medium text-gray-700">Total Amount</span>
+                  <span className="text-xl font-bold text-green-600">
+                    {formatCurrency(calculateEditTotal())}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingSale(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </DashboardLayout>
   );
 }

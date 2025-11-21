@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSupplierItems, addSupplierItem, deleteSupplierItem, getSupplierById } from "@/services/supplierService";
+import { getSupplierItems, addSupplierItem, updateSupplierItem, deleteSupplierItem, getSupplierById } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, Plus, Trash2, Package, DollarSign, X, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Package, X, TrendingUp, Edit, Search } from "lucide-react";
 import Link from "next/link";
 import { Dialog } from "@headlessui/react";
 
@@ -38,6 +38,19 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
   const [bulkItems, setBulkItems] = useState([
     { itemName: "", alias: "", price: 0 }
   ]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<SupplierItem | null>(null);
+  const [editForm, setEditForm] = useState({ alias: "", price: 0 });
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter items based on search
+  const filteredItems = items.filter(item => {
+    const query = searchQuery.toLowerCase();
+    return (
+      item.itemName.toLowerCase().includes(query) ||
+      (item.alias && item.alias.toLowerCase().includes(query))
+    );
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -136,10 +149,44 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
     ));
   };
 
+  const handleOpenEditModal = (item: SupplierItem) => {
+    setEditingItem(item);
+    setEditForm({ alias: item.alias || "", price: item.price });
+    setShowEditModal(true);
+  };
+
+  const handleEditItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingItem) return;
+
+    if (editForm.price <= 0) {
+      toast.error("Please provide a valid price");
+      return;
+    }
+
+    try {
+      const updatedItem = await updateSupplierItem(editingItem.id, {
+        itemName: editingItem.itemName,
+        alias: editForm.alias || undefined,
+        price: editForm.price,
+      });
+      setItems(prev => prev.map(item =>
+        item.id === editingItem.id ? updatedItem : item
+      ));
+      setShowEditModal(false);
+      setEditingItem(null);
+      toast.success("Item updated successfully");
+    } catch (error) {
+      console.error("Failed to update item:", error);
+      toast.error("Failed to update item");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-3 text-gray-600">Loading supplier items...</span>
@@ -151,9 +198,9 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Link
@@ -179,7 +226,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
               </button>
               <button
                 onClick={() => setShowBulkAddModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-200"
               >
                 <Package className="w-5 h-5" />
                 Bulk Add Items
@@ -189,7 +236,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
         </div>
 
         {/* Management Tools */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 p-6">
+        <div className="bg-white shadow-sm border border-gray-200 mb-4 p-6">
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Item Management Tools</h3>
             <p className="text-sm text-gray-500 mt-1">Manage prices and quantities for all items in this supplier</p>
@@ -200,7 +247,6 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
               href={`/suppliers/${supplierId}/price-management`}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
-              <DollarSign className="w-4 h-4" />
               Manage Prices
             </Link>
             
@@ -215,15 +261,15 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Items</p>
               <p className="text-3xl font-bold text-gray-900">{items.length}</p>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Average Price</p>
               <p className="text-3xl font-bold text-green-600">
@@ -236,8 +282,35 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
           </div>
         </div>
 
+        {/* Search */}
+        <div className="bg-white shadow-sm border border-gray-200 mb-4 p-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search items by name or alias..."
+              className="w-full pl-12 pr-12 py-3 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-gray-500 mt-2">
+              Found {filteredItems.length} of {items.length} items
+            </p>
+          )}
+        </div>
+
         {/* Items List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white shadow-sm border border-gray-200">
           {items.length === 0 ? (
             <div className="text-center py-16">
               <Package className="mx-auto h-12 w-12 text-gray-400" />
@@ -250,6 +323,12 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                 <Plus className="w-4 h-4" />
                 Add Item
               </button>
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="text-center py-16">
+              <Search className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-4 text-lg font-medium text-gray-900">No matching items</h3>
+              <p className="mt-2 text-gray-500">Try adjusting your search query</p>
             </div>
           ) : (
             <div className="overflow-hidden">
@@ -271,7 +350,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {items.map((item, index) => (
+                  {filteredItems.map((item, index) => (
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-200">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -296,21 +375,27 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <DollarSign className="w-4 h-4 text-green-500 mr-1" />
-                          <span className="text-sm font-semibold text-green-600">
-                            {formatCurrency(item.price)}
-                          </span>
-                        </div>
+                        <span className="text-sm font-semibold text-green-600">
+                          {formatCurrency(item.price)}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleDeleteItem(item.id, item.itemName)}
-                          className="inline-flex items-center p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-                          title="Delete Item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleOpenEditModal(item)}
+                            className="inline-flex items-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
+                            title="Edit Item"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id, item.itemName)}
+                            className="inline-flex items-center p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
+                            title="Delete Item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -322,10 +407,10 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
       </div>
 
       {/* Add Item Modal */}
-      <Dialog open={showAddModal} onClose={() => setShowAddModal(false)} className="relative z-50">
+      <Dialog open={showAddModal} onClose={() => {}} className="relative z-50">
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-gray-200">
+          <Dialog.Panel className="w-full max-w-md bg-white p-6 shadow-2xl border border-gray-200">
             <Dialog.Title className="text-xl font-bold text-gray-900 mb-6">
               Add New Item
             </Dialog.Title>
@@ -367,20 +452,17 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                 <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
                   Price *
                 </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type="number"
-                    id="price"
-                    value={newItem.price || ""}
-                    onChange={(e) => setNewItem(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
+                <input
+                  type="number"
+                  id="price"
+                  value={newItem.price || ""}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  required
+                />
               </div>
 
               <div className="flex items-center justify-end space-x-3 pt-4">
@@ -404,10 +486,10 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
       </Dialog>
 
       {/* Bulk Add Items Modal */}
-      <Dialog open={showBulkAddModal} onClose={() => setShowBulkAddModal(false)} className="relative z-50">
+      <Dialog open={showBulkAddModal} onClose={() => {}} className="relative z-50">
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 max-h-[90vh] overflow-y-auto">
+          <Dialog.Panel className="w-full max-w-4xl bg-white p-6 shadow-2xl border border-gray-200 max-h-[90vh] overflow-y-auto">
             <Dialog.Title className="text-xl font-bold text-gray-900 mb-6">
               Bulk Add Items
             </Dialog.Title>
@@ -510,6 +592,89 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                     Add All Items ({bulkItems.filter(item => item.itemName.trim() && item.price > 0).length})
                   </button>
                 </div>
+              </div>
+            </form>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
+      {/* Edit Item Modal */}
+      <Dialog open={showEditModal} onClose={() => {}} className="relative z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-md bg-white p-6 shadow-2xl border border-gray-200">
+            <Dialog.Title className="text-xl font-bold text-gray-900 mb-6">
+              Edit Item
+            </Dialog.Title>
+
+            <form onSubmit={handleEditItem} className="space-y-4">
+              {/* Item Name - Read Only */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Item Name
+                </label>
+                <div className="relative">
+                  <Package className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={editingItem?.itemName || ""}
+                    disabled
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Item name cannot be changed</p>
+              </div>
+
+              {/* Alias - Editable */}
+              <div>
+                <label htmlFor="editAlias" className="block text-sm font-medium text-gray-700 mb-1">
+                  Alias (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="editAlias"
+                  value={editForm.alias}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, alias: e.target.value }))}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter search alias (e.g., sugar, rice)"
+                />
+              </div>
+
+              {/* Price - Editable */}
+              <div>
+                <label htmlFor="editPrice" className="block text-sm font-medium text-gray-700 mb-1">
+                  Price *
+                </label>
+                <input
+                  type="number"
+                  id="editPrice"
+                  value={editForm.price || ""}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingItem(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Save Changes
+                </button>
               </div>
             </form>
           </Dialog.Panel>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { updateSupplierItem } from "@/services/supplierService";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, Package, DollarSign, Factory, Edit, Save, X } from "lucide-react";
+import { ArrowLeft, Package, Factory, Edit, Save, X } from "lucide-react";
 import Link from "next/link";
 import Badge from "@/components/ui/Badge";
 import { formatCurrency } from "@/utils/format";
@@ -188,17 +188,14 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Price (GHS)
                     </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <input
-                        type="number"
-                        value={formData.price || ""}
-                        onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      value={formData.price || ""}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      min="0"
+                      step="0.01"
+                    />
                   </div>
                 </div>
               ) : (
@@ -212,7 +209,6 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
                   </div>
                   
                   <div className="flex items-center">
-                    <DollarSign className="w-5 h-5 text-gray-400 mr-3" />
                     <div>
                       <p className="text-sm text-gray-500">Price per Unit</p>
                       <p className="text-lg font-semibold text-green-600">{formatCurrency(item.price)}</p>
@@ -275,7 +271,6 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
                   href={`/suppliers/${item.supplier.id}/price-management`}
                   className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
-                  <DollarSign className="w-4 h-4" />
                   Manage Prices
                 </Link>
                 

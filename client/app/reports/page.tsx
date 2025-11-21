@@ -29,7 +29,7 @@ function QuickReportCard({
   return (
     <Link href={href}>
       <div
-        className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${color} p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}
+        className={`group relative overflow-hidden bg-gradient-to-br ${color} p-6 shadow-lg hover:shadow-xl transition-all duration-200`}
       >
         <div className="relative z-10">
           <div className="mb-3 inline-flex p-2 rounded-lg bg-white/20 backdrop-blur-sm">
@@ -53,9 +53,9 @@ export default function ReportsPage() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
@@ -69,7 +69,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Quick Reports */}
-          <div className="mb-8">
+          <div className="mb-4">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
               Quick Reports
             </h2>

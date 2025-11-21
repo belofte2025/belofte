@@ -9,7 +9,6 @@ import { sendPaymentConfirmationSMS } from "@/services/smsService";
 import {
   ArrowLeft,
   CreditCard,
-  DollarSign,
   FileText,
   Calendar,
   Save,
@@ -476,10 +475,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                 {/* Amount Field */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
-                      Payment Amount (₵)
-                    </div>
+                    Payment Amount (₵)
                   </label>
                   <input
                     type="number"

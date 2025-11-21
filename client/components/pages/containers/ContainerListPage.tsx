@@ -126,9 +126,9 @@ export default function ContainerListPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Containers</h1>
@@ -138,7 +138,7 @@ export default function ContainerListPage() {
             </div>
             <Link
               href="/containers/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-200"
             >
               <Plus className="w-5 h-5" />
               Add Container
@@ -147,8 +147,8 @@ export default function ContainerListPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">
                 Total Containers
@@ -159,7 +159,7 @@ export default function ContainerListPage() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Pending</p>
               <p className="text-3xl font-bold text-yellow-600">
@@ -168,7 +168,7 @@ export default function ContainerListPage() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Received</p>
               <p className="text-3xl font-bold text-green-600">
@@ -177,7 +177,7 @@ export default function ContainerListPage() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Completed</p>
               <p className="text-3xl font-bold text-blue-600">
@@ -188,7 +188,7 @@ export default function ContainerListPage() {
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
           <SearchInput
             value={search}
             onChange={(value) => {
@@ -201,7 +201,7 @@ export default function ContainerListPage() {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -401,7 +401,7 @@ export default function ContainerListPage() {
           aria-hidden="true"
         />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl border border-gray-200">
+          <Dialog.Panel className="w-full max-w-md bg-white p-8 shadow-2xl border border-gray-200">
             <Dialog.Title className="text-xl font-bold text-gray-900 mb-6 text-center">
               Container Actions
             </Dialog.Title>
@@ -411,7 +411,7 @@ export default function ContainerListPage() {
                   setSelectedId(null);
                   window.location.href = `/sales/container/${selectedId}`;
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 <Container className="w-4 h-4" />
                 Make Sale in Container
@@ -421,7 +421,7 @@ export default function ContainerListPage() {
                   setSelectedId(null);
                   handleMarkReceived(selectedId!);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 <CheckCircle className="w-4 h-4" />
                 Perform Offload
@@ -431,7 +431,7 @@ export default function ContainerListPage() {
                   setSelectedId(null);
                   window.location.href = `/reports/sales/container/${selectedId}`;
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-purple-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-purple-700 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 <CheckCircle className="w-4 h-4" />
                 Container Sales Report
@@ -441,7 +441,7 @@ export default function ContainerListPage() {
                   setSelectedId(null);
                   window.location.href = `/offload/parkinglist/${selectedId}`;
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-yellow-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-yellow-700 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 <CheckCircle className="w-4 h-4" />
                 Container Parking list
@@ -450,7 +450,7 @@ export default function ContainerListPage() {
                 onClick={() => {
                   handleDelete(selectedId!);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors duration-200"
               >
                 <Clock className="w-4 h-4" />
                 Delete Container
@@ -458,7 +458,7 @@ export default function ContainerListPage() {
             </div>
             <button
               onClick={() => setSelectedId(null)}
-              className="w-full mt-6 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors duration-200"
+              className="w-full mt-6 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors duration-200"
             >
               Cancel
             </button>

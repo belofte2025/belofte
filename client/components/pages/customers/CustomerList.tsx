@@ -66,9 +66,9 @@ export default function CustomerList() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
@@ -76,7 +76,7 @@ export default function CustomerList() {
             </div>
             <Link
               href="/customers/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-colors duration-200"
             >
               <PlusCircle className="w-5 h-5" />
               Add Customer
@@ -85,22 +85,22 @@ export default function CustomerList() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Customers</p>
               <p className="text-3xl font-bold text-gray-900">{totalCustomers}</p>
             </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Outstanding Debts</p>
               <p className="text-3xl font-bold text-red-600">{positiveBalance}</p>
             </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Balance</p>
               <p className={`text-3xl font-bold ${
@@ -113,7 +113,7 @@ export default function CustomerList() {
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
           <SearchInput
             value={search}
             onChange={(value) => {
@@ -126,7 +126,7 @@ export default function CustomerList() {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

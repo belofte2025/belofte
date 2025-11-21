@@ -205,7 +205,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-3 text-gray-600">Loading quantity management...</span>
@@ -218,7 +218,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
   if (!data) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="text-center py-16">
             <h3 className="text-lg font-medium text-gray-900">No data available</h3>
             <p className="mt-2 text-gray-500">Unable to load quantity management data.</p>
@@ -230,9 +230,9 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Link
@@ -276,7 +276,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
         </div>
 
         {/* Items Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -516,7 +516,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
 
         {/* Help Section */}
         {bulkMode && (
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <div className="mt-6 bg-blue-50 border border-blue-200 p-6">
             <h4 className="text-sm font-medium text-blue-900 mb-2">Quantity Adjustment Help</h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Positive numbers increase quantities, negative numbers decrease them</li>

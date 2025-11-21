@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { addSupplierItem } from "@/services/supplierService";
 import { getSuppliers } from "@/services/supplierService";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, Package, DollarSign, Factory, X, Plus } from "lucide-react";
+import { ArrowLeft, Package, Factory, X, Plus } from "lucide-react";
 import Link from "next/link";
 
 type Supplier = {
@@ -335,23 +335,18 @@ export default function AddItemForm() {
               <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
                 Price per Unit (GHS) *
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <DollarSign className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={formData.price || ""}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                  required
-                />
-              </div>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={formData.price || ""}
+                onChange={handleChange}
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                required
+              />
               <p className="mt-2 text-sm text-gray-500">
                 Enter the unit price for this item from the selected supplier
               </p>

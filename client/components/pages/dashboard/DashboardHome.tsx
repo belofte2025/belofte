@@ -38,7 +38,7 @@ const quickActions = [
 
 export default function DashboardHome() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Header Section */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">

@@ -7,14 +7,13 @@ import {
   updateSinglePrice 
 } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
-import { 
-  ArrowLeft, 
-  DollarSign, 
-  Edit, 
-  Save, 
-  X, 
-  Package, 
-  CheckSquare, 
+import {
+  ArrowLeft,
+  Edit,
+  Save,
+  X,
+  Package,
+  CheckSquare,
   Square,
   Factory
 } from "lucide-react";
@@ -181,7 +180,7 @@ export default function PriceManagementPage({ supplierId }: PriceManagementPageP
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-3 text-gray-600">Loading price management...</span>
@@ -194,7 +193,7 @@ export default function PriceManagementPage({ supplierId }: PriceManagementPageP
   if (!data) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="text-center py-16">
             <h3 className="text-lg font-medium text-gray-900">No data available</h3>
             <p className="mt-2 text-gray-500">Unable to load price management data.</p>
@@ -206,9 +205,9 @@ export default function PriceManagementPage({ supplierId }: PriceManagementPageP
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Link
@@ -252,7 +251,7 @@ export default function PriceManagementPage({ supplierId }: PriceManagementPageP
         </div>
 
         {/* Items Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -339,27 +338,21 @@ export default function PriceManagementPage({ supplierId }: PriceManagementPageP
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <DollarSign className="w-4 h-4 text-green-500 mr-1" />
-                        <span className="text-sm font-semibold text-green-600">
-                          {formatCurrency(item.price)}
-                        </span>
-                      </div>
+                      <span className="text-sm font-semibold text-green-600">
+                        {formatCurrency(item.price)}
+                      </span>
                     </td>
                     {bulkMode && (
                       <td className="px-6 py-4 whitespace-nowrap">
                         {selectedItems.has(item.id) ? (
-                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                            <input
-                              type="number"
-                              value={editedPrices[item.id] ?? item.price}
-                              onChange={(e) => handleBulkPriceChange(item.id, parseFloat(e.target.value) || 0)}
-                              className="block w-32 pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              min="0"
-                              step="0.01"
-                            />
-                          </div>
+                          <input
+                            type="number"
+                            value={editedPrices[item.id] ?? item.price}
+                            onChange={(e) => handleBulkPriceChange(item.id, parseFloat(e.target.value) || 0)}
+                            className="block w-32 px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            min="0"
+                            step="0.01"
+                          />
                         ) : (
                           <span className="text-sm text-gray-400">Select to edit</span>
                         )}
@@ -369,21 +362,18 @@ export default function PriceManagementPage({ supplierId }: PriceManagementPageP
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {editingItem === item.id ? (
                           <div className="flex items-center justify-end space-x-2">
-                            <div className="relative">
-                              <DollarSign className="absolute left-2 top-2 h-4 w-4 text-gray-400" />
-                              <input
-                                type="number"
-                                value={editedPrices[item.id] ?? item.price}
-                                onChange={(e) => setEditedPrices(prev => ({
-                                  ...prev,
-                                  [item.id]: parseFloat(e.target.value) || 0
-                                }))}
-                                className="block w-24 pl-6 pr-2 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                min="0"
-                                step="0.01"
-                                autoFocus
-                              />
-                            </div>
+                            <input
+                              type="number"
+                              value={editedPrices[item.id] ?? item.price}
+                              onChange={(e) => setEditedPrices(prev => ({
+                                ...prev,
+                                [item.id]: parseFloat(e.target.value) || 0
+                              }))}
+                              className="block w-24 px-2 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              min="0"
+                              step="0.01"
+                              autoFocus
+                            />
                             <button
                               onClick={() => handleSavePrice(item.id)}
                               disabled={saving}

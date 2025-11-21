@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSupplierItemsWithSales } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
-import { PlusCircle, Factory, DollarSign, TrendingUp, Download } from "lucide-react";
+import { PlusCircle, Factory, TrendingUp, Download } from "lucide-react";
 import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
@@ -147,9 +147,9 @@ export default function ItemsListPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Items Management</h1>
@@ -159,14 +159,14 @@ export default function ItemsListPage() {
               <button
                 onClick={exportToPDF}
                 disabled={loading || items.length === 0}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-sm hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-5 h-5" />
                 Export PDF
               </button>
               <Link
                 href="/items/new"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-200"
               >
                 <PlusCircle className="w-5 h-5" />
                 Add Item
@@ -176,29 +176,29 @@ export default function ItemsListPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Items</p>
               <p className="text-3xl font-bold text-gray-900">{totalItems}</p>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Value</p>
               <p className="text-3xl font-bold text-green-600">{formatCurrency(totalValue)}</p>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Sold</p>
               <p className="text-3xl font-bold text-blue-600">{totalSold}</p>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Available</p>
               <p className="text-3xl font-bold text-purple-600">{totalAvailable}</p>
@@ -207,7 +207,7 @@ export default function ItemsListPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <SearchInput
@@ -242,7 +242,7 @@ export default function ItemsListPage() {
 
         {/* Quick Management Access */}
         {selectedSupplier !== "all" && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6 mb-6">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-blue-900">
@@ -261,7 +261,6 @@ export default function ItemsListPage() {
                     onClick={() => toast("Navigate to supplier page first for price management")}
                     className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200"
                   >
-                    <DollarSign className="w-4 h-4" />
                     Manage Prices
                   </button>
                   <button
@@ -278,7 +277,7 @@ export default function ItemsListPage() {
         )}
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -334,12 +333,9 @@ export default function ItemsListPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                          <div className="flex items-center">
-                            <DollarSign className="w-4 h-4 text-green-500 mr-1" />
-                            <span className="text-sm font-semibold text-green-600">
-                              {formatCurrency(item.unitPrice)}
-                            </span>
-                          </div>
+                          <span className="text-sm font-semibold text-green-600">
+                            {formatCurrency(item.unitPrice)}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                           <div className="text-xs text-gray-500">

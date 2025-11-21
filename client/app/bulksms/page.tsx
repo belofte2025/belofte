@@ -49,9 +49,9 @@ export default function BulkSMSPage() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl shadow-lg">
                 <Send className="w-6 h-6 text-white" />
@@ -66,7 +66,7 @@ export default function BulkSMSPage() {
           </div>
 
           {/* Info Card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+          <div className="bg-blue-50 border border-blue-200 p-6 mb-6">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
@@ -90,7 +90,7 @@ export default function BulkSMSPage() {
           </div>
 
           {/* Action Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="bg-white shadow-sm border border-gray-200 p-8">
             <div className="text-center">
               <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center text-white mb-4">
                 <Users className="w-8 h-8" />
@@ -105,7 +105,7 @@ export default function BulkSMSPage() {
               <button
                 onClick={handleSendBulkReminders}
                 disabled={sending}
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {sending ? (
                   <>
@@ -124,7 +124,7 @@ export default function BulkSMSPage() {
 
           {/* Results */}
           {results && (
-            <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="mt-6 bg-white shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-blue-50 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Results</h3>
               </div>
