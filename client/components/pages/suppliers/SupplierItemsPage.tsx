@@ -15,6 +15,7 @@ interface SupplierItemsPageProps {
 type SupplierItem = {
   id: string;
   itemName: string;
+  alias?: string | null;
   price: number;
 };
 
@@ -31,10 +32,11 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
   const [showBulkAddModal, setShowBulkAddModal] = useState(false);
   const [newItem, setNewItem] = useState({
     itemName: "",
+    alias: "",
     price: 0,
   });
   const [bulkItems, setBulkItems] = useState([
-    { itemName: "", price: 0 }
+    { itemName: "", alias: "", price: 0 }
   ]);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
     try {
       const addedItem = await addSupplierItem(supplierId, newItem);
       setItems(prev => [...prev, addedItem]);
-      setNewItem({ itemName: "", price: 0 });
+      setNewItem({ itemName: "", alias: "", price: 0 });
       setShowAddModal(false);
       toast.success("Item added successfully");
     } catch (error) {
@@ -101,16 +103,17 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
     }
 
     try {
-      const promises = validItems.map(item => 
+      const promises = validItems.map(item =>
         addSupplierItem(supplierId, {
           itemName: item.itemName,
+          alias: item.alias,
           price: item.price,
         })
       );
-      
+
       const addedItems = await Promise.all(promises);
       setItems(prev => [...prev, ...addedItems]);
-      setBulkItems([{ itemName: "", price: 0 }]);
+      setBulkItems([{ itemName: "", alias: "", price: 0 }]);
       setShowBulkAddModal(false);
       toast.success(`${validItems.length} items added successfully`);
     } catch (error) {
@@ -120,15 +123,15 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
   };
 
   const addBulkItemRow = () => {
-    setBulkItems(prev => [...prev, { itemName: "", price: 0 }]);
+    setBulkItems(prev => [...prev, { itemName: "", alias: "", price: 0 }]);
   };
 
   const removeBulkItemRow = (index: number) => {
     setBulkItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateBulkItem = (index: number, field: 'itemName' | 'price', value: string | number) => {
-    setBulkItems(prev => prev.map((item, i) => 
+  const updateBulkItem = (index: number, field: 'itemName' | 'alias' | 'price', value: string | number) => {
+    setBulkItems(prev => prev.map((item, i) =>
       i === index ? { ...item, [field]: value } : item
     ));
   };
@@ -257,6 +260,9 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                       Item Name
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Alias
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Price
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -283,6 +289,11 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                             </div>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-600">
+                          {item.alias || <span className="text-gray-400 italic">No alias</span>}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -336,6 +347,20 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                     required
                   />
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="alias" className="block text-sm font-medium text-gray-700 mb-1">
+                  Alias (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="alias"
+                  value={newItem.alias}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, alias: e.target.value }))}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter search alias (e.g., sugar, rice)"
+                />
               </div>
 
               <div>
@@ -401,17 +426,18 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
               <div className="space-y-4">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700 pb-2 border-b">
                   <div className="col-span-1">#</div>
-                  <div className="col-span-6">Item Name</div>
-                  <div className="col-span-4">Price (GHS)</div>
+                  <div className="col-span-4">Item Name</div>
+                  <div className="col-span-3">Alias</div>
+                  <div className="col-span-3">Price (GHS)</div>
                   <div className="col-span-1">Action</div>
                 </div>
-                
+
                 {bulkItems.map((item, index) => (
                   <div key={index} className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <span className="text-sm text-gray-500">{index + 1}</span>
                     </div>
-                    <div className="col-span-6">
+                    <div className="col-span-4">
                       <input
                         type="text"
                         value={item.itemName}
@@ -420,7 +446,16 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                         placeholder="Enter item name"
                       />
                     </div>
-                    <div className="col-span-4">
+                    <div className="col-span-3">
+                      <input
+                        type="text"
+                        value={item.alias}
+                        onChange={(e) => updateBulkItem(index, 'alias', e.target.value)}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Alias (optional)"
+                      />
+                    </div>
+                    <div className="col-span-3">
                       <input
                         type="number"
                         value={item.price || ""}
@@ -462,7 +497,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                     type="button"
                     onClick={() => {
                       setShowBulkAddModal(false);
-                      setBulkItems([{ itemName: "", price: 0 }]);
+                      setBulkItems([{ itemName: "", alias: "", price: 0 }]);
                     }}
                     className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
                   >

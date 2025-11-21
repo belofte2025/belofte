@@ -14,7 +14,6 @@ import {
   TrendingDown,
   DollarSign,
   User,
-  Tag,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/format";
 import toast from "react-hot-toast";

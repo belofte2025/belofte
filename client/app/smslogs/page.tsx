@@ -22,7 +22,7 @@ export default function SMSLogsPage() {
       const data = await getSMSLogs(page, 50);
       setLogs(data.logs);
       setTotalPages(data.pagination.pages);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load SMS logs');
     } finally {
       setLoading(false);

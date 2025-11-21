@@ -34,6 +34,7 @@ import CustomerForm from "@/components/pages/customers/CustomerForm";
 type Item = {
   id: string;
   itemName: string;
+  alias?: string | null;
   supplierName: string;
   remainingQty: number;
   unitPrice: number;
@@ -113,7 +114,8 @@ export default function ContainerSalesForm() {
     return items.filter(
       (i) =>
         i.itemName.toLowerCase().includes(search.toLowerCase()) ||
-        i.supplierName.toLowerCase().includes(search.toLowerCase())
+        i.supplierName.toLowerCase().includes(search.toLowerCase()) ||
+        (i.alias && i.alias.toLowerCase().includes(search.toLowerCase()))
     );
   }, [items, search]);
 
@@ -458,6 +460,11 @@ export default function ContainerSalesForm() {
                             <h4 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                               {item.itemName}
                             </h4>
+                            {item.alias && (
+                              <p className="text-xs text-gray-500 italic">
+                                Alias: {item.alias}
+                              </p>
+                            )}
                             <p className="text-sm text-gray-600">
                               by {item.supplierName}
                             </p>

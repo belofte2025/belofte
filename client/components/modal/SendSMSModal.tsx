@@ -37,7 +37,7 @@ export default function SendSMSModal({
       } else {
         toast.error(result.error || "Failed to send SMS");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to send SMS");
     } finally {
       setSending(false);

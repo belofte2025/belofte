@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSupplierItemsWithSales, deleteSupplierItem } from "@/services/supplierService";
+import { getSupplierItemsWithSales } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
 import { PlusCircle, Factory, DollarSign, TrendingUp, Download } from "lucide-react";
 import Link from "next/link";

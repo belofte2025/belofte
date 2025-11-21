@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Building2 } from "lucide-react";
 import { getCompanies, Company } from "@/services/companyService";
 import toast from "react-hot-toast";

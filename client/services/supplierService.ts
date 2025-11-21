@@ -47,7 +47,7 @@ export const deleteSupplier = async (id: string) => {
 
 export const addSupplierItem = async (
   supplierId: string,
-  payload: { itemName: string; price: number }
+  payload: { itemName: string; alias?: string; price: number }
 ) => {
   const res = await api.post(`/suppliers/${supplierId}/items`, payload);
   return res.data;
@@ -55,7 +55,7 @@ export const addSupplierItem = async (
 
 export const updateSupplierItem = async (
   id: string,
-  data: { itemName: string; price: number }
+  data: { itemName: string; alias?: string; price: number }
 ) => {
   const res = await api.put(`/suppliers/items/${id}`, data);
   return res.data;
@@ -70,6 +70,7 @@ export const getSupplierItemsWithSales = async () => {
   return res.data.map((item: any) => ({
     id: item.id, // use real DB ID
     itemName: item.itemName,
+    alias: item.alias,
     quantity: item.quantity,
     sold: item.soldQty,
     available: item.remainingQty,
@@ -87,7 +88,7 @@ export const getSupplierItemsForPriceManagement = async (supplierId: string) => 
 
 export const bulkUpdatePrices = async (
   supplierId: string,
-  updates: { itemId: string; price: number }[]
+  updates: { itemId: string; price: number; alias?: string }[]
 ) => {
   const res = await api.put(`/suppliers/${supplierId}/price-management/bulk`, {
     updates,
