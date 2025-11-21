@@ -78,6 +78,7 @@ model SupplierItem {
   id         String   @id @default(uuid())
   supplierId String
   itemName   String
+  alias      String?
   price      Float
   supplier   Supplier @relation(fields: [supplierId], references: [id])
 }

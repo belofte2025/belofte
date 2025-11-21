@@ -288,18 +288,19 @@ export const listContainerItemsWithSales = async (
     // Step 5: Fetch supplier items ONLY for this container's supplier
     const supplierItems = await prisma.supplierItem.findMany({
       where: { supplierId: container.supplierId },
-      select: { itemName: true },
+      select: { itemName: true, alias: true },
     });
 
-    const supplierItemNames = new Set(
-      supplierItems.map((item: { itemName: string }) => item.itemName)
+    const supplierItemMap = new Map(
+      supplierItems.map((item: { itemName: string; alias: string | null }) => [item.itemName, item.alias])
     );
 
     // Step 6: Final result
     const result = containerItems.map((item: { id: string; itemName: string; quantity: number; receivedQty: number; unitPrice: number }) => {
       const soldQty = soldMap[item.itemName] || 0;
       const remainingQty = (item.quantity || 0) - soldQty;
-      const isMatched = supplierItemNames.has(item.itemName);
+      const alias = supplierItemMap.get(item.itemName);
+      const isMatched = supplierItemMap.has(item.itemName);
       const supplierName = isMatched
         ? container.supplier.suppliername
         : "Unknown";
@@ -307,6 +308,7 @@ export const listContainerItemsWithSales = async (
       return {
         id: item.id,
         itemName: item.itemName,
+        alias: alias || null,
         expectedQty: item.quantity,
         receivedQty: item.receivedQty,
         soldQty,

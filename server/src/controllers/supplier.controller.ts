@@ -168,7 +168,7 @@ export const deleteSupplier = async (req: Request, res: Response) => {
 export const addSupplierItem = async (req: Request, res: Response) => {
   try {
     const { supplierId } = req.params;
-    const { itemName, price } = req.body;
+    const { itemName, price, alias } = req.body;
     const companyId = req.user?.companyId;
 
     if (!companyId) {
@@ -190,6 +190,7 @@ export const addSupplierItem = async (req: Request, res: Response) => {
       data: {
         supplierId,
         itemName,
+        alias,
         price,
       },
     });
@@ -257,6 +258,7 @@ export const getSupplierItems = async (req: Request, res: Response) => {
       select: {
         id: true,
         itemName: true,
+        alias: true,
         price: true,
       },
       orderBy: { itemName: "asc" },
@@ -272,7 +274,7 @@ export const getSupplierItems = async (req: Request, res: Response) => {
 export const updateSupplierItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { itemName, price } = req.body;
+    const { itemName, price, alias } = req.body;
     const companyId = req.user?.companyId;
 
     if (!companyId) {
@@ -297,7 +299,7 @@ export const updateSupplierItem = async (req: Request, res: Response) => {
 
     const item = await prisma.supplierItem.update({
       where: { id },
-      data: { itemName, price },
+      data: { itemName, price, alias },
     });
 
     res.json(item);
@@ -390,12 +392,14 @@ export const listSupplierItemsWithSales = async (
     const supplierItemMap = supplierItems.map((item: {
       id: string;
       itemName: string;
+      alias?: string | null;
       supplierId: string;
       price: number;
       supplier: { suppliername: string } | null;
     }) => ({
       id: item.id,
       itemName: item.itemName,
+      alias: item.alias,
       supplierId: item.supplierId,
       supplierName: item.supplier?.suppliername || "Unknown",
       price: item.price,
@@ -441,6 +445,7 @@ export const listSupplierItemsWithSales = async (
     const result = supplierItemMap.map((sItem: {
       id: string;
       itemName: string;
+      alias?: string | null;
       supplierId: string;
       supplierName: string;
       price: number;
@@ -475,6 +480,7 @@ export const listSupplierItemsWithSales = async (
       return {
         id: sItem.id,
         itemName: sItem.itemName,
+        alias: sItem.alias,
         supplierName: sItem.supplierName,
         quantity: totalQty,
         soldQty,
@@ -497,7 +503,7 @@ export const listSupplierItemsWithSales = async (
 export const bulkUpdatePrices = async (req: Request, res: Response) => {
   try {
     const { supplierId } = req.params;
-    const { updates } = req.body; // [{ itemId, price }, ...]
+    const { updates } = req.body; // [{ itemId, price, alias? }, ...]
     const companyId = req.user?.companyId;
 
     if (!companyId) {
@@ -529,23 +535,27 @@ export const bulkUpdatePrices = async (req: Request, res: Response) => {
       return;
     }
 
-    // Perform bulk updates
-    const updatePromises = updates.map((update: { itemId: string; price: number }) =>
-      prisma.supplierItem.update({
+    // Perform bulk updates (price and optional alias)
+    const updatePromises = updates.map((update: { itemId: string; price: number; alias?: string }) => {
+      const data: { price: number; alias?: string | null } = { price: update.price };
+      if (update.alias !== undefined) {
+        data.alias = update.alias || null;
+      }
+      return prisma.supplierItem.update({
         where: { id: update.itemId },
-        data: { price: update.price },
-      })
-    );
+        data,
+      });
+    });
 
     const updatedItems = await Promise.all(updatePromises);
 
     res.json({
-      message: `Updated ${updatedItems.length} item prices`,
+      message: `Updated ${updatedItems.length} item(s)`,
       updatedItems,
     });
   } catch (error) {
-    console.error("Failed to bulk update prices:", error);
-    res.status(500).json({ error: "Failed to update prices", detail: error });
+    console.error("Failed to bulk update items:", error);
+    res.status(500).json({ error: "Failed to update items", detail: error });
   }
 };
 

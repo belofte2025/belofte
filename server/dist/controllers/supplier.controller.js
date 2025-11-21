@@ -152,7 +152,7 @@ exports.deleteSupplier = deleteSupplier;
 const addSupplierItem = async (req, res) => {
     try {
         const { supplierId } = req.params;
-        const { itemName, price } = req.body;
+        const { itemName, price, alias } = req.body;
         const companyId = req.user?.companyId;
         if (!companyId) {
             res.status(400).json({ error: "Company ID is missing" });
@@ -170,6 +170,7 @@ const addSupplierItem = async (req, res) => {
             data: {
                 supplierId,
                 itemName,
+                alias,
                 price,
             },
         });
@@ -229,6 +230,7 @@ const getSupplierItems = async (req, res) => {
             select: {
                 id: true,
                 itemName: true,
+                alias: true,
                 price: true,
             },
             orderBy: { itemName: "asc" },
@@ -244,7 +246,7 @@ exports.getSupplierItems = getSupplierItems;
 const updateSupplierItem = async (req, res) => {
     try {
         const { id } = req.params;
-        const { itemName, price } = req.body;
+        const { itemName, price, alias } = req.body;
         const companyId = req.user?.companyId;
         if (!companyId) {
             res.status(400).json({ error: "Company ID is missing" });
@@ -265,7 +267,7 @@ const updateSupplierItem = async (req, res) => {
         }
         const item = await prisma_1.default.supplierItem.update({
             where: { id },
-            data: { itemName, price },
+            data: { itemName, price, alias },
         });
         res.json(item);
     }
@@ -346,6 +348,7 @@ const listSupplierItemsWithSales = async (req, res) => {
         const supplierItemMap = supplierItems.map((item) => ({
             id: item.id,
             itemName: item.itemName,
+            alias: item.alias,
             supplierId: item.supplierId,
             supplierName: item.supplier?.suppliername || "Unknown",
             price: item.price,
@@ -394,6 +397,7 @@ const listSupplierItemsWithSales = async (req, res) => {
             return {
                 id: sItem.id,
                 itemName: sItem.itemName,
+                alias: sItem.alias,
                 supplierName: sItem.supplierName,
                 quantity: totalQty,
                 soldQty,
@@ -415,7 +419,7 @@ exports.listSupplierItemsWithSales = listSupplierItemsWithSales;
 const bulkUpdatePrices = async (req, res) => {
     try {
         const { supplierId } = req.params;
-        const { updates } = req.body; // [{ itemId, price }, ...]
+        const { updates } = req.body; // [{ itemId, price, alias? }, ...]
         const companyId = req.user?.companyId;
         if (!companyId) {
             res.status(400).json({ error: "Company ID is missing" });
@@ -441,20 +445,26 @@ const bulkUpdatePrices = async (req, res) => {
             res.status(400).json({ error: "Some items don't belong to this supplier" });
             return;
         }
-        // Perform bulk updates
-        const updatePromises = updates.map((update) => prisma_1.default.supplierItem.update({
-            where: { id: update.itemId },
-            data: { price: update.price },
-        }));
+        // Perform bulk updates (price and optional alias)
+        const updatePromises = updates.map((update) => {
+            const data = { price: update.price };
+            if (update.alias !== undefined) {
+                data.alias = update.alias || null;
+            }
+            return prisma_1.default.supplierItem.update({
+                where: { id: update.itemId },
+                data,
+            });
+        });
         const updatedItems = await Promise.all(updatePromises);
         res.json({
-            message: `Updated ${updatedItems.length} item prices`,
+            message: `Updated ${updatedItems.length} item(s)`,
             updatedItems,
         });
     }
     catch (error) {
-        console.error("Failed to bulk update prices:", error);
-        res.status(500).json({ error: "Failed to update prices", detail: error });
+        console.error("Failed to bulk update items:", error);
+        res.status(500).json({ error: "Failed to update items", detail: error });
     }
 };
 exports.bulkUpdatePrices = bulkUpdatePrices;
