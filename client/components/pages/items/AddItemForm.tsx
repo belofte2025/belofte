@@ -23,10 +23,11 @@ export default function AddItemForm() {
   const [formData, setFormData] = useState({
     supplierId: "",
     itemName: "",
+    alias: "",
     price: 0,
   });
   const [bulkItems, setBulkItems] = useState([
-    { itemName: "", price: 0 }
+    { itemName: "", alias: "", price: 0 }
   ]);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function AddItemForm() {
     try {
       await addSupplierItem(formData.supplierId, {
         itemName: formData.itemName,
+        alias: formData.alias || undefined,
         price: formData.price,
       });
       toast.success("Item added successfully");
@@ -94,13 +96,14 @@ export default function AddItemForm() {
 
     setLoading(true);
     try {
-      const promises = validItems.map(item => 
+      const promises = validItems.map(item =>
         addSupplierItem(formData.supplierId, {
           itemName: item.itemName,
+          alias: item.alias || undefined,
           price: item.price,
         })
       );
-      
+
       await Promise.all(promises);
       toast.success(`${validItems.length} items added successfully`);
       router.push("/items");
@@ -113,15 +116,15 @@ export default function AddItemForm() {
   };
 
   const addBulkItemRow = () => {
-    setBulkItems(prev => [...prev, { itemName: "", price: 0 }]);
+    setBulkItems(prev => [...prev, { itemName: "", alias: "", price: 0 }]);
   };
 
   const removeBulkItemRow = (index: number) => {
     setBulkItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateBulkItem = (index: number, field: 'itemName' | 'price', value: string | number) => {
-    setBulkItems(prev => prev.map((item, i) => 
+  const updateBulkItem = (index: number, field: 'itemName' | 'alias' | 'price', value: string | number) => {
+    setBulkItems(prev => prev.map((item, i) =>
       i === index ? { ...item, [field]: value } : item
     ));
   };
@@ -249,26 +252,36 @@ export default function AddItemForm() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700 pb-2 border-b">
                     <div className="col-span-1">#</div>
-                    <div className="col-span-7">Item Name</div>
-                    <div className="col-span-3">Price (GHS)</div>
+                    <div className="col-span-4">Item Name</div>
+                    <div className="col-span-4">Alias (Optional)</div>
+                    <div className="col-span-2">Price (GHS)</div>
                     <div className="col-span-1">Action</div>
                   </div>
-                  
+
                   {bulkItems.map((item, index) => (
                     <div key={index} className="grid grid-cols-12 gap-4 items-center">
                       <div className="col-span-1">
                         <span className="text-sm text-gray-500">{index + 1}</span>
                       </div>
-                      <div className="col-span-7">
+                      <div className="col-span-4">
                         <input
                           type="text"
                           value={item.itemName}
                           onChange={(e) => updateBulkItem(index, 'itemName', e.target.value)}
                           className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Enter item name (e.g., Rice, Sugar, Oil)"
+                          placeholder="Enter item name"
                         />
                       </div>
-                      <div className="col-span-3">
+                      <div className="col-span-4">
+                        <input
+                          type="text"
+                          value={item.alias}
+                          onChange={(e) => updateBulkItem(index, 'alias', e.target.value)}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Alternative name"
+                        />
+                      </div>
+                      <div className="col-span-2">
                         <input
                           type="number"
                           value={item.price || ""}
@@ -328,6 +341,25 @@ export default function AddItemForm() {
                 />
               </div>
               {duplicateWarning}
+            </div>
+
+            {/* Alias */}
+            <div>
+              <label htmlFor="alias" className="block text-sm font-medium text-gray-700 mb-2">
+                Alias (Optional)
+              </label>
+              <input
+                type="text"
+                id="alias"
+                name="alias"
+                value={formData.alias}
+                onChange={handleChange}
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter alternative name for searching (e.g., Rice 25kg, Premium Oil)"
+              />
+              <p className="mt-2 text-sm text-gray-500">
+                Add an alternative name to make the item easier to find during sales
+              </p>
             </div>
 
             {/* Price */}

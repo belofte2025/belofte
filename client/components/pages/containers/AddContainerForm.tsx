@@ -260,7 +260,7 @@ export default function AddContainerForm() {
           {/* Left Column - Container Details */}
           <div className="lg:col-span-1 space-y-6">
             {/* Basic Information */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white p-6 shadow-sm border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Container Details
               </h3>
@@ -326,7 +326,7 @@ export default function AddContainerForm() {
 
             {/* Summary Card */}
             {selectedItems.length > 0 && (
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+              <div className="bg-white p-6 shadow-sm border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Container Summary
                 </h3>
@@ -372,7 +372,7 @@ export default function AddContainerForm() {
           {/* Right Column - Items Management */}
           <div className="lg:col-span-2 space-y-6">
             {/* Data Source Selection */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Add Items to Container
@@ -464,7 +464,7 @@ export default function AddContainerForm() {
                       Add Custom Item
                     </button>
                   ) : (
-                    <div className="bg-white rounded-xl p-4 border-2 border-indigo-200">
+                    <div className="bg-white p-4 border-2 border-indigo-200">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-semibold text-gray-900">
                           Add New Item

@@ -99,21 +99,21 @@ export default function SupplierListPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Suppliers</p>
               <p className="text-3xl font-bold text-gray-900">{totalSuppliers}</p>
             </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Containers</p>
               <p className="text-3xl font-bold text-blue-600">{totalContainers}</p>
             </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+
+          <div className="bg-white p-6 shadow-sm border border-gray-200">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Items</p>
               <p className="text-3xl font-bold text-green-600">{totalItems}</p>
@@ -122,7 +122,7 @@ export default function SupplierListPage() {
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
           <SearchInput
             value={search}
             onChange={(value) => {
@@ -135,7 +135,7 @@ export default function SupplierListPage() {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
