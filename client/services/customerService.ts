@@ -44,7 +44,7 @@ export const updateCustomer = async (id: string, data: any) => {
 
 export const createCustomerPayment = async (
   id: string,
-  data: { amount: number; note?: string; paymentType?: string }
+  data: { amount: number; note?: string; paymentType?: string; paymentDate?: string }
 ) => {
   await api.post(`/customers/${id}/payments`, data);
 };

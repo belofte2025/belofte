@@ -36,6 +36,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [paymentType, setPaymentType] = useState("");
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerBal, setCustomerBal] = useState(0);
@@ -307,6 +308,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
         amount: amountPaid,
         note,
         paymentType,
+        paymentDate,
       });
       console.log("✅ Payment recorded successfully");
 
@@ -377,7 +379,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
             currentBalance,
             paymentType,
             note,
-            date: today,
+            date: paymentDate,
           };
           generateReceiptPDF(receipt);
         }
@@ -453,7 +455,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Calendar className="w-4 h-4" />
-                  <span className="text-sm">Payment Date: {today}</span>
+                  <span className="text-sm">Payment Date: {paymentDate}</span>
                 </div>
               </div>
             </div>
@@ -512,6 +514,23 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     <option value="BANK">Bank Transfer</option>
                     <option value="MOMO">Mobile Money</option>
                   </select>
+                </div>
+
+                {/* Payment Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Payment Date
+                    </div>
+                  </label>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    max={today}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
+                  />
                 </div>
 
                 {/* Note Type */}

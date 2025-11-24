@@ -25,6 +25,7 @@ export const createCustomerDebt = async (data: {
   amount: number;
   description?: string;
   debtType?: string;
+  debtDate?: string;
 }) => {
   console.log("[customerDebtService] Creating debt:", data);
   try {

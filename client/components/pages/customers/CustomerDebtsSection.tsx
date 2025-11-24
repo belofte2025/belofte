@@ -39,6 +39,7 @@ export default function CustomerDebtsSection({
     amount: "",
     description: "",
     debtType: "manual",
+    debtDate: new Date().toISOString().split("T")[0],
   });
 
   const fetchDebts = useCallback(async () => {
@@ -80,11 +81,12 @@ export default function CustomerDebtsSection({
           amount: parseFloat(formData.amount),
           description: formData.description,
           debtType: formData.debtType,
+          debtDate: formData.debtDate,
         });
         toast.success("Debt added successfully");
       }
 
-      setFormData({ amount: "", description: "", debtType: "manual" });
+      setFormData({ amount: "", description: "", debtType: "manual", debtDate: new Date().toISOString().split("T")[0] });
       setShowAddForm(false);
       setEditingDebt(null);
       fetchDebts();
@@ -131,6 +133,7 @@ export default function CustomerDebtsSection({
       amount: debt.amount.toString(),
       description: debt.description || "",
       debtType: debt.debtType,
+      debtDate: debt.createdAt ? new Date(debt.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
     });
     setShowAddForm(true);
   };
@@ -187,7 +190,7 @@ export default function CustomerDebtsSection({
             onClick={() => {
               setShowAddForm(!showAddForm);
               setEditingDebt(null);
-              setFormData({ amount: "", description: "", debtType: "manual" });
+              setFormData({ amount: "", description: "", debtType: "manual", debtDate: new Date().toISOString().split("T")[0] });
             }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
@@ -250,6 +253,24 @@ export default function CustomerDebtsSection({
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Debt Date
+                </div>
+              </label>
+              <input
+                type="date"
+                value={formData.debtDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, debtDate: e.target.value })
+                }
+                max={new Date().toISOString().split("T")[0]}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
             <div className="flex gap-3">
               <button
                 type="submit"
@@ -266,6 +287,7 @@ export default function CustomerDebtsSection({
                     amount: "",
                     description: "",
                     debtType: "manual",
+                    debtDate: new Date().toISOString().split("T")[0],
                   });
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors duration-200"
