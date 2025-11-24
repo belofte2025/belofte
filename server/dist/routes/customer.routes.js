@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
+const authorizePermission_1 = require("../middlewares/authorizePermission");
 const customer_controller_1 = require("../controllers/customer.controller");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate);
@@ -32,7 +33,7 @@ router.use(auth_middleware_1.authenticate);
  *       201:
  *         description: Customer created successfully
  */
-router.post("/", customer_controller_1.createCustomer);
+router.post("/", (0, authorizePermission_1.requirePermission)("customers.create"), customer_controller_1.createCustomer);
 /**
  * @openapi
  * /customers:
@@ -121,7 +122,7 @@ router.get("/:id", customer_controller_1.getCustomerById);
  *           application/json:
 
  */
-router.put("/:id", customer_controller_1.updateCustomer); // ✅ Corrected
+router.put("/:id", (0, authorizePermission_1.requirePermission)("customers.edit"), customer_controller_1.updateCustomer); // ✅ Corrected
 /**
  * @openapi
  * /customers/{id}/payments:
@@ -163,7 +164,7 @@ router.put("/:id", customer_controller_1.updateCustomer); // ✅ Corrected
  *       500:
  *         description: Server error
  */
-router.post("/:id/payments", customer_controller_1.createCustomerPayment);
+router.post("/:id/payments", (0, authorizePermission_1.requirePermission)("payments.create"), customer_controller_1.createCustomerPayment);
 /**
  * @openapi
  * /customers/{id}/statement:

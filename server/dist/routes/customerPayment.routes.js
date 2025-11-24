@@ -2,10 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
+const authorizePermission_1 = require("../middlewares/authorizePermission");
 const customerPayment_controller_1 = require("../controllers/customerPayment.controller");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate);
-router.post("/", customerPayment_controller_1.recordCustomerPayment);
+router.post("/", (0, authorizePermission_1.requirePermission)("payments.create"), customerPayment_controller_1.recordCustomerPayment);
 router.get("/:id/statement", customerPayment_controller_1.getCustomerStatement);
 /**
  * @swagger
@@ -37,7 +38,7 @@ router.get("/:id/statement", customerPayment_controller_1.getCustomerStatement);
  *       500:
  *         description: Server error
  */
-router.delete("/:id/customerpayments", customerPayment_controller_1.deleteCustomerPayment);
+router.delete("/:id/customerpayments", (0, authorizePermission_1.requirePermission)("payments.create"), customerPayment_controller_1.deleteCustomerPayment);
 /**
  * @swagger
  * /payments/{id}/payments:

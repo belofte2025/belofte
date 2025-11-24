@@ -3,10 +3,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const customerDebt_controller_1 = require("../controllers/customerDebt.controller");
-// import { authenticate } from "../middlewares/auth.middleware";
-// import { authorizeRoles } from "../middlewares/authoriseRole";
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const authorizePermission_1 = require("../middlewares/authorizePermission");
 const router = (0, express_1.Router)();
-// router.use(authenticate); // TEMPORARILY DISABLED FOR TESTING
+router.use(auth_middleware_1.authenticate);
 /**
  * @openapi
  * /customerdebts:
@@ -39,7 +39,7 @@ const router = (0, express_1.Router)();
  *       201:
  *         description: Debt created successfully
  */
-router.post("/", customerDebt_controller_1.createCustomerDebt);
+router.post("/", (0, authorizePermission_1.requirePermission)("debts.create"), customerDebt_controller_1.createCustomerDebt);
 /**
  * @openapi
  * /customerdebts/bulk:
@@ -79,7 +79,7 @@ router.post("/", customerDebt_controller_1.createCustomerDebt);
  *       201:
  *         description: Debts created successfully
  */
-router.post("/bulk", customerDebt_controller_1.bulkCreateCustomerDebts);
+router.post("/bulk", (0, authorizePermission_1.requirePermission)("debts.create"), customerDebt_controller_1.bulkCreateCustomerDebts);
 /**
  * @openapi
  * /customerdebts:
@@ -155,7 +155,7 @@ router.get("/customer/:customerId", customerDebt_controller_1.getCustomerDebts);
  *         description: Debt updated successfully
  */
 // ✅ FIXED: Changed :customerId back to :id
-router.put("/:id", customerDebt_controller_1.updateCustomerDebt);
+router.put("/:id", (0, authorizePermission_1.requirePermission)("debts.edit"), customerDebt_controller_1.updateCustomerDebt);
 /**
  * @openapi
  * /customerdebts/{id}/mark-paid:
@@ -176,9 +176,7 @@ router.put("/:id", customerDebt_controller_1.updateCustomerDebt);
  *         description: Debt marked as paid
  */
 // ✅ FIXED: Changed :customerId back to :id
-router.patch("/:id/mark-paid", 
-// authorizeRoles("admin", "staff"), // TEMPORARILY DISABLED FOR TESTING
-customerDebt_controller_1.markDebtAsPaid);
+router.patch("/:id/mark-paid", (0, authorizePermission_1.requirePermission)("debts.edit"), customerDebt_controller_1.markDebtAsPaid);
 /**
  * @openapi
  * /customerdebts/{id}:
@@ -199,5 +197,5 @@ customerDebt_controller_1.markDebtAsPaid);
  *         description: Debt deleted successfully
  */
 // ✅ FIXED: Changed :customerId back to :id
-router.delete("/:id", /* authorizeRoles("admin"), */ customerDebt_controller_1.deleteCustomerDebt);
+router.delete("/:id", (0, authorizePermission_1.requirePermission)("debts.delete"), customerDebt_controller_1.deleteCustomerDebt);
 exports.default = router;

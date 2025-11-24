@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const multer_1 = __importDefault(require("multer"));
 const auth_middleware_1 = require("../middlewares/auth.middleware");
+const authorizePermission_1 = require("../middlewares/authorizePermission");
 const upload_controller_1 = require("../controllers/upload.controller");
 const template_controller_1 = require("../controllers/template.controller");
 const import_controller_1 = require("../controllers/import.controller");
@@ -17,11 +18,11 @@ router.get("/templates/customers", template_controller_1.generateCustomerTemplat
 router.get("/templates/suppliers", template_controller_1.generateSupplierTemplate);
 // Apply authentication middleware to all routes below this point
 router.use(auth_middleware_1.authenticate);
-// Import routes (require authentication)
-router.post("/import/customers", upload.single("file"), import_controller_1.importCustomers);
-router.post("/import/suppliers", upload.single("file"), import_controller_1.importSuppliers);
-router.post("/container/:id/items", upload.single("file"), upload_controller_1.uploadContainerItems);
-router.post("/supplier/:id/items", upload.single("file"), upload_controller_1.uploadSupplierItems);
+// Import routes (require authentication and utilities.import permission)
+router.post("/import/customers", (0, authorizePermission_1.requirePermission)("utilities.import"), upload.single("file"), import_controller_1.importCustomers);
+router.post("/import/suppliers", (0, authorizePermission_1.requirePermission)("utilities.import"), upload.single("file"), import_controller_1.importSuppliers);
+router.post("/container/:id/items", (0, authorizePermission_1.requirePermission)("containers.edit"), upload.single("file"), upload_controller_1.uploadContainerItems);
+router.post("/supplier/:id/items", (0, authorizePermission_1.requirePermission)("suppliers.edit"), upload.single("file"), upload_controller_1.uploadSupplierItems);
 /**
  * @swagger
  * /uploads/uploadopeningbalances:
@@ -48,7 +49,7 @@ router.post("/supplier/:id/items", upload.single("file"), upload_controller_1.up
  *       500:
  *         description: Internal server error
  */
-router.post("/uploadopeningbalances", upload.single("file"), upload_controller_1.uploadOpeningBalances);
+router.post("/uploadopeningbalances", (0, authorizePermission_1.requirePermission)("utilities.import"), upload.single("file"), upload_controller_1.uploadOpeningBalances);
 /**
  * @swagger
  * /uploads/openingstock:
@@ -95,5 +96,5 @@ router.post("/uploadopeningbalances", upload.single("file"), upload_controller_1
  *       500:
  *         description: Internal server error
  */
-router.post("/openingstock", upload.single("file"), upload_controller_1.uploadOpeningStockItems);
+router.post("/openingstock", (0, authorizePermission_1.requirePermission)("utilities.import"), upload.single("file"), upload_controller_1.uploadOpeningStockItems);
 exports.default = router;

@@ -85,7 +85,7 @@ const getInventoryBySupplier = async (supplierId) => {
         },
     });
     // Get all sale items for these companies WHERE sourceId is one of this supplier's containers
-    const allSaleItems = await prisma_1.default.saleItem.findMany({
+    const containerSaleItems = await prisma_1.default.saleItem.findMany({
         where: {
             sale: {
                 companyId: { in: companyIds },
@@ -104,6 +104,34 @@ const getInventoryBySupplier = async (supplierId) => {
             },
         },
     });
+    // Get all supplierItems for this supplier
+    const supplierItemIds = await prisma_1.default.supplierItem.findMany({
+        where: { supplierId: supplierId },
+        select: { id: true, itemName: true },
+    });
+    const supplierItemIdList = supplierItemIds.map(si => si.id);
+    // Get all regular sale items where sourceId points to this supplier's supplierItems
+    const regularSaleItems = await prisma_1.default.saleItem.findMany({
+        where: {
+            sale: {
+                companyId: { in: companyIds },
+                sourceType: "regular",
+                sourceId: { in: supplierItemIdList },
+            },
+        },
+        select: {
+            itemName: true,
+            quantity: true,
+            sale: {
+                select: {
+                    companyId: true,
+                    sourceId: true,
+                },
+            },
+        },
+    });
+    // Combine both sale types
+    const allSaleItems = [...containerSaleItems, ...regularSaleItems];
     // Build summary by item name
     const summaryMap = {};
     // Aggregate received quantities
@@ -153,8 +181,8 @@ const getInventoryReport = async (companyId) => {
             },
         },
     });
-    // Get all sale items for this company
-    const allSaleItems = await prisma_1.default.saleItem.findMany({
+    // Get all container sale items for this company
+    const containerSaleItems = await prisma_1.default.saleItem.findMany({
         where: {
             sale: {
                 companyId: companyId,
@@ -171,6 +199,43 @@ const getInventoryReport = async (companyId) => {
             },
         },
     });
+    // Get all regular sale items for this company
+    const regularSaleItems = await prisma_1.default.saleItem.findMany({
+        where: {
+            sale: {
+                companyId: companyId,
+                sourceType: "regular",
+            },
+        },
+        include: {
+            sale: {
+                select: {
+                    sourceId: true,
+                },
+            },
+        },
+    });
+    // For regular sales, we need to map sourceId to supplier via supplierItem
+    const regularSalesBySupplier = {};
+    for (const saleItem of regularSaleItems) {
+        if (saleItem.sale.sourceId) {
+            const supplierItem = await prisma_1.default.supplierItem.findUnique({
+                where: { id: saleItem.sale.sourceId },
+                include: { supplier: true },
+            });
+            if (supplierItem) {
+                const supplierName = supplierItem.supplier.suppliername;
+                if (!regularSalesBySupplier[supplierName]) {
+                    regularSalesBySupplier[supplierName] = [];
+                }
+                regularSalesBySupplier[supplierName].push({
+                    itemName: saleItem.itemName,
+                    quantity: saleItem.quantity,
+                    containerId: '', // Regular sales don't have containerIds, we'll handle this separately
+                });
+            }
+        }
+    }
     // Group by item name and supplier
     const inventoryMap = new Map();
     allContainerItems.forEach((item) => {
@@ -198,12 +263,18 @@ const getInventoryReport = async (companyId) => {
     });
     // Now calculate sold quantities for each item + supplier combination
     inventoryMap.forEach((inventoryItem, key) => {
-        // Only count sales from THIS supplier's containers
-        const relatedSales = allSaleItems.filter((s) => s.itemName === inventoryItem.itemName &&
+        // Count container sales from THIS supplier's containers
+        const containerSales = containerSaleItems.filter((s) => s.itemName === inventoryItem.itemName &&
             inventoryItem.containerIds.includes(s.sale.sourceId));
-        const soldQty = relatedSales.reduce((sum, s) => sum + (s.quantity || 0), 0);
-        inventoryItem.sold = soldQty;
-        inventoryItem.available = inventoryItem.received - soldQty;
+        const containerSoldQty = containerSales.reduce((sum, s) => sum + (s.quantity || 0), 0);
+        // Count regular sales for this supplier
+        const regularSales = regularSalesBySupplier[inventoryItem.supplierName] || [];
+        const regularSoldQty = regularSales
+            .filter(s => s.itemName === inventoryItem.itemName)
+            .reduce((sum, s) => sum + (s.quantity || 0), 0);
+        const totalSoldQty = containerSoldQty + regularSoldQty;
+        inventoryItem.sold = totalSoldQty;
+        inventoryItem.available = inventoryItem.received - totalSoldQty;
         inventoryItem.totalValue = inventoryItem.available * inventoryItem.unitPrice;
     });
     // Convert map to array and remove containerIds before returning

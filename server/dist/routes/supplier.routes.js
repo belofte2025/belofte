@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const supplier_controller_1 = require("../controllers/supplier.controller");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
+const authorizePermission_1 = require("../middlewares/authorizePermission");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate);
 /**
@@ -32,7 +33,7 @@ router.use(auth_middleware_1.authenticate);
  *       201:
  *         description: Supplier created
  */
-router.post("/", auth_middleware_1.authenticate, supplier_controller_1.createSupplier);
+router.post("/", (0, authorizePermission_1.requirePermission)("suppliers.create"), supplier_controller_1.createSupplier);
 /**
  * @openapi
  * /suppliers:
@@ -45,7 +46,7 @@ router.post("/", auth_middleware_1.authenticate, supplier_controller_1.createSup
  *       200:
  *         description: List of suppliers
  */
-router.get("/allsuppliers", auth_middleware_1.authenticate, supplier_controller_1.getSuppliers);
+router.get("/allsuppliers", supplier_controller_1.getSuppliers);
 /**
  * @openapi
  * /suppliers/{id}:
@@ -89,7 +90,7 @@ router.get("/:id", supplier_controller_1.getSupplierById);
  *       200:
  *         description: Supplier updated
  */
-router.put("/:id", supplier_controller_1.updateSupplier);
+router.put("/:id", (0, authorizePermission_1.requirePermission)("suppliers.edit"), supplier_controller_1.updateSupplier);
 /**
  * @openapi
  * /suppliers/{id}:
@@ -107,7 +108,7 @@ router.put("/:id", supplier_controller_1.updateSupplier);
  *       200:
  *         description: Supplier deleted
  */
-router.delete("/:id", supplier_controller_1.deleteSupplier);
+router.delete("/:id", (0, authorizePermission_1.requirePermission)("suppliers.delete"), supplier_controller_1.deleteSupplier);
 /**
  * @openapi
  * /suppliers/{supplierId}/items:
@@ -133,7 +134,7 @@ router.delete("/:id", supplier_controller_1.deleteSupplier);
  *       201:
  *         description: Item added
  */
-router.post("/:supplierId/items", auth_middleware_1.authenticate, supplier_controller_1.addSupplierItem);
+router.post("/:supplierId/items", (0, authorizePermission_1.requirePermission)("suppliers.create"), supplier_controller_1.addSupplierItem);
 /**
  * @openapi
  * /api/suppliers/{id}/items:
@@ -196,7 +197,7 @@ router.get("/:id/items", supplier_controller_1.getSupplierItems);
  *       200:
  *         description: Item updated
  */
-router.put("/items/:id", auth_middleware_1.authenticate, supplier_controller_1.updateSupplierItem);
+router.put("/items/:id", (0, authorizePermission_1.requirePermission)("suppliers.edit"), supplier_controller_1.updateSupplierItem);
 /**
  * @openapi
  * /suppliers/items/{id}:
@@ -214,7 +215,7 @@ router.put("/items/:id", auth_middleware_1.authenticate, supplier_controller_1.u
  *       200:
  *         description: Item deleted
  */
-router.delete("/items/:id", supplier_controller_1.deleteSupplierItem);
+router.delete("/items/:id", (0, authorizePermission_1.requirePermission)("suppliers.delete"), supplier_controller_1.deleteSupplierItem);
 /**
  * @openapi
  * /suppliers/list:
@@ -335,7 +336,7 @@ router.get("/:supplierId/price-management", supplier_controller_1.getSupplierIte
  *       200:
  *         description: Prices updated successfully
  */
-router.put("/:supplierId/price-management/bulk", supplier_controller_1.bulkUpdatePrices);
+router.put("/:supplierId/price-management/bulk", (0, authorizePermission_1.requirePermission)("suppliers.edit"), supplier_controller_1.bulkUpdatePrices);
 /**
  * @openapi
  * /suppliers/{supplierId}/quantity-management:
@@ -385,5 +386,5 @@ router.get("/:supplierId/quantity-management", supplier_controller_1.getSupplier
  *       200:
  *         description: Quantities adjusted successfully
  */
-router.put("/:supplierId/quantity-management/bulk", supplier_controller_1.bulkAdjustQuantities);
+router.put("/:supplierId/quantity-management/bulk", (0, authorizePermission_1.requirePermission)("suppliers.edit"), supplier_controller_1.bulkAdjustQuantities);
 exports.default = router;

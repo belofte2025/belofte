@@ -423,7 +423,7 @@ export const listSupplierItemsWithSales = async (
       },
     });
 
-    // Step 4: Fetch sale items for this company only
+    // Step 4: Fetch sale items for this company only (with source info)
     const allSaleItems = await prisma.saleItem.findMany({
       where: {
         sale: {
@@ -436,9 +436,34 @@ export const listSupplierItemsWithSales = async (
         sale: {
           select: {
             companyId: true,
+            sourceType: true,
+            sourceId: true,
           },
         },
       },
+    });
+
+    // Step 4b: Get all container IDs for this company grouped by supplier
+    const allContainersBySupplierId: Record<string, string[]> = {};
+    allContainerItems.forEach((item: any) => {
+      const supplierId = item.container?.supplierId;
+      if (supplierId) {
+        if (!allContainersBySupplierId[supplierId]) {
+          allContainersBySupplierId[supplierId] = [];
+        }
+        if (!allContainersBySupplierId[supplierId].includes(item.container.id)) {
+          allContainersBySupplierId[supplierId].push(item.container.id);
+        }
+      }
+    });
+
+    // Step 4c: Get all supplierItem IDs grouped by supplier
+    const supplierItemIdsBySupplierId: Record<string, string[]> = {};
+    supplierItems.forEach((item: any) => {
+      if (!supplierItemIdsBySupplierId[item.supplierId]) {
+        supplierItemIdsBySupplierId[item.supplierId] = [];
+      }
+      supplierItemIdsBySupplierId[item.supplierId].push(item.id);
     });
 
     // Step 5: Compute result per supplier item
@@ -465,11 +490,30 @@ export const listSupplierItemsWithSales = async (
         0
       );
 
+      // Filter sales to only count those from THIS supplier
+      const containerIds = allContainersBySupplierId[sItem.supplierId] || [];
+      const supplierItemIds = supplierItemIdsBySupplierId[sItem.supplierId] || [];
+
       const relatedSales = allSaleItems.filter(
         (s: {
           itemName: string;
-          sale: { companyId: string };
-        }) => s.itemName === sItem.itemName
+          sale: { companyId: string; sourceType: string; sourceId: string };
+        }) => {
+          // Only count sales for this item name
+          if (s.itemName !== sItem.itemName) return false;
+
+          // For container sales: check if container belongs to this supplier
+          if (s.sale.sourceType === 'container') {
+            return containerIds.includes(s.sale.sourceId);
+          }
+
+          // For regular sales: check if supplierItem belongs to this supplier
+          if (s.sale.sourceType === 'regular') {
+            return supplierItemIds.includes(s.sale.sourceId);
+          }
+
+          return false;
+        }
       );
 
       const soldQty = relatedSales.reduce(

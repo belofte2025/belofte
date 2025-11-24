@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const container_controller_1 = require("../controllers/container.controller");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
+const authorizePermission_1 = require("../middlewares/authorizePermission");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate);
 /**
@@ -69,7 +70,7 @@ router.get("/", container_controller_1.getContainers);
  *       201:
  *         description: Container created
  */
-router.post("/", container_controller_1.createContainer);
+router.post("/", (0, authorizePermission_1.requirePermission)("containers.create"), container_controller_1.createContainer);
 /**
  * @openapi
  * /containers/{id}:
@@ -111,7 +112,7 @@ router.get("/:id", container_controller_1.getContainerById);
  *       200:
  *         description: Container marked as received
  */
-router.put("/:id/mark-received", container_controller_1.markContainerAsReceived);
+router.put("/:id/mark-received", (0, authorizePermission_1.requirePermission)("containers.edit"), container_controller_1.markContainerAsReceived);
 /**
  * @openapi
  * /containers/{id}/mark-incomplete:
@@ -131,7 +132,7 @@ router.put("/:id/mark-received", container_controller_1.markContainerAsReceived)
  *       200:
  *         description: Container marked as offload incomplete
  */
-router.put("/:id/mark-incomplete", container_controller_1.markContainerAsIncomplete);
+router.put("/:id/mark-incomplete", (0, authorizePermission_1.requirePermission)("containers.edit"), container_controller_1.markContainerAsIncomplete);
 /**
  * @openapi
  * /containers/{id}/mark-done:
@@ -151,11 +152,11 @@ router.put("/:id/mark-incomplete", container_controller_1.markContainerAsIncompl
  *       200:
  *         description: Container marked as offload done
  */
-router.put("/:id/mark-done", container_controller_1.markContainerAsDone);
-router.delete("/:id", container_controller_1.deleteContainer);
-router.put("/:id/update-quantities", container_controller_1.updateReceivedQuantities);
-router.post("/:id/offload", container_controller_1.completeOffload);
-router.post("/offload", container_controller_1.saveOffloadData);
+router.put("/:id/mark-done", (0, authorizePermission_1.requirePermission)("containers.edit"), container_controller_1.markContainerAsDone);
+router.delete("/:id", (0, authorizePermission_1.requirePermission)("containers.delete"), container_controller_1.deleteContainer);
+router.put("/:id/update-quantities", (0, authorizePermission_1.requirePermission)("containers.edit"), container_controller_1.updateReceivedQuantities);
+router.post("/:id/offload", (0, authorizePermission_1.requirePermission)("containers.edit"), container_controller_1.completeOffload);
+router.post("/offload", (0, authorizePermission_1.requirePermission)("containers.edit"), container_controller_1.saveOffloadData);
 /**
  * @swagger
  * /containers/{id}/items:

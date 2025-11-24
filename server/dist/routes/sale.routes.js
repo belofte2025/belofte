@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const sale_controller_1 = require("../controllers/sale.controller");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
-const authoriseRole_1 = require("../middlewares/authoriseRole");
+const authorizePermission_1 = require("../middlewares/authorizePermission");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate);
 /**
@@ -40,7 +40,7 @@ router.use(auth_middleware_1.authenticate);
  *       201:
  *         description: Sale recorded
  */
-router.post("/", (0, authoriseRole_1.authorizeRoles)("admin", "staff"), sale_controller_1.recordSale);
+router.post("/", (0, authorizePermission_1.requirePermission)("sales.create"), sale_controller_1.recordSale);
 router.get("/", sale_controller_1.getSales);
 /**
  * @swagger
@@ -93,12 +93,12 @@ router.get("/listsales", sale_controller_1.listSales);
  *         description: Sale not found
  */
 // IMPORTANT: This must come BEFORE /:id route
-router.delete("/deletesales/:id", sale_controller_1.deleteSaleById);
+router.delete("/deletesales/:id", (0, authorizePermission_1.requirePermission)("sales.delete"), sale_controller_1.deleteSaleById);
 // Get sales by customer - specific route before dynamic :id
 router.get("/customer/:id", sale_controller_1.getSalesByCustomerId);
 // Dynamic routes come last
 router.get("/:id/items", sale_controller_1.getContainerItemsBySupplier);
 router.get("/:id", sale_controller_1.getSaleById);
-router.put("/:id", sale_controller_1.updateSale);
-router.put("/:id/total", sale_controller_1.updateSaleTotalAmount);
+router.put("/:id", (0, authorizePermission_1.requirePermission)("sales.edit"), sale_controller_1.updateSale);
+router.put("/:id/total", (0, authorizePermission_1.requirePermission)("sales.edit"), sale_controller_1.updateSaleTotalAmount);
 exports.default = router;
