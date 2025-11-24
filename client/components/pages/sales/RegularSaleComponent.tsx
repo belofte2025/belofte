@@ -200,10 +200,12 @@ export default function RegularSaleComponent() {
       setLoading(true);
 
       const customerId = selectedCustomer.value;
+      // Use the first item's supplierItemId as sourceId for inventory tracking
+      const sourceId = cart.length > 0 ? cart[0].id : null;
 
       await recordSale({
         sourceType: "regular",
-        sourceId: customerId,
+        sourceId: sourceId,
         customerId,
         saleType,
         saleDate,
