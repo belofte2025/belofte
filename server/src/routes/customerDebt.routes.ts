@@ -10,11 +10,11 @@ import {
   deleteCustomerDebt,
   markDebtAsPaid,
 } from "../controllers/customerDebt.controller";
-// import { authenticate } from "../middlewares/auth.middleware";
-// import { authorizeRoles } from "../middlewares/authoriseRole";
+import { authenticate } from "../middlewares/auth.middleware";
+import { requirePermission } from "../middlewares/authorizePermission";
 
 const router = Router();
-// router.use(authenticate); // TEMPORARILY DISABLED FOR TESTING
+router.use(authenticate);
 
 /**
  * @openapi
@@ -48,7 +48,7 @@ const router = Router();
  *       201:
  *         description: Debt created successfully
  */
-router.post("/", createCustomerDebt);
+router.post("/", requirePermission("debts.create"), createCustomerDebt);
 
 /**
  * @openapi
@@ -89,7 +89,7 @@ router.post("/", createCustomerDebt);
  *       201:
  *         description: Debts created successfully
  */
-router.post("/bulk", bulkCreateCustomerDebts);
+router.post("/bulk", requirePermission("debts.create"), bulkCreateCustomerDebts);
 
 /**
  * @openapi
@@ -168,7 +168,7 @@ router.get("/customer/:customerId", getCustomerDebts);
  *         description: Debt updated successfully
  */
 // ✅ FIXED: Changed :customerId back to :id
-router.put("/:id", updateCustomerDebt);
+router.put("/:id", requirePermission("debts.edit"), updateCustomerDebt);
 
 /**
  * @openapi
@@ -192,7 +192,7 @@ router.put("/:id", updateCustomerDebt);
 // ✅ FIXED: Changed :customerId back to :id
 router.patch(
   "/:id/mark-paid",
-  // authorizeRoles("admin", "staff"), // TEMPORARILY DISABLED FOR TESTING
+  requirePermission("debts.edit"),
   markDebtAsPaid
 );
 
@@ -216,6 +216,6 @@ router.patch(
  *         description: Debt deleted successfully
  */
 // ✅ FIXED: Changed :customerId back to :id
-router.delete("/:id", /* authorizeRoles("admin"), */ deleteCustomerDebt);
+router.delete("/:id", requirePermission("debts.delete"), deleteCustomerDebt);
 
 export default router;

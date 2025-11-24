@@ -16,6 +16,7 @@ import {
   getContainerSalesSummary,
 } from "../controllers/container.controller";
 import { authenticate } from "../middlewares/auth.middleware";
+import { requirePermission } from "../middlewares/authorizePermission";
 
 const router = Router();
 
@@ -86,7 +87,7 @@ router.get("/", getContainers);
  *       201:
  *         description: Container created
  */
-router.post("/", createContainer);
+router.post("/", requirePermission("containers.create"), createContainer);
 
 /**
  * @openapi
@@ -130,7 +131,7 @@ router.get("/:id", getContainerById);
  *       200:
  *         description: Container marked as received
  */
-router.put("/:id/mark-received", markContainerAsReceived);
+router.put("/:id/mark-received", requirePermission("containers.edit"), markContainerAsReceived);
 
 /**
  * @openapi
@@ -151,7 +152,7 @@ router.put("/:id/mark-received", markContainerAsReceived);
  *       200:
  *         description: Container marked as offload incomplete
  */
-router.put("/:id/mark-incomplete", markContainerAsIncomplete);
+router.put("/:id/mark-incomplete", requirePermission("containers.edit"), markContainerAsIncomplete);
 
 /**
  * @openapi
@@ -172,15 +173,15 @@ router.put("/:id/mark-incomplete", markContainerAsIncomplete);
  *       200:
  *         description: Container marked as offload done
  */
-router.put("/:id/mark-done", markContainerAsDone);
+router.put("/:id/mark-done", requirePermission("containers.edit"), markContainerAsDone);
 
-router.delete("/:id", deleteContainer);
+router.delete("/:id", requirePermission("containers.delete"), deleteContainer);
 
-router.put("/:id/update-quantities", updateReceivedQuantities);
+router.put("/:id/update-quantities", requirePermission("containers.edit"), updateReceivedQuantities);
 
-router.post("/:id/offload", completeOffload);
+router.post("/:id/offload", requirePermission("containers.edit"), completeOffload);
 
-router.post("/offload", saveOffloadData);
+router.post("/offload", requirePermission("containers.edit"), saveOffloadData);
 /**
  * @swagger
  * /containers/{id}/items:

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middlewares/auth.middleware";
+import { requirePermission } from "../middlewares/authorizePermission";
 import {
   createCustomer,
   getCustomers,
@@ -41,7 +42,7 @@ router.use(authenticate);
  *       201:
  *         description: Customer created successfully
  */
-router.post("/", createCustomer);
+router.post("/", requirePermission("customers.create"), createCustomer);
 
 /**
  * @openapi
@@ -134,7 +135,7 @@ router.get("/:id", getCustomerById);
  *           application/json:
 
  */
-router.put("/:id", updateCustomer); // ✅ Corrected
+router.put("/:id", requirePermission("customers.edit"), updateCustomer); // ✅ Corrected
 
 /**
  * @openapi
@@ -178,7 +179,7 @@ router.put("/:id", updateCustomer); // ✅ Corrected
  *         description: Server error
  */
 
-router.post("/:id/payments", createCustomerPayment);
+router.post("/:id/payments", requirePermission("payments.create"), createCustomerPayment);
 
 /**
  * @openapi

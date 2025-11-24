@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { authenticate } from "../middlewares/auth.middleware";
+import { requirePermission } from "../middlewares/authorizePermission";
 import {
   uploadContainerItems,
   uploadOpeningBalances,
@@ -23,16 +24,17 @@ router.get("/templates/suppliers", generateSupplierTemplate);
 // Apply authentication middleware to all routes below this point
 router.use(authenticate);
 
-// Import routes (require authentication)
-router.post("/import/customers", upload.single("file"), importCustomers);
-router.post("/import/suppliers", upload.single("file"), importSuppliers);
+// Import routes (require authentication and utilities.import permission)
+router.post("/import/customers", requirePermission("utilities.import"), upload.single("file"), importCustomers);
+router.post("/import/suppliers", requirePermission("utilities.import"), upload.single("file"), importSuppliers);
 
 router.post(
   "/container/:id/items",
+  requirePermission("containers.edit"),
   upload.single("file"),
   uploadContainerItems
 );
-router.post("/supplier/:id/items", upload.single("file"), uploadSupplierItems);
+router.post("/supplier/:id/items", requirePermission("suppliers.edit"), upload.single("file"), uploadSupplierItems);
 
 /**
  * @swagger
@@ -62,6 +64,7 @@ router.post("/supplier/:id/items", upload.single("file"), uploadSupplierItems);
  */
 router.post(
   "/uploadopeningbalances",
+  requirePermission("utilities.import"),
   upload.single("file"),
   uploadOpeningBalances
 );
@@ -112,7 +115,7 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.post("/openingstock", upload.single("file"), uploadOpeningStockItems);
+router.post("/openingstock", requirePermission("utilities.import"), upload.single("file"), uploadOpeningStockItems);
 
 
 export default router;

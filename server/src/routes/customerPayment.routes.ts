@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middlewares/auth.middleware";
+import { requirePermission } from "../middlewares/authorizePermission";
 import {
   recordCustomerPayment,
   getCustomerStatement,
@@ -11,7 +12,7 @@ import {
 const router = Router();
 router.use(authenticate);
 
-router.post("/", recordCustomerPayment);
+router.post("/", requirePermission("payments.create"), recordCustomerPayment);
 
 router.get("/:id/statement", getCustomerStatement);
 
@@ -45,7 +46,7 @@ router.get("/:id/statement", getCustomerStatement);
  *       500:
  *         description: Server error
  */
-router.delete("/:id/customerpayments", deleteCustomerPayment);
+router.delete("/:id/customerpayments", requirePermission("payments.create"), deleteCustomerPayment);
 
 /**
  * @swagger

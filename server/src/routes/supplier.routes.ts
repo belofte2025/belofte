@@ -17,6 +17,7 @@ import {
   getSupplierItemsForQuantityManagement,
 } from "../controllers/supplier.controller";
 import { authenticate } from "../middlewares/auth.middleware";
+import { requirePermission } from "../middlewares/authorizePermission";
 
 const router = Router();
 router.use(authenticate);
@@ -48,7 +49,7 @@ router.use(authenticate);
  *       201:
  *         description: Supplier created
  */
-router.post("/", authenticate, createSupplier);
+router.post("/", requirePermission("suppliers.create"), createSupplier);
 
 /**
  * @openapi
@@ -62,7 +63,7 @@ router.post("/", authenticate, createSupplier);
  *       200:
  *         description: List of suppliers
  */
-router.get("/allsuppliers", authenticate, getSuppliers);
+router.get("/allsuppliers", getSuppliers);
 
 /**
  * @openapi
@@ -108,7 +109,7 @@ router.get("/:id", getSupplierById);
  *       200:
  *         description: Supplier updated
  */
-router.put("/:id", updateSupplier);
+router.put("/:id", requirePermission("suppliers.edit"), updateSupplier);
 
 /**
  * @openapi
@@ -127,7 +128,7 @@ router.put("/:id", updateSupplier);
  *       200:
  *         description: Supplier deleted
  */
-router.delete("/:id", deleteSupplier);
+router.delete("/:id", requirePermission("suppliers.delete"), deleteSupplier);
 
 /**
  * @openapi
@@ -154,7 +155,7 @@ router.delete("/:id", deleteSupplier);
  *       201:
  *         description: Item added
  */
-router.post("/:supplierId/items", authenticate, addSupplierItem);
+router.post("/:supplierId/items", requirePermission("suppliers.create"), addSupplierItem);
 
 /**
  * @openapi
@@ -220,7 +221,7 @@ router.get("/:id/items", getSupplierItems);
  *       200:
  *         description: Item updated
  */
-router.put("/items/:id", authenticate, updateSupplierItem);
+router.put("/items/:id", requirePermission("suppliers.edit"), updateSupplierItem);
 
 /**
  * @openapi
@@ -239,7 +240,7 @@ router.put("/items/:id", authenticate, updateSupplierItem);
  *       200:
  *         description: Item deleted
  */
-router.delete("/items/:id", deleteSupplierItem);
+router.delete("/items/:id", requirePermission("suppliers.delete"), deleteSupplierItem);
 
 /**
  * @openapi
@@ -366,7 +367,7 @@ router.get("/:supplierId/price-management", getSupplierItemsForPriceManagement);
  *       200:
  *         description: Prices updated successfully
  */
-router.put("/:supplierId/price-management/bulk", bulkUpdatePrices);
+router.put("/:supplierId/price-management/bulk", requirePermission("suppliers.edit"), bulkUpdatePrices);
 
 /**
  * @openapi
@@ -418,6 +419,6 @@ router.get("/:supplierId/quantity-management", getSupplierItemsForQuantityManage
  *       200:
  *         description: Quantities adjusted successfully
  */
-router.put("/:supplierId/quantity-management/bulk", bulkAdjustQuantities);
+router.put("/:supplierId/quantity-management/bulk", requirePermission("suppliers.edit"), bulkAdjustQuantities);
 
 export default router;

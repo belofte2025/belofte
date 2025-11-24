@@ -11,7 +11,7 @@ import {
   deleteSaleById,
 } from "../controllers/sale.controller";
 import { authenticate } from "../middlewares/auth.middleware";
-import { authorizeRoles } from "../middlewares/authoriseRole";
+import { requirePermission } from "../middlewares/authorizePermission";
 
 const router = Router();
 router.use(authenticate);
@@ -50,7 +50,7 @@ router.use(authenticate);
  *       201:
  *         description: Sale recorded
  */
-router.post("/", authorizeRoles("admin", "staff"), recordSale);
+router.post("/", requirePermission("sales.create"), recordSale);
 
 router.get("/", getSales);
 
@@ -106,7 +106,7 @@ router.get("/listsales", listSales);
  *         description: Sale not found
  */
 // IMPORTANT: This must come BEFORE /:id route
-router.delete("/deletesales/:id", deleteSaleById);
+router.delete("/deletesales/:id", requirePermission("sales.delete"), deleteSaleById);
 
 // Get sales by customer - specific route before dynamic :id
 router.get("/customer/:id", getSalesByCustomerId);
@@ -114,7 +114,7 @@ router.get("/customer/:id", getSalesByCustomerId);
 // Dynamic routes come last
 router.get("/:id/items", getContainerItemsBySupplier);
 router.get("/:id", getSaleById);
-router.put("/:id", updateSale);
-router.put("/:id/total", updateSaleTotalAmount);
+router.put("/:id", requirePermission("sales.edit"), updateSale);
+router.put("/:id/total", requirePermission("sales.edit"), updateSaleTotalAmount);
 
 export default router;

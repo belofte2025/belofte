@@ -44,6 +44,15 @@ const permissions = [
   { code: 'payments.view', name: 'View Payments', category: 'payments', description: 'View payment records' },
   { code: 'payments.create', name: 'Record Payments', category: 'payments', description: 'Record customer payments' },
 
+  // Debts
+  { code: 'debts.view', name: 'View Debts', category: 'debts', description: 'View customer debt records' },
+  { code: 'debts.create', name: 'Create Debts', category: 'debts', description: 'Record new customer debts' },
+  { code: 'debts.edit', name: 'Edit Debts', category: 'debts', description: 'Modify existing debt records' },
+  { code: 'debts.delete', name: 'Delete Debts', category: 'debts', description: 'Remove debt records' },
+
+  // Audit
+  { code: 'audit.view', name: 'View Audit Logs', category: 'audit', description: 'Access system audit logs' },
+
   // Utilities
   { code: 'utilities.view', name: 'Access Utilities', category: 'utilities', description: 'Access utility tools' },
   { code: 'utilities.import', name: 'Import Data', category: 'utilities', description: 'Import customers and suppliers' },
@@ -70,6 +79,8 @@ const roleTemplates = {
       'sales.view', 'sales.create', 'sales.edit', 'sales.delete',
       'reports.view', 'reports.export',
       'payments.view', 'payments.create',
+      'debts.view', 'debts.create', 'debts.edit', 'debts.delete',
+      'audit.view',
       'utilities.view', 'utilities.import',
       'users.view', 'users.create', 'users.edit', 'users.delete',
       'roles.manage',
@@ -87,6 +98,7 @@ const roleTemplates = {
       'sales.view', 'sales.create', 'sales.edit',
       'reports.view', 'reports.export',
       'payments.view', 'payments.create',
+      'debts.view', 'debts.create', 'debts.edit',
       'utilities.view',
       'users.view',
     ],

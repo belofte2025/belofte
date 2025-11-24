@@ -7,9 +7,11 @@ import {
   getCashSalesAndPaymentsReport,
 } from "../controllers/report.controller";
 import { authenticate } from "../middlewares/auth.middleware";
+import { requirePermission } from "../middlewares/authorizePermission";
 
 const router = Router();
 router.use(authenticate);
+router.use(requirePermission("reports.view")); // All report routes require reports.view permission
 
 /**
  * @openapi
