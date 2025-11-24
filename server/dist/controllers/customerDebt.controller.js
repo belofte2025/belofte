@@ -14,7 +14,7 @@ const createCustomerDebt = async (req, res) => {
         companyId: req.user?.companyId,
     });
     try {
-        const { customerId, amount, description, debtType, companyId } = req.body;
+        const { customerId, amount, description, debtType, companyId, debtDate } = req.body;
         if (!customerId || !amount) {
             console.log("[customerDebt.controller] CREATE - Bad request: Missing customerId or amount");
             res.status(400).json({ error: "Customer ID and amount are required" });
@@ -40,16 +40,22 @@ const createCustomerDebt = async (req, res) => {
             amount,
             debtType,
             companyId: finalCompanyId,
+            debtDate,
         });
+        const debtData = {
+            customerId,
+            companyId: finalCompanyId,
+            amount: parseFloat(amount),
+            description: description || null,
+            debtType: debtType || "manual",
+            status: "unpaid",
+        };
+        // If a custom debt date is provided, use it
+        if (debtDate) {
+            debtData.createdAt = new Date(debtDate);
+        }
         const debt = await prisma_1.default.customerDebt.create({
-            data: {
-                customerId,
-                companyId: finalCompanyId,
-                amount: parseFloat(amount),
-                description: description || null,
-                debtType: debtType || "manual",
-                status: "unpaid",
-            },
+            data: debtData,
             include: {
                 customer: true,
             },

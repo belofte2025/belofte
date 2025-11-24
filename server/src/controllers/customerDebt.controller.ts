@@ -12,7 +12,7 @@ export const createCustomerDebt = async (req: Request, res: Response) => {
   });
 
   try {
-    const { customerId, amount, description, debtType, companyId } = req.body;
+    const { customerId, amount, description, debtType, companyId, debtDate } = req.body;
 
     if (!customerId || !amount) {
       console.log(
@@ -49,17 +49,25 @@ export const createCustomerDebt = async (req: Request, res: Response) => {
       amount,
       debtType,
       companyId: finalCompanyId,
+      debtDate,
     });
 
+    const debtData: any = {
+      customerId,
+      companyId: finalCompanyId,
+      amount: parseFloat(amount),
+      description: description || null,
+      debtType: debtType || "manual",
+      status: "unpaid",
+    };
+
+    // If a custom debt date is provided, use it
+    if (debtDate) {
+      debtData.createdAt = new Date(debtDate);
+    }
+
     const debt = await prisma.customerDebt.create({
-      data: {
-        customerId,
-        companyId: finalCompanyId,
-        amount: parseFloat(amount),
-        description: description || null,
-        debtType: debtType || "manual",
-        status: "unpaid",
-      },
+      data: debtData,
       include: {
         customer: true,
       },

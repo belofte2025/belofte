@@ -6,15 +6,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllCustomerPayments = exports.getCustomerPayments = exports.deleteCustomerPayment = exports.getCustomerStatement = exports.recordCustomerPayment = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const recordCustomerPayment = async (req, res) => {
-    const { customerId, amount, note, paymentType } = req.body;
+    const { customerId, amount, note, paymentType, paymentDate } = req.body;
     const companyId = req.user?.companyId;
     if (!companyId) {
         res.status(400).json({ error: "Company ID missing" });
         return;
     }
     try {
+        const paymentData = {
+            customerId,
+            amount,
+            note,
+            paymentType,
+            companyId
+        };
+        // If a custom payment date is provided, use it
+        if (paymentDate) {
+            paymentData.createdAt = new Date(paymentDate);
+        }
         const payment = await prisma_1.default.customerPayment.create({
-            data: { customerId, amount, note, paymentType, companyId },
+            data: paymentData,
         });
         res.status(201).json(payment);
     }

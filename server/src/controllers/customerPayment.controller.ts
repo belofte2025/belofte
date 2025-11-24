@@ -2,15 +2,28 @@ import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 
 export const recordCustomerPayment = async (req: Request, res: Response) => {
-  const { customerId, amount, note, paymentType } = req.body;
+  const { customerId, amount, note, paymentType, paymentDate } = req.body;
   const companyId = req.user?.companyId;
   if (!companyId) {
     res.status(400).json({ error: "Company ID missing" });
     return;
   }
   try {
+    const paymentData: any = {
+      customerId,
+      amount,
+      note,
+      paymentType,
+      companyId
+    };
+
+    // If a custom payment date is provided, use it
+    if (paymentDate) {
+      paymentData.createdAt = new Date(paymentDate);
+    }
+
     const payment = await prisma.customerPayment.create({
-      data: { customerId, amount, note, paymentType, companyId },
+      data: paymentData,
     });
     res.status(201).json(payment);
   } catch (err) {
