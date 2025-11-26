@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteSaleById = exports.listSales = exports.updateSaleTotalAmount = exports.updateSale = exports.getSaleById = exports.getSalesByCustomerId = exports.getContainerItemsBySupplier = exports.getSales = exports.recordSale = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const recordSale = async (req, res) => {
-    const { saleType, sourceType, sourceId, customerId, items, saleDate } = req.body;
+    const { saleType, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
     const companyId = req.user?.companyId;
     const userPermissions = req.user?.permissions || [];
     const canEditPrice = userPermissions.includes("sales.edit_price");
@@ -43,7 +43,20 @@ const recordSale = async (req, res) => {
                 }
             }
         }
-        const totalAmount = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+        // Calculate subtotal (sum of all items before discount)
+        const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+        // Calculate discount amount
+        let discountAmount = 0;
+        if (discountType && discountValue > 0) {
+            if (discountType === "percentage") {
+                discountAmount = (subtotal * discountValue) / 100;
+            }
+            else if (discountType === "amount") {
+                discountAmount = discountValue;
+            }
+        }
+        // Calculate final total after discount
+        const totalAmount = Math.max(0, subtotal - discountAmount);
         const sale = await prisma_1.default.sale.create({
             data: {
                 saleType,
@@ -51,6 +64,9 @@ const recordSale = async (req, res) => {
                 sourceId,
                 customerId,
                 companyId,
+                subtotal,
+                discountType: discountType || null,
+                discountValue: discountValue || 0,
                 totalAmount,
                 createdAt: saleDate ? new Date(saleDate) : new Date(),
                 items: {

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 
 export const recordSale = async (req: Request, res: Response) => {
-  const { saleType, sourceType, sourceId, customerId, items, saleDate } = req.body;
+  const { saleType, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
   const companyId = req.user?.companyId;
   const userPermissions = req.user?.permissions || [];
   const canEditPrice = userPermissions.includes("sales.edit_price");
@@ -46,11 +46,25 @@ export const recordSale = async (req: Request, res: Response) => {
       }
     }
 
-    const totalAmount = items.reduce(
+    // Calculate subtotal (sum of all items before discount)
+    const subtotal = items.reduce(
       (sum: number, i: { unitPrice: number; quantity: number }) =>
         sum + i.unitPrice * i.quantity,
       0
     );
+
+    // Calculate discount amount
+    let discountAmount = 0;
+    if (discountType && discountValue > 0) {
+      if (discountType === "percentage") {
+        discountAmount = (subtotal * discountValue) / 100;
+      } else if (discountType === "amount") {
+        discountAmount = discountValue;
+      }
+    }
+
+    // Calculate final total after discount
+    const totalAmount = Math.max(0, subtotal - discountAmount);
 
     const sale = await prisma.sale.create({
       data: {
@@ -59,6 +73,9 @@ export const recordSale = async (req: Request, res: Response) => {
         sourceId,
         customerId,
         companyId,
+        subtotal,
+        discountType: discountType || null,
+        discountValue: discountValue || 0,
         totalAmount,
         createdAt: saleDate ? new Date(saleDate) : new Date(),
         items: {
