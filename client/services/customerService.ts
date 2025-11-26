@@ -37,6 +37,17 @@ export const createCustomer = async (data: any) => {
   return res.data;
 };
 
+export const checkCustomerName = async (customerName: string) => {
+  const res = await api.get("/customers/check-name", {
+    params: { customerName },
+  });
+  return res.data.similarCustomers as Array<{
+    id: string;
+    customerName: string;
+    phone: string;
+  }>;
+};
+
 export const updateCustomer = async (id: string, data: any) => {
   const res = await api.put(`/customers/${id}`, data);
   return res.data;

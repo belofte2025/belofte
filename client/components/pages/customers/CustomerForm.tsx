@@ -5,9 +5,11 @@ import {
   createCustomer,
   updateCustomer,
   getCustomerById,
+  checkCustomerName,
 } from "@/services/customerService";
-import { User, Phone, Save, AlertCircle, ArrowLeft } from "lucide-react";
+import { User, Phone, Save, AlertCircle, ArrowLeft, AlertTriangle } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { Dialog } from "@headlessui/react";
 
 type Props = {
   mode: "create" | "edit";
@@ -20,6 +22,10 @@ export default function CustomerForm({ mode, customerId }: Props) {
   const [loading, setLoading] = useState(mode === "edit");
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
   const [saving, setSaving] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [similarCustomers, setSimilarCustomers] = useState<
+    Array<{ id: string; customerName: string; phone: string }>
+  >([]);
 
   const router = useRouter();
 
@@ -63,19 +69,47 @@ export default function CustomerForm({ mode, customerId }: Props) {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    setSaving(true);
-    try {
-      if (mode === "create") {
-        await createCustomer({ customerName: name, phone });
-        toast.success("Customer created successfully!");
-        // Clear form after successful creation
-        setName("");
-        setPhone("");
-      } else {
+    // For create mode, check for similar customer names first
+    if (mode === "create") {
+      setSaving(true);
+      try {
+        const similar = await checkCustomerName(name.trim());
+        if (similar.length > 0) {
+          setSimilarCustomers(similar);
+          setShowDuplicateModal(true);
+          setSaving(false);
+          return;
+        }
+        // No duplicates, proceed with creation
+        await proceedWithCreation();
+      } catch {
+        toast.error("Failed to check customer name. Please try again.");
+        setSaving(false);
+      }
+    } else {
+      // Edit mode - just update directly
+      setSaving(true);
+      try {
         await updateCustomer(customerId!, { customerName: name, phone });
         toast.success("Customer updated successfully!");
         router.push("/customers");
+      } catch {
+        toast.error("Failed to save customer. Please try again.");
+      } finally {
+        setSaving(false);
       }
+    }
+  };
+
+  const proceedWithCreation = async () => {
+    setSaving(true);
+    try {
+      await createCustomer({ customerName: name, phone });
+      toast.success("Customer created successfully!");
+      setName("");
+      setPhone("");
+      setShowDuplicateModal(false);
+      setSimilarCustomers([]);
     } catch {
       toast.error("Failed to save customer. Please try again.");
     } finally {
@@ -234,6 +268,70 @@ export default function CustomerForm({ mode, customerId }: Props) {
           </div>
         </form>
       </div>
+
+      {/* Duplicate Customer Warning Modal */}
+      <Dialog
+        open={showDuplicateModal}
+        onClose={() => setShowDuplicateModal(false)}
+        className="relative z-50"
+      >
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          aria-hidden="true"
+        />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border-2 border-amber-400">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center w-14 h-14 rounded-full bg-amber-100 mb-4">
+                <AlertTriangle className="w-8 h-8 text-amber-600" />
+              </div>
+              <Dialog.Title className="text-xl font-bold text-amber-700 mb-2">
+                Warning: Similar Customer Found
+              </Dialog.Title>
+              <p className="text-gray-600 mb-4">
+                A customer with a similar name already exists in the system. Please verify this is not a duplicate before continuing.
+              </p>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+                <p className="text-sm font-semibold text-amber-800 mb-3">
+                  Existing customers with similar names:
+                </p>
+                <ul className="space-y-3">
+                  {similarCustomers.map((customer) => (
+                    <li
+                      key={customer.id}
+                      className="text-sm text-amber-900 flex items-center gap-2 bg-white p-2 rounded-lg border border-amber-200"
+                    >
+                      <User className="w-4 h-4 text-amber-600" />
+                      <span className="font-semibold">{customer.customerName}</span>
+                      <span className="text-amber-600">({customer.phone})</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDuplicateModal(false);
+                    setSimilarCustomers([]);
+                  }}
+                  className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Go Back & Edit
+                </button>
+                <button
+                  onClick={proceedWithCreation}
+                  disabled={saving}
+                  className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+                >
+                  {saving ? "Creating..." : "Continue Anyway"}
+                </button>
+              </div>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 }
