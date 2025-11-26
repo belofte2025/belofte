@@ -27,6 +27,8 @@ import {
   UserPlus,
   X,
   Lock,
+  Percent,
+  DollarSign,
 } from "lucide-react";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
@@ -76,6 +78,8 @@ export default function RegularSaleComponent() {
     new Date().toISOString().split("T")[0]
   );
   const [loading, setLoading] = useState(false);
+  const [discountType, setDiscountType] = useState<"percentage" | "amount" | null>(null);
+  const [discountValue, setDiscountValue] = useState<number>(0);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCreditPrompt, setShowCreditPrompt] = useState(false);
@@ -164,9 +168,22 @@ export default function RegularSaleComponent() {
     }
   };
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => cart.reduce((sum, i) => sum + i.qty * i.unitPrice, 0),
     [cart]
+  );
+
+  const discountAmount = useMemo(() => {
+    if (!discountType || discountValue <= 0) return 0;
+    if (discountType === "percentage") {
+      return (subtotal * discountValue) / 100;
+    }
+    return discountValue;
+  }, [discountType, discountValue, subtotal]);
+
+  const total = useMemo(
+    () => Math.max(0, subtotal - discountAmount),
+    [subtotal, discountAmount]
   );
 
   const handleConfirmSale = () => {
@@ -209,6 +226,8 @@ export default function RegularSaleComponent() {
         customerId,
         saleType,
         saleDate,
+        discountType: discountType,
+        discountValue: discountValue,
         items: cart.map((item) => ({
           itemName: item.itemName,
           quantity: item.qty,
@@ -239,11 +258,17 @@ export default function RegularSaleComponent() {
         qty: i.qty,
         unitPrice: i.unitPrice,
       })),
+      subtotal,
+      discountType,
+      discountValue,
+      discountAmount,
       total,
       saleType,
     });
 
     setCart([]);
+    setDiscountType(null);
+    setDiscountValue(0);
 
     if (saleType === "credit") {
       setShowCreditPrompt(true);
@@ -397,11 +422,69 @@ export default function RegularSaleComponent() {
                 <h3 className="font-semibold text-gray-900">Cart Summary</h3>
                 <Badge variant="info">{cart.length} items</Badge>
               </div>
+
+              {/* Discount Section */}
+              <div className="mb-4 p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <Percent className="w-4 h-4 text-orange-500" />
+                  <span className="text-sm font-medium text-gray-700">Apply Discount</span>
+                </div>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setDiscountType(discountType === "percentage" ? null : "percentage")}
+                    className={`flex-1 p-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                      discountType === "percentage"
+                        ? "border-orange-500 bg-orange-50 text-orange-700"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <Percent className="w-4 h-4 inline mr-1" />
+                    Percentage
+                  </button>
+                  <button
+                    onClick={() => setDiscountType(discountType === "amount" ? null : "amount")}
+                    className={`flex-1 p-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                      discountType === "amount"
+                        ? "border-orange-500 bg-orange-50 text-orange-700"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4 inline mr-1" />
+                    Fixed Amount
+                  </button>
+                </div>
+                {discountType && (
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={discountValue || ""}
+                      onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                      placeholder={discountType === "percentage" ? "Enter %" : "Enter amount"}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      min="0"
+                      max={discountType === "percentage" ? 100 : subtotal}
+                      step={discountType === "percentage" ? 1 : 0.01}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                      {discountType === "percentage" ? "%" : "₵"}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">₵ {total.toFixed(2)}</span>
+                  <span className="font-medium">₵ {subtotal.toFixed(2)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-orange-600">
+                    <span>
+                      Discount ({discountType === "percentage" ? `${discountValue}%` : "Fixed"}):
+                    </span>
+                    <span className="font-medium">- ₵ {discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold pt-3 border-t">
                   <span>Total:</span>
                   <span className="text-green-600">₵ {total.toFixed(2)}</span>
@@ -684,6 +767,18 @@ export default function RegularSaleComponent() {
                     <span>Payment:</span>
                     <span className="font-medium capitalize">{saleType}</span>
                   </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal:</span>
+                    <span className="font-medium">₵ {subtotal.toFixed(2)}</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-orange-600">
+                      <span>
+                        Discount ({discountType === "percentage" ? `${discountValue}%` : "Fixed"}):
+                      </span>
+                      <span className="font-medium">- ₵ {discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-bold pt-2 border-t">
                     <span>Total:</span>
                     <span className="text-green-600">₵ {total.toFixed(2)}</span>
@@ -745,6 +840,8 @@ export default function RegularSaleComponent() {
                     setShowPrintPrompt(false);
                     if (saleType === "credit") setShowCreditPrompt(true);
                     setCart([]);
+                    setDiscountType(null);
+                    setDiscountValue(0);
                     try {
                       const itemData = await getSupplierItemsWithSales();
                       setItems(itemData);
