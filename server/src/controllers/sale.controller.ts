@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 
 export const recordSale = async (req: Request, res: Response) => {
-  const { saleType, sourceType, sourceId, customerId, items } = req.body;
+  const { saleType, sourceType, sourceId, customerId, items, saleDate } = req.body;
   const companyId = req.user?.companyId;
   const userPermissions = req.user?.permissions || [];
   const canEditPrice = userPermissions.includes("sales.edit_price");
@@ -60,6 +60,7 @@ export const recordSale = async (req: Request, res: Response) => {
         customerId,
         companyId,
         totalAmount,
+        createdAt: saleDate ? new Date(saleDate) : new Date(),
         items: {
           createMany: {
             data: items.map(
