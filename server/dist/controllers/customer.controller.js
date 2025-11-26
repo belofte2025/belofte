@@ -3,8 +3,44 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCustomerStatement = exports.getCustomerPayments = exports.createCustomerPayment = exports.updateCustomer = exports.getCustomerByIdBal = exports.getCustomerById = exports.getCustomers = exports.createCustomer = void 0;
+exports.getCustomerStatement = exports.getCustomerPayments = exports.createCustomerPayment = exports.updateCustomer = exports.getCustomerByIdBal = exports.getCustomerById = exports.getCustomers = exports.createCustomer = exports.checkCustomerName = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
+const checkCustomerName = async (req, res) => {
+    try {
+        const { customerName } = req.query;
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            res.status(400).json({ error: "Company ID missing" });
+            return;
+        }
+        if (!customerName || typeof customerName !== "string") {
+            res.status(400).json({ error: "Customer name is required" });
+            return;
+        }
+        // Find customers with similar names (case-insensitive)
+        const similarCustomers = await prisma_1.default.customer.findMany({
+            where: {
+                companyId,
+                customerName: {
+                    contains: customerName,
+                    mode: "insensitive",
+                },
+            },
+            select: {
+                id: true,
+                customerName: true,
+                phone: true,
+            },
+            take: 5,
+        });
+        res.json({ similarCustomers });
+    }
+    catch (err) {
+        console.error("Check customer name error:", err);
+        res.status(500).json({ error: "Failed to check customer name" });
+    }
+};
+exports.checkCustomerName = checkCustomerName;
 const createCustomer = async (req, res) => {
     try {
         const { customerName, phone } = req.body;

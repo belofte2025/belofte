@@ -3,6 +3,45 @@ import prisma from "../utils/prisma";
 import * as XLSX from "xlsx";
 import type { Customer, CustomerPayment } from "@prisma/client";
 
+export const checkCustomerName = async (req: Request, res: Response) => {
+  try {
+    const { customerName } = req.query;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID missing" });
+      return;
+    }
+
+    if (!customerName || typeof customerName !== "string") {
+      res.status(400).json({ error: "Customer name is required" });
+      return;
+    }
+
+    // Find customers with similar names (case-insensitive)
+    const similarCustomers = await prisma.customer.findMany({
+      where: {
+        companyId,
+        customerName: {
+          contains: customerName,
+          mode: "insensitive",
+        },
+      },
+      select: {
+        id: true,
+        customerName: true,
+        phone: true,
+      },
+      take: 5,
+    });
+
+    res.json({ similarCustomers });
+  } catch (err) {
+    console.error("Check customer name error:", err);
+    res.status(500).json({ error: "Failed to check customer name" });
+  }
+};
+
 export const createCustomer = async (req: Request, res: Response) => {
   try {
     const { customerName, phone } = req.body;

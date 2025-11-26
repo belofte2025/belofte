@@ -67,6 +67,83 @@ router.get("/allsuppliers", getSuppliers);
 
 /**
  * @openapi
+ * /suppliers/list:
+ *   get:
+ *     tags: [Suppliers]
+ *     summary: Get full supplier list for the logged-in user's company
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Raw list of suppliers
+ */
+router.get("/list", getSupplierslist);
+
+/**
+ * @swagger
+ * /suppliers/items/withsales:
+ *   get:
+ *     summary: Get supplier items with total, sold, and remaining quantities
+ *     tags:
+ *       - Supplier Items
+ *     description: |
+ *       Retrieves all supplier items along with total quantities supplied,
+ *       quantities sold, and remaining quantities. Matches items by supplier and item name.
+ *     responses:
+ *       200:
+ *         description: List of supplier items with sales summary
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/items/withsales", listSupplierItemsWithSales);
+
+/**
+ * @openapi
+ * /suppliers/items/{id}:
+ *   put:
+ *     tags: [Supplier Items]
+ *     summary: Update a supplier item
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               itemName: { type: string }
+ *               price: { type: number }
+ *     responses:
+ *       200:
+ *         description: Item updated
+ */
+router.put("/items/:id", requirePermission("suppliers.edit"), updateSupplierItem);
+
+/**
+ * @openapi
+ * /suppliers/items/{id}:
+ *   delete:
+ *     tags: [Supplier Items]
+ *     summary: Delete a supplier item
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Item deleted
+ */
+router.delete("/items/:id", requirePermission("suppliers.delete"), deleteSupplierItem);
+
+/**
+ * @openapi
  * /suppliers/{id}:
  *   get:
  *     tags: [Suppliers]
@@ -196,127 +273,6 @@ router.post("/:supplierId/items", requirePermission("suppliers.create"), addSupp
  */
 
 router.get("/:id/items", getSupplierItems);
-
-/**
- * @openapi
- * /suppliers/items/{id}:
- *   put:
- *     tags: [Supplier Items]
- *     summary: Update a supplier item
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema: { type: string }
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             properties:
- *               itemName: { type: string }
- *               price: { type: number }
- *     responses:
- *       200:
- *         description: Item updated
- */
-router.put("/items/:id", requirePermission("suppliers.edit"), updateSupplierItem);
-
-/**
- * @openapi
- * /suppliers/items/{id}:
- *   delete:
- *     tags: [Supplier Items]
- *     summary: Delete a supplier item
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema: { type: string }
- *     responses:
- *       200:
- *         description: Item deleted
- */
-router.delete("/items/:id", requirePermission("suppliers.delete"), deleteSupplierItem);
-
-/**
- * @openapi
- * /suppliers/list:
- *   get:
- *     tags: [Suppliers]
- *     summary: Get full supplier list for the logged-in user's company
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Raw list of suppliers
- */
-router.get("/list", getSupplierslist);
-
-/**
- * @openapi
- * /suppliers/allsuppliers:
- *   get:
- *     tags: [Suppliers]
- *     summary: Get full supplier list for the logged-in user's company
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Raw list of suppliers
- */
-router.get("/allsuppliers", getSuppliers);
-
-/**
- * @swagger
- * /suppliers/items/withsales:
- *   get:
- *     summary: Get supplier items with total, sold, and remaining quantities
- *     tags:
- *       - Supplier Items
- *     description: |
- *       Retrieves all supplier items along with total quantities supplied,
- *       quantities sold, and remaining quantities. Matches items by supplier and item name.
- *     responses:
- *       200:
- *         description: List of supplier items with sales summary
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                     description: ID of the supplier item
- *                   itemName:
- *                     type: string
- *                     description: Name of the item
- *                   supplierName:
- *                     type: string
- *                     description: Name of the supplier
- *                   quantity:
- *                     type: number
- *                     description: Total quantity supplied
- *                   soldQty:
- *                     type: number
- *                     description: Total quantity sold
- *                   remainingQty:
- *                     type: number
- *                     description: Quantity remaining in stock
- *                   price:
- *                     type: number
- *                     format: float
- *                     description: Current unit price
- *       500:
- *         description: Internal server error
- */
-
-router.get("/items/withsales", listSupplierItemsWithSales);
 
 /**
  * @openapi

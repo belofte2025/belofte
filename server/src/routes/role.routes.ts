@@ -33,6 +33,21 @@ router.get('/', getRoles);
 
 /**
  * @openapi
+ * /roles/permissions/all:
+ *   get:
+ *     tags:
+ *       - Roles
+ *     summary: Get all available permissions
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all permissions
+ */
+router.get('/permissions/all', getPermissions);
+
+/**
+ * @openapi
  * /roles/{id}:
  *   get:
  *     tags:
@@ -53,21 +68,6 @@ router.get('/', getRoles);
  *         description: Role not found
  */
 router.get('/:id', getRoleById);
-
-/**
- * @openapi
- * /roles/permissions/all:
- *   get:
- *     tags:
- *       - Roles
- *     summary: Get all available permissions
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of all permissions
- */
-router.get('/permissions/all', getPermissions);
 
 /**
  * @openapi

@@ -23,6 +23,20 @@ router.use(auth_middleware_1.authenticate);
 router.get('/', role_controller_1.getRoles);
 /**
  * @openapi
+ * /roles/permissions/all:
+ *   get:
+ *     tags:
+ *       - Roles
+ *     summary: Get all available permissions
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all permissions
+ */
+router.get('/permissions/all', role_controller_1.getPermissions);
+/**
+ * @openapi
  * /roles/{id}:
  *   get:
  *     tags:
@@ -43,20 +57,6 @@ router.get('/', role_controller_1.getRoles);
  *         description: Role not found
  */
 router.get('/:id', role_controller_1.getRoleById);
-/**
- * @openapi
- * /roles/permissions/all:
- *   get:
- *     tags:
- *       - Roles
- *     summary: Get all available permissions
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of all permissions
- */
-router.get('/permissions/all', role_controller_1.getPermissions);
 /**
  * @openapi
  * /roles:

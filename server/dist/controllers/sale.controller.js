@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteSaleById = exports.listSales = exports.updateSaleTotalAmount = exports.updateSale = exports.getSaleById = exports.getSalesByCustomerId = exports.getContainerItemsBySupplier = exports.getSales = exports.recordSale = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const recordSale = async (req, res) => {
-    const { saleType, sourceType, sourceId, customerId, items } = req.body;
+    const { saleType, sourceType, sourceId, customerId, items, saleDate } = req.body;
     const companyId = req.user?.companyId;
     const userPermissions = req.user?.permissions || [];
     const canEditPrice = userPermissions.includes("sales.edit_price");
@@ -52,6 +52,7 @@ const recordSale = async (req, res) => {
                 customerId,
                 companyId,
                 totalAmount,
+                createdAt: saleDate ? new Date(saleDate) : new Date(),
                 items: {
                     createMany: {
                         data: items.map((i) => ({

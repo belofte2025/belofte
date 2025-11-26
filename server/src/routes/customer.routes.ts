@@ -9,6 +9,7 @@ import {
   getCustomerStatement,
   getCustomerById,
   getCustomerByIdBal,
+  checkCustomerName,
 } from "../controllers/customer.controller";
 
 const router = Router();
@@ -58,6 +59,27 @@ router.post("/", requirePermission("customers.create"), createCustomer);
  *         description: List of customers
  */
 router.get("/", getCustomers);
+
+/**
+ * @openapi
+ * /customers/check-name:
+ *   get:
+ *     tags:
+ *       - Customers
+ *     summary: Check if a customer name already exists
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: customerName
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of similar customer names
+ */
+router.get("/check-name", checkCustomerName);
 
 /**
  * @openapi

@@ -50,6 +50,26 @@ router.post("/", (0, authorizePermission_1.requirePermission)("customers.create"
 router.get("/", customer_controller_1.getCustomers);
 /**
  * @openapi
+ * /customers/check-name:
+ *   get:
+ *     tags:
+ *       - Customers
+ *     summary: Check if a customer name already exists
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: customerName
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of similar customer names
+ */
+router.get("/check-name", customer_controller_1.checkCustomerName);
+/**
+ * @openapi
  * /customers/bal/{id}:
  *   get:
  *     tags: [Customers]
