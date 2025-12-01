@@ -549,6 +549,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     <option value="">Select note type</option>
                     <option value="Part Payment">Partial Payment</option>
                     <option value="Final Payment">Final Payment</option>
+                    <option value="Deposit">Deposit</option>
                   </select>
                 </div>
 
