@@ -280,7 +280,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
 // Record a customer payment
 export const createCustomerPayment = async (req: Request, res: Response) => {
   try {
-    const { amount, note } = req.body;
+    const { amount, note, paymentType, paymentDate } = req.body;
     const { id: customerId } = req.params;
     const companyId = req.user?.companyId;
 
@@ -294,13 +294,21 @@ export const createCustomerPayment = async (req: Request, res: Response) => {
       return;
     }
 
+    const paymentData: any = {
+      amount,
+      note,
+      paymentType,
+      customerId,
+      companyId,
+    };
+
+    // If a custom payment date is provided, use it instead of default timestamp
+    if (paymentDate) {
+      paymentData.createdAt = new Date(paymentDate);
+    }
+
     const payment = await prisma.customerPayment.create({
-      data: {
-        amount,
-        note,
-        customerId,
-        companyId,
-      },
+      data: paymentData,
     });
 
     // Update customer balance

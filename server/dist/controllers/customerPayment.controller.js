@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllCustomerPayments = exports.getCustomerPayments = exports.deleteCustomerPayment = exports.getCustomerStatement = exports.recordCustomerPayment = void 0;
+exports.getAllCustomerPayments = exports.getCustomerPayments = exports.deleteCustomerPayment = exports.updateCustomerPayment = exports.getCustomerStatement = exports.recordCustomerPayment = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const recordCustomerPayment = async (req, res) => {
     const { customerId, amount, note, paymentType, paymentDate } = req.body;
@@ -138,6 +138,62 @@ const getCustomerStatement = async (req, res) => {
     }
 };
 exports.getCustomerStatement = getCustomerStatement;
+const updateCustomerPayment = async (req, res) => {
+    const paymentId = req.params.id;
+    const { amount, note, paymentType, paymentDate } = req.body;
+    const companyId = req.user?.companyId;
+    try {
+        // Check if payment exists
+        const existingPayment = await prisma_1.default.customerPayment.findUnique({
+            where: { id: paymentId },
+        });
+        if (!existingPayment) {
+            res.status(404).json({ error: "Payment not found" });
+            return;
+        }
+        // Verify company ownership
+        if (companyId && existingPayment.companyId !== companyId) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+        // Calculate balance adjustment
+        const amountDiff = (amount !== undefined ? parseFloat(amount) : existingPayment.amount) - existingPayment.amount;
+        // Build update data
+        const updateData = {};
+        if (amount !== undefined)
+            updateData.amount = parseFloat(amount);
+        if (note !== undefined)
+            updateData.note = note;
+        if (paymentType !== undefined)
+            updateData.paymentType = paymentType;
+        if (paymentDate)
+            updateData.createdAt = new Date(paymentDate);
+        // Update the payment
+        const updatedPayment = await prisma_1.default.customerPayment.update({
+            where: { id: paymentId },
+            data: updateData,
+        });
+        // Adjust customer balance if amount changed
+        if (amountDiff !== 0) {
+            await prisma_1.default.customer.update({
+                where: { id: existingPayment.customerId },
+                data: {
+                    balance: {
+                        decrement: amountDiff, // If payment increased, balance decreases more
+                    },
+                },
+            });
+        }
+        res.json(updatedPayment);
+        return;
+    }
+    catch (error) {
+        console.error("Failed to update payment:", error);
+        res.status(500).json({ error: "Failed to update payment" });
+        return;
+    }
+};
+exports.updateCustomerPayment = updateCustomerPayment;
 const deleteCustomerPayment = async (req, res) => {
     const paymentId = req.params.id;
     try {

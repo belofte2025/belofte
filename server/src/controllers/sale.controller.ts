@@ -223,30 +223,37 @@ export const getSaleById = async (req: Request, res: Response) => {
 // Update sale and items
 export const updateSale = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { saleType, items } = req.body;
+  const { saleType, items, saleDate } = req.body;
 
   try {
-    await prisma.sale.update({
-      where: { id },
-      data: {
-        saleType,
-        items: {
-          deleteMany: {},
-          createMany: {
-            data: items.map(
-              (item: {
-                itemName: string;
-                quantity: number;
-                unitPrice: number;
-              }) => ({
-                itemName: item.itemName,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-              })
-            ),
-          },
+    const updateData: any = {
+      saleType,
+      items: {
+        deleteMany: {},
+        createMany: {
+          data: items.map(
+            (item: {
+              itemName: string;
+              quantity: number;
+              unitPrice: number;
+            }) => ({
+              itemName: item.itemName,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+            })
+          ),
         },
       },
+    };
+
+    // If a sale date is provided, update createdAt
+    if (saleDate) {
+      updateData.createdAt = new Date(saleDate);
+    }
+
+    await prisma.sale.update({
+      where: { id },
+      data: updateData,
     });
 
     res.json({ message: "Sale updated successfully" });

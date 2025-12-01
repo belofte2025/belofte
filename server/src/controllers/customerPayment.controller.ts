@@ -146,6 +146,65 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
   }
 };
 
+export const updateCustomerPayment = async (req: Request, res: Response) => {
+  const paymentId = req.params.id;
+  const { amount, note, paymentType, paymentDate } = req.body;
+  const companyId = req.user?.companyId;
+
+  try {
+    // Check if payment exists
+    const existingPayment = await prisma.customerPayment.findUnique({
+      where: { id: paymentId },
+    });
+
+    if (!existingPayment) {
+      res.status(404).json({ error: "Payment not found" });
+      return;
+    }
+
+    // Verify company ownership
+    if (companyId && existingPayment.companyId !== companyId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    // Calculate balance adjustment
+    const amountDiff = (amount !== undefined ? parseFloat(amount) : existingPayment.amount) - existingPayment.amount;
+
+    // Build update data
+    const updateData: any = {};
+    if (amount !== undefined) updateData.amount = parseFloat(amount);
+    if (note !== undefined) updateData.note = note;
+    if (paymentType !== undefined) updateData.paymentType = paymentType;
+    if (paymentDate) updateData.createdAt = new Date(paymentDate);
+
+    // Update the payment
+    const updatedPayment = await prisma.customerPayment.update({
+      where: { id: paymentId },
+      data: updateData,
+    });
+
+    // Adjust customer balance if amount changed
+    if (amountDiff !== 0) {
+      await prisma.customer.update({
+        where: { id: existingPayment.customerId },
+        data: {
+          balance: {
+            decrement: amountDiff, // If payment increased, balance decreases more
+          },
+        },
+      });
+    }
+
+    res.json(updatedPayment);
+    return;
+  } catch (error) {
+    console.error("Failed to update payment:", error);
+    res.status(500).json({ error: "Failed to update payment" });
+    return;
+  }
+};
+
 export const deleteCustomerPayment = async (req: Request, res: Response) => {
   const paymentId = req.params.id;
 

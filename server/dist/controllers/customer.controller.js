@@ -237,7 +237,7 @@ exports.updateCustomer = updateCustomer;
 // Record a customer payment
 const createCustomerPayment = async (req, res) => {
     try {
-        const { amount, note } = req.body;
+        const { amount, note, paymentType, paymentDate } = req.body;
         const { id: customerId } = req.params;
         const companyId = req.user?.companyId;
         if (!amount || isNaN(amount)) {
@@ -248,13 +248,19 @@ const createCustomerPayment = async (req, res) => {
             res.status(400).json({ error: "Company ID is required." });
             return;
         }
+        const paymentData = {
+            amount,
+            note,
+            paymentType,
+            customerId,
+            companyId,
+        };
+        // If a custom payment date is provided, use it instead of default timestamp
+        if (paymentDate) {
+            paymentData.createdAt = new Date(paymentDate);
+        }
         const payment = await prisma_1.default.customerPayment.create({
-            data: {
-                amount,
-                note,
-                customerId,
-                companyId,
-            },
+            data: paymentData,
         });
         // Update customer balance
         await prisma_1.default.customer.update({

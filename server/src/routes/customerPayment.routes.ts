@@ -4,6 +4,7 @@ import { requirePermission } from "../middlewares/authorizePermission";
 import {
   recordCustomerPayment,
   getCustomerStatement,
+  updateCustomerPayment,
   deleteCustomerPayment,
   getCustomerPayments,
   getAllCustomerPayments,
@@ -15,6 +16,45 @@ router.use(authenticate);
 router.post("/", requirePermission("payments.create"), recordCustomerPayment);
 
 router.get("/:id/statement", getCustomerStatement);
+
+/**
+ * @swagger
+ * /payments/{id}:
+ *   put:
+ *     summary: Update a customer payment
+ *     tags:
+ *       - CustomerPayments
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the payment to update
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *               note:
+ *                 type: string
+ *               paymentType:
+ *                 type: string
+ *               paymentDate:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Payment updated successfully
+ *       404:
+ *         description: Payment not found
+ *       500:
+ *         description: Server error
+ */
+router.put("/:id", requirePermission("payments.create"), updateCustomerPayment);
 
 /**
  * @swagger
