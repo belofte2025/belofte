@@ -328,6 +328,7 @@ const getCustomerStatement = async (req, res) => {
                 createdAt: true,
                 amount: true,
                 note: true,
+                paymentType: true,
             },
         });
         // Fetch debts
@@ -357,17 +358,22 @@ const getCustomerStatement = async (req, res) => {
                 credit: 0,
                 status: "completed",
             })),
-            // Payments (decrease balance)
-            ...payments.map((p) => ({
-                id: p.id,
-                date: p.createdAt.toISOString().split("T")[0],
-                timestamp: p.createdAt,
-                type: "payment",
-                description: p.note || "Payment received",
-                debit: 0,
-                credit: p.amount, // Payment received (decreases balance)
-                status: "completed",
-            })),
+            // Payments and Credit Notes (decrease balance)
+            ...payments.map((p) => {
+                const transactionType = p.paymentType === "CREDIT_NOTE" ? "credit_note" : "payment";
+                return {
+                    id: p.id,
+                    date: p.createdAt.toISOString().split("T")[0],
+                    timestamp: p.createdAt,
+                    type: transactionType,
+                    description: p.paymentType === "CREDIT_NOTE"
+                        ? (p.note || "Credit note")
+                        : (p.note || "Payment received"),
+                    debit: 0,
+                    credit: p.amount, // Payment/Credit received (decreases balance)
+                    status: "completed",
+                };
+            }),
             // Debts (increase balance)
             ...debts.map((d) => ({
                 id: d.id,
