@@ -65,7 +65,7 @@ export interface StatementEntry {
   id: string;
   date: string;
   timestamp?: Date;
-  type: "credit_sale" | "payment" | "debt";
+  type: "credit_sale" | "payment" | "debt" | "credit_note";
   description: string;
   debit: number;
   credit: number;

@@ -20,7 +20,7 @@ import toast from "react-hot-toast";
 type StatementEntry = {
   id: string;
   date: string;
-  type: "credit_sale" | "payment" | "debt";
+  type: "credit_sale" | "payment" | "debt" | "credit_note";
   description: string;
   debit: number;
   credit: number;
@@ -137,6 +137,7 @@ export default function CustomerStatement({ customerId }: Props) {
       credit_sale: { label: "Credit Sale", color: "bg-blue-100 text-blue-800" },
       payment: { label: "Payment", color: "bg-green-100 text-green-800" },
       debt: { label: "Debt", color: "bg-red-100 text-red-800" },
+      credit_note: { label: "Credit Note", color: "bg-purple-100 text-purple-800" },
     };
     const badge = badges[type as keyof typeof badges] || {
       label: type,

@@ -33,10 +33,14 @@ interface PaymentReceipt {
 
 export default function CustomerPaymentForm({ customerId }: Props) {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"payment" | "credit">("payment");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [paymentType, setPaymentType] = useState("");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [creditDescription, setCreditDescription] = useState("");
+  const [creditDate, setCreditDate] = useState(new Date().toISOString().split("T")[0]);
+  const [creditAmount, setCreditAmount] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerBal, setCustomerBal] = useState(0);
@@ -275,6 +279,55 @@ export default function CustomerPaymentForm({ customerId }: Props) {
     printWindow.document.close();
   };
 
+  const handleCreditSubmit = async () => {
+    if (!creditAmount || isNaN(Number(creditAmount))) {
+      toast.error("Enter a valid credit amount");
+      return;
+    }
+    if (!creditDescription) {
+      toast.error("Select a credit description");
+      return;
+    }
+
+    const creditAmountValue = parseFloat(creditAmount);
+    const previousBalance = customerBal;
+    const currentBalance = previousBalance - creditAmountValue;
+
+    console.log("💳 Credit note submission:", {
+      customerId,
+      creditAmount: creditAmountValue,
+      previousBalance,
+      currentBalance,
+      creditDescription,
+      creditDate,
+    });
+
+    setSubmitting(true);
+    try {
+      console.log("📝 Recording credit note...");
+      await createCustomerPayment(customerId, {
+        amount: creditAmountValue,
+        note: creditDescription,
+        paymentType: "CREDIT_NOTE",
+        paymentDate: creditDate,
+      });
+      console.log("✅ Credit note recorded successfully");
+
+      toast.success(`₵ ${creditAmount} credit note recorded for ${customerName}`, {
+        duration: 2000,
+      });
+
+      setTimeout(() => {
+        router.push(`/customers`);
+      }, 500);
+    } catch (error) {
+      console.error("❌ Credit note error:", error);
+      toast.error("Failed to record credit note");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!amount || isNaN(Number(amount))) {
       toast.error("Enter a valid amount");
@@ -421,12 +474,38 @@ export default function CustomerPaymentForm({ customerId }: Props) {
             </button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Record Payment
+                {activeTab === "payment" ? "Record Payment" : "Record Credit Note"}
               </h1>
               <p className="mt-1 text-gray-600">
-                Add a new payment for {customerName}
+                {activeTab === "payment"
+                  ? `Add a new payment for ${customerName}`
+                  : `Add a credit note for ${customerName}`}
               </p>
             </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab("payment")}
+              className={`px-6 py-3 font-medium transition-all duration-200 border-b-2 ${
+                activeTab === "payment"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Payment
+            </button>
+            <button
+              onClick={() => setActiveTab("credit")}
+              className={`px-6 py-3 font-medium transition-all duration-200 border-b-2 ${
+                activeTab === "credit"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Credit Note
+            </button>
           </div>
         </div>
 
@@ -455,7 +534,10 @@ export default function CustomerPaymentForm({ customerId }: Props) {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Calendar className="w-4 h-4" />
-                  <span className="text-sm">Payment Date: {paymentDate}</span>
+                  <span className="text-sm">
+                    {activeTab === "payment" ? "Payment Date: " : "Credit Date: "}
+                    {activeTab === "payment" ? paymentDate : creditDate}
+                  </span>
                 </div>
               </div>
             </div>
@@ -463,15 +545,16 @@ export default function CustomerPaymentForm({ customerId }: Props) {
 
           {/* Payment Form */}
           <div className="lg:col-span-2">
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <CreditCard className="w-5 h-5 text-blue-600" />
+            {activeTab === "payment" ? (
+              <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-blue-100 rounded-full">
+                    <CreditCard className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Payment Details
+                  </h2>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Payment Details
-                </h2>
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Amount Field */}
@@ -611,6 +694,106 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                 </button>
               </div>
             </div>
+            ) : (
+              /* Credit Note Form */
+              <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <FileText className="w-5 h-5 text-green-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Credit Note Details
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Credit Amount Field */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Credit Amount (₵)
+                    </label>
+                    <input
+                      type="number"
+                      value={creditAmount}
+                      onChange={(e) => setCreditAmount(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 text-gray-900 placeholder:text-gray-400"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                    />
+                    {creditAmount && !isNaN(Number(creditAmount)) && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        New Balance: ₵{" "}
+                        {(customerBal - parseFloat(creditAmount)).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Credit Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Description
+                      </div>
+                    </label>
+                    <select
+                      value={creditDescription}
+                      onChange={(e) => setCreditDescription(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
+                    >
+                      <option value="">Select description</option>
+                      <option value="Returned Damaged Goods">Returned Damaged Goods</option>
+                      <option value="Discount on Payment">Discount on Payment</option>
+                    </select>
+                  </div>
+
+                  {/* Credit Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Credit Date
+                      </div>
+                    </label>
+                    <input
+                      type="date"
+                      value={creditDate}
+                      onChange={(e) => setCreditDate(e.target.value)}
+                      max={today}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={() => router.back()}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreditSubmit}
+                    disabled={submitting}
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg shadow-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Record Credit Note
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
