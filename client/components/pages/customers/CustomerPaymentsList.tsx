@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import {
   getCustomerPayments,
   deleteCustomerPayment,
+  updateCustomerPayment,
 } from "@/services/paymentService";
 import { getCustomerById } from "@/services/customerService";
 import { useCallback } from "react";
 import { formatCurrency } from "@/utils/format";
-import { CreditCard, Calendar, Trash2, Receipt, User, FileText } from "lucide-react";
+import { CreditCard, Calendar, Trash2, Receipt, User, FileText, Edit2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { Dialog } from "@headlessui/react";
 
 type Props = {
   customerId: string;
@@ -26,6 +28,16 @@ export default function CustomerPaymentsList({ customerId }: Props) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [editForm, setEditForm] = useState({
+    amount: "",
+    paymentType: "",
+    note: "",
+    paymentDate: "",
+  });
 
   const loadPayments = useCallback(async () => {
     try {
@@ -60,6 +72,37 @@ export default function CustomerPaymentsList({ customerId }: Props) {
       await loadPayments();
     } catch {
       toast.error("Failed to delete payment. Please try again.");
+    }
+  };
+
+  const handleOpenEditModal = (payment: Payment) => {
+    setEditingPayment(payment);
+    setEditForm({
+      amount: payment.amount.toString(),
+      paymentType: payment.paymentType,
+      note: payment.note || "",
+      paymentDate: new Date(payment.createdAt).toISOString().split("T")[0],
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPayment) return;
+
+    try {
+      await updateCustomerPayment(editingPayment.id, {
+        amount: parseFloat(editForm.amount),
+        paymentType: editForm.paymentType,
+        note: editForm.note,
+        paymentDate: editForm.paymentDate,
+      });
+      toast.success("Payment updated successfully");
+      setShowEditModal(false);
+      setEditingPayment(null);
+      await loadPayments();
+    } catch {
+      toast.error("Failed to update payment");
     }
   };
 
@@ -211,6 +254,14 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => handleOpenEditModal(payment)}
+                        className="inline-flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                        title="Edit payment"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        <span className="text-sm font-medium">Edit</span>
+                      </button>
+                      <button
                         onClick={() => confirmDelete(payment.id, payment.amount)}
                         className="inline-flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                         title="Delete payment"
@@ -232,13 +283,111 @@ export default function CustomerPaymentsList({ customerId }: Props) {
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Payment Summary</h3>
               <p className="text-gray-600">
-                Customer has made <span className="font-semibold text-green-600">{totalPayments}</span> payments 
+                Customer has made <span className="font-semibold text-green-600">{totalPayments}</span> payments
                 totaling <span className="font-semibold text-green-600">{formatCurrency(totalAmount)}</span>
               </p>
             </div>
           </div>
         )}
       </div>
+
+      {/* Edit Payment Modal */}
+      <Dialog open={showEditModal} onClose={() => {}} className="relative z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-md bg-white p-6 rounded-xl shadow-2xl border border-gray-200">
+            <Dialog.Title className="text-xl font-bold text-gray-900 mb-6">
+              Edit Payment
+            </Dialog.Title>
+
+            <form onSubmit={handleEditPayment} className="space-y-4">
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount (₵)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, amount: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              {/* Payment Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  value={editForm.paymentType}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, paymentType: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="CASH">Cash</option>
+                  <option value="BANK">Bank Transfer</option>
+                  <option value="MOMO">Mobile Money</option>
+                </select>
+              </div>
+
+              {/* Payment Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Payment Date
+                  </div>
+                </label>
+                <input
+                  type="date"
+                  value={editForm.paymentDate}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, paymentDate: e.target.value }))}
+                  max={new Date().toISOString().split("T")[0]}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Note */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Note
+                </label>
+                <select
+                  value={editForm.note}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, note: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select note type</option>
+                  <option value="Part Payment">Partial Payment</option>
+                  <option value="Final Payment">Final Payment</option>
+                </select>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingPayment(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 }

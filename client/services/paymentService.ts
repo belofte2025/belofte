@@ -10,6 +10,19 @@ export const getCustomerStatement = async (customerId: string) => {
   return res.data;
 };
 
+export const updateCustomerPayment = async (
+  id: string,
+  data: {
+    amount?: number;
+    note?: string;
+    paymentType?: string;
+    paymentDate?: string;
+  }
+) => {
+  const res = await api.put(`/payments/${id}`, data);
+  return res.data;
+};
+
 export const deleteCustomerPayment = async (id: string) => {
   const res = await api.delete(`/payments/${id}/customerpayments`);
   return res.data;

@@ -313,9 +313,9 @@ export default function RegularSaleComponent() {
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Sale Configuration */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1">
             {/* Sale Date */}
-            <div className="bg-white p-6 shadow-sm border border-gray-200">
+            <div className="bg-white p-6 shadow-sm border border-gray-200 border-b-0">
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-purple-600" />
                 <h3 className="font-semibold text-gray-900">Sale Date</h3>
@@ -330,7 +330,7 @@ export default function RegularSaleComponent() {
             </div>
 
             {/* Customer Selection */}
-            <div className="bg-white p-6 shadow-sm border border-gray-200">
+            <div className="bg-white p-6 shadow-sm border border-gray-200 border-b-0">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-blue-600" />
@@ -366,7 +366,7 @@ export default function RegularSaleComponent() {
             </div>
 
             {/* Sale Type */}
-            <div className="bg-white p-6 shadow-sm border border-gray-200">
+            <div className="bg-white p-6 shadow-sm border border-gray-200 border-b-0">
               <h3 className="font-semibold text-gray-900 mb-4">
                 Payment Method
               </h3>

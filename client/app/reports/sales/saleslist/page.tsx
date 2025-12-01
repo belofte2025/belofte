@@ -69,8 +69,9 @@ export default function SalesListPage() {
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [editForm, setEditForm] = useState<{
     saleType: string;
+    saleDate: string;
     items: SaleItem[];
-  }>({ saleType: "", items: [] });
+  }>({ saleType: "", saleDate: "", items: [] });
 
   const loadSales = useCallback(async () => {
     setLoading(true);
@@ -143,6 +144,7 @@ export default function SalesListPage() {
     setEditingSale(sale);
     setEditForm({
       saleType: sale.saleType,
+      saleDate: new Date(sale.createdAt).toISOString().split("T")[0],
       items: sale.items.map(item => ({ ...item })),
     });
     setShowEditModal(true);
@@ -160,6 +162,7 @@ export default function SalesListPage() {
     try {
       await updateSale(editingSale.id, {
         saleType: editForm.saleType,
+        saleDate: editForm.saleDate,
         items: editForm.items,
       });
       toast.success("Sale updated successfully");
@@ -454,6 +457,23 @@ export default function SalesListPage() {
                   <option value="cash">Cash</option>
                   <option value="credit">Credit</option>
                 </select>
+              </div>
+
+              {/* Sale Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Sale Date
+                  </div>
+                </label>
+                <input
+                  type="date"
+                  value={editForm.saleDate}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, saleDate: e.target.value }))}
+                  max={new Date().toISOString().split("T")[0]}
+                  className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
 
               {/* Items */}
