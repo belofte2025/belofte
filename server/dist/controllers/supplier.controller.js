@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSupplierItemsForQuantityManagement = exports.getSupplierItemsForPriceManagement = exports.bulkAdjustQuantities = exports.bulkUpdatePrices = exports.listSupplierItemsWithSales = exports.getSupplierslist = exports.deleteSupplierItem = exports.updateSupplierItem = exports.getSupplierItems = exports.addMultipleSupplierItems = exports.addSupplierItem = exports.deleteSupplier = exports.updateSupplier = exports.getSupplierById = exports.getSuppliers = exports.createSupplier = void 0;
+exports.bulkUpdateAliases = exports.getSupplierItemsForAliasManagement = exports.getSupplierItemsForQuantityManagement = exports.getSupplierItemsForPriceManagement = exports.bulkAdjustQuantities = exports.bulkUpdatePrices = exports.listSupplierItemsWithSales = exports.getSupplierslist = exports.deleteSupplierItem = exports.updateSupplierItem = exports.getSupplierItems = exports.addMultipleSupplierItems = exports.addSupplierItem = exports.deleteSupplier = exports.updateSupplier = exports.getSupplierById = exports.getSuppliers = exports.createSupplier = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 // ------------------------------
 // SUPPLIERS
@@ -695,4 +695,93 @@ const getSupplierItemsForQuantityManagement = async (req, res) => {
     }
 };
 exports.getSupplierItemsForQuantityManagement = getSupplierItemsForQuantityManagement;
+const getSupplierItemsForAliasManagement = async (req, res) => {
+    try {
+        const { supplierId } = req.params;
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            res.status(400).json({ error: "Company ID is missing" });
+            return;
+        }
+        // Verify supplier belongs to company
+        const supplier = await prisma_1.default.supplier.findFirst({
+            where: { id: supplierId, companyId },
+            include: {
+                items: {
+                    orderBy: { itemName: 'asc' },
+                },
+            },
+        });
+        if (!supplier) {
+            res.status(404).json({ error: "Supplier not found" });
+            return;
+        }
+        res.json({
+            supplier: {
+                id: supplier.id,
+                name: supplier.suppliername,
+                country: supplier.country,
+            },
+            items: supplier.items.map(item => ({
+                id: item.id,
+                itemName: item.itemName,
+                alias: item.alias,
+                price: item.price,
+            })),
+        });
+    }
+    catch (error) {
+        console.error("Failed to fetch items for alias management:", error);
+        res.status(500).json({ error: "Failed to fetch items", detail: error });
+    }
+};
+exports.getSupplierItemsForAliasManagement = getSupplierItemsForAliasManagement;
+const bulkUpdateAliases = async (req, res) => {
+    try {
+        const { supplierId } = req.params;
+        const { updates } = req.body; // [{ itemId, alias }, ...]
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            res.status(400).json({ error: "Company ID is missing" });
+            return;
+        }
+        // Verify supplier belongs to company
+        const supplier = await prisma_1.default.supplier.findFirst({
+            where: { id: supplierId, companyId },
+        });
+        if (!supplier) {
+            res.status(404).json({ error: "Supplier not found" });
+            return;
+        }
+        // Validate all items belong to the supplier
+        const itemIds = updates.map((u) => u.itemId);
+        const items = await prisma_1.default.supplierItem.findMany({
+            where: {
+                id: { in: itemIds },
+                supplierId,
+            },
+        });
+        if (items.length !== itemIds.length) {
+            res.status(400).json({ error: "Some items don't belong to this supplier" });
+            return;
+        }
+        // Perform bulk alias updates
+        const updatePromises = updates.map((update) => {
+            return prisma_1.default.supplierItem.update({
+                where: { id: update.itemId },
+                data: { alias: update.alias || null },
+            });
+        });
+        const updatedItems = await Promise.all(updatePromises);
+        res.json({
+            message: `Updated ${updatedItems.length} item alias(es)`,
+            updatedItems,
+        });
+    }
+    catch (error) {
+        console.error("Failed to bulk update aliases:", error);
+        res.status(500).json({ error: "Failed to update aliases", detail: error });
+    }
+};
+exports.bulkUpdateAliases = bulkUpdateAliases;
 9;

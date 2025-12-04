@@ -371,11 +371,21 @@ const upsertSupplierItems = async (supplierId, items) => {
             },
         });
         if (existing) {
+            // Prepare update data
+            const updateData = {};
             // Update price if different
             if (existing.price !== item.unitPrice) {
+                updateData.price = item.unitPrice;
+            }
+            // Update alias if provided and different
+            if (item.alias !== undefined && existing.alias !== item.alias) {
+                updateData.alias = item.alias || null;
+            }
+            // Only update if there are changes
+            if (Object.keys(updateData).length > 0) {
                 await prisma_1.default.supplierItem.update({
                     where: { id: existing.id },
-                    data: { price: item.unitPrice },
+                    data: updateData,
                 });
             }
         }
@@ -385,6 +395,7 @@ const upsertSupplierItems = async (supplierId, items) => {
                 data: {
                     supplierId,
                     itemName: item.itemName,
+                    alias: item.alias || null,
                     price: item.unitPrice,
                 },
             });

@@ -776,7 +776,7 @@ export const getSupplierItemsForQuantityManagement = async (req: Request, res: R
     // Group by item name and get the latest entry for each
     const itemMap = new Map();
     containerItems.forEach(item => {
-      if (!itemMap.has(item.itemName) || 
+      if (!itemMap.has(item.itemName) ||
           new Date(item.container.arrivalDate) > new Date(itemMap.get(item.itemName).container.arrivalDate)) {
         itemMap.set(item.itemName, item);
       }
@@ -807,6 +807,105 @@ export const getSupplierItemsForQuantityManagement = async (req: Request, res: R
   } catch (error) {
     console.error("Failed to fetch items for quantity management:", error);
     res.status(500).json({ error: "Failed to fetch items", detail: error });
+  }
+};
+
+export const getSupplierItemsForAliasManagement = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+      include: {
+        items: {
+          orderBy: { itemName: 'asc' },
+        },
+      },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+
+    res.json({
+      supplier: {
+        id: supplier.id,
+        name: supplier.suppliername,
+        country: supplier.country,
+      },
+      items: supplier.items.map(item => ({
+        id: item.id,
+        itemName: item.itemName,
+        alias: item.alias,
+        price: item.price,
+      })),
+    });
+  } catch (error) {
+    console.error("Failed to fetch items for alias management:", error);
+    res.status(500).json({ error: "Failed to fetch items", detail: error });
+  }
+};
+
+export const bulkUpdateAliases = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const { updates } = req.body; // [{ itemId, alias }, ...]
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+
+    // Validate all items belong to the supplier
+    const itemIds = updates.map((u: { itemId: string }) => u.itemId);
+    const items = await prisma.supplierItem.findMany({
+      where: {
+        id: { in: itemIds },
+        supplierId,
+      },
+    });
+
+    if (items.length !== itemIds.length) {
+      res.status(400).json({ error: "Some items don't belong to this supplier" });
+      return;
+    }
+
+    // Perform bulk alias updates
+    const updatePromises = updates.map((update: { itemId: string; alias?: string }) => {
+      return prisma.supplierItem.update({
+        where: { id: update.itemId },
+        data: { alias: update.alias || null },
+      });
+    });
+
+    const updatedItems = await Promise.all(updatePromises);
+
+    res.json({
+      message: `Updated ${updatedItems.length} item alias(es)`,
+      updatedItems,
+    });
+  } catch (error) {
+    console.error("Failed to bulk update aliases:", error);
+    res.status(500).json({ error: "Failed to update aliases", detail: error });
   }
 };
 9

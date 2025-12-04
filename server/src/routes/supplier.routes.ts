@@ -15,6 +15,8 @@ import {
   bulkAdjustQuantities,
   getSupplierItemsForPriceManagement,
   getSupplierItemsForQuantityManagement,
+  getSupplierItemsForAliasManagement,
+  bulkUpdateAliases,
 } from "../controllers/supplier.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { requirePermission } from "../middlewares/authorizePermission";
@@ -376,5 +378,56 @@ router.get("/:supplierId/quantity-management", getSupplierItemsForQuantityManage
  *         description: Quantities adjusted successfully
  */
 router.put("/:supplierId/quantity-management/bulk", requirePermission("suppliers.edit"), bulkAdjustQuantities);
+
+/**
+ * @openapi
+ * /suppliers/{supplierId}/alias-management:
+ *   get:
+ *     tags: [Alias Management]
+ *     summary: Get supplier items for alias management
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Supplier items with alias info
+ */
+router.get("/:supplierId/alias-management", getSupplierItemsForAliasManagement);
+
+/**
+ * @openapi
+ * /suppliers/{supplierId}/alias-management/bulk:
+ *   put:
+ *     tags: [Alias Management]
+ *     summary: Bulk update item aliases for a supplier
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [updates]
+ *             properties:
+ *               updates:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     itemId: { type: string }
+ *                     alias: { type: string }
+ *     responses:
+ *       200:
+ *         description: Aliases updated successfully
+ */
+router.put("/:supplierId/alias-management/bulk", requirePermission("suppliers.edit"), bulkUpdateAliases);
 
 export default router;

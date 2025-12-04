@@ -419,7 +419,7 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
 };
 const upsertSupplierItems = async (
   supplierId: string,
-  items: { itemName: string; unitPrice: number }[]
+  items: { itemName: string; unitPrice: number; alias?: string }[]
 ) => {
   for (const item of items) {
     const existing = await prisma.supplierItem.findFirst({
@@ -430,11 +430,24 @@ const upsertSupplierItems = async (
     });
 
     if (existing) {
+      // Prepare update data
+      const updateData: { price?: number; alias?: string | null } = {};
+
       // Update price if different
       if (existing.price !== item.unitPrice) {
+        updateData.price = item.unitPrice;
+      }
+
+      // Update alias if provided and different
+      if (item.alias !== undefined && existing.alias !== item.alias) {
+        updateData.alias = item.alias || null;
+      }
+
+      // Only update if there are changes
+      if (Object.keys(updateData).length > 0) {
         await prisma.supplierItem.update({
           where: { id: existing.id },
-          data: { price: item.unitPrice },
+          data: updateData,
         });
       }
     } else {
@@ -443,6 +456,7 @@ const upsertSupplierItems = async (
         data: {
           supplierId,
           itemName: item.itemName,
+          alias: item.alias || null,
           price: item.unitPrice,
         },
       });
