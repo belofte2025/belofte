@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getSMSLogs, SMSLog } from '@/services/smsService';
 import { MessageSquare, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -13,11 +13,7 @@ export default function SMSLogsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchLogs();
-  }, [page]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const data = await getSMSLogs(page, 50);
       setLogs(data.logs);
@@ -27,7 +23,11 @@ export default function SMSLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [page, fetchLogs]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

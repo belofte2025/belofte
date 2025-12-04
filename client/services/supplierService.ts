@@ -122,3 +122,20 @@ export const bulkAdjustQuantities = async (
   });
   return res.data;
 };
+
+// ========== ALIAS MANAGEMENT ==========
+
+export const getSupplierItemsForAliasManagement = async (supplierId: string) => {
+  const res = await api.get(`/suppliers/${supplierId}/alias-management`);
+  return res.data;
+};
+
+export const bulkUpdateAliases = async (
+  supplierId: string,
+  updates: { itemId: string; alias?: string }[]
+) => {
+  const res = await api.put(`/suppliers/${supplierId}/alias-management/bulk`, {
+    updates,
+  });
+  return res.data;
+};

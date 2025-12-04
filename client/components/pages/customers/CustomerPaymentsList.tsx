@@ -255,7 +255,7 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleOpenEditModal(payment)}
-                        className="inline-flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                        className="inline-flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded transition-colors duration-200"
                         title="Edit payment"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -263,7 +263,7 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                       </button>
                       <button
                         onClick={() => confirmDelete(payment.id, payment.amount)}
-                        className="inline-flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                        className="inline-flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
                         title="Delete payment"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -311,7 +311,7 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                   step="0.01"
                   value={editForm.amount}
                   onChange={(e) => setEditForm(prev => ({ ...prev, amount: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -324,7 +324,7 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                 <select
                   value={editForm.paymentType}
                   onChange={(e) => setEditForm(prev => ({ ...prev, paymentType: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="CASH">Cash</option>
                   <option value="BANK">Bank Transfer</option>
@@ -345,7 +345,7 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                   value={editForm.paymentDate}
                   onChange={(e) => setEditForm(prev => ({ ...prev, paymentDate: e.target.value }))}
                   max={new Date().toISOString().split("T")[0]}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
@@ -357,7 +357,7 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                 <select
                   value={editForm.note}
                   onChange={(e) => setEditForm(prev => ({ ...prev, note: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select note type</option>
                   <option value="Part Payment">Partial Payment</option>
@@ -373,13 +373,13 @@ export default function CustomerPaymentsList({ customerId }: Props) {
                     setShowEditModal(false);
                     setEditingPayment(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                 >
                   Save Changes
                 </button>

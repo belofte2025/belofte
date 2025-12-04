@@ -97,7 +97,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
             <p className="mt-2 text-gray-500">The supplier you&apos;re looking for doesn&apos;t exist.</p>
             <Link
               href="/suppliers"
-              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               Back to Suppliers
             </Link>
@@ -130,14 +130,14 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                 <>
                   <button
                     onClick={handleCancel}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                   >
                     <X className="w-4 h-4" />
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                   >
                     <Save className="w-4 h-4" />
                     Save
@@ -146,7 +146,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
               ) : (
                 <button
                   onClick={() => setEditing(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                 >
                   <Edit className="w-4 h-4" />
                   Edit
@@ -175,7 +175,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                         type="text"
                         value={formData.suppliername}
                         onChange={(e) => setFormData(prev => ({ ...prev, suppliername: e.target.value }))}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -190,7 +190,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                         type="text"
                         value={formData.contact}
                         onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -204,7 +204,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                       <select
                         value={formData.country}
                         onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         {/* North America */}
                         <option value="United States">United States</option>
@@ -325,7 +325,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
                   href={`/suppliers/${supplier.id}/items`}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                 >
                   <Package className="w-4 h-4" />
                   Manage Items
@@ -333,7 +333,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                 
                 <Link
                   href={`/containers/new?supplier=${supplier.id}`}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                 >
                   <Container className="w-4 h-4" />
                   Add Container

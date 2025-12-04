@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getCustomerById } from "@/services/customerService";
 import { getSalesByCustomerId, updateSale, deleteSaleById } from "@/services/salesService";
 import { formatCurrency } from "@/utils/format";
-import { ShoppingCart, Calendar, TrendingUp, Receipt, Eye, Edit, Trash2, Plus, Minus, X } from "lucide-react";
+import { ShoppingCart, TrendingUp, Receipt, Eye, Edit, Trash2, Plus, Minus, X } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -40,7 +40,7 @@ export default function CustomerSalesList({ customerId }: Props) {
     items: SaleItem[];
   }>({ saleType: "", items: [] });
 
-  const loadSales = async () => {
+  const loadSales = useCallback(async () => {
     try {
       const data = await getSalesByCustomerId(customerId);
       setSales(data);
@@ -49,7 +49,7 @@ export default function CustomerSalesList({ customerId }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [customerId]);
 
   useEffect(() => {
     const loadCustomer = async () => {
@@ -63,7 +63,7 @@ export default function CustomerSalesList({ customerId }: Props) {
 
     loadCustomer();
     loadSales();
-  }, [customerId]);
+  }, [customerId, loadSales]);
 
   const handleOpenEditModal = (sale: Sale) => {
     setEditingSale(sale);

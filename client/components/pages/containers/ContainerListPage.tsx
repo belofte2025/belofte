@@ -138,7 +138,7 @@ export default function ContainerListPage() {
             </div>
             <Link
               href="/containers/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-200"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded shadow-sm hover:bg-blue-700 transition-colors duration-200"
             >
               <Plus className="w-5 h-5" />
               Add Container
@@ -411,7 +411,7 @@ export default function ContainerListPage() {
                   setSelectedId(null);
                   window.location.href = `/sales/container/${selectedId}`;
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-sm font-medium transition-colors duration-200"
               >
                 <Container className="w-4 h-4" />
                 Make Sale in Container
@@ -421,7 +421,7 @@ export default function ContainerListPage() {
                   setSelectedId(null);
                   handleMarkReceived(selectedId!);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded text-sm font-medium transition-colors duration-200"
               >
                 <CheckCircle className="w-4 h-4" />
                 Perform Offload
@@ -431,7 +431,7 @@ export default function ContainerListPage() {
                   setSelectedId(null);
                   window.location.href = `/reports/sales/container/${selectedId}`;
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-purple-700 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-purple-700 hover:bg-green-100 rounded text-sm font-medium transition-colors duration-200"
               >
                 <CheckCircle className="w-4 h-4" />
                 Container Sales Report
@@ -441,7 +441,7 @@ export default function ContainerListPage() {
                   setSelectedId(null);
                   window.location.href = `/offload/parkinglist/${selectedId}`;
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-yellow-700 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-yellow-700 hover:bg-green-100 rounded text-sm font-medium transition-colors duration-200"
               >
                 <CheckCircle className="w-4 h-4" />
                 Container Parking list
@@ -450,7 +450,7 @@ export default function ContainerListPage() {
                 onClick={() => {
                   handleDelete(selectedId!);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 hover:bg-red-100 rounded text-sm font-medium transition-colors duration-200"
               >
                 <Clock className="w-4 h-4" />
                 Delete Container
@@ -458,7 +458,7 @@ export default function ContainerListPage() {
             </div>
             <button
               onClick={() => setSelectedId(null)}
-              className="w-full mt-6 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors duration-200"
+              className="w-full mt-6 px-4 py-3 border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50 transition-colors duration-200"
             >
               Cancel
             </button>

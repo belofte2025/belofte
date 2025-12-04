@@ -566,7 +566,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-gray-900 placeholder:text-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-gray-900 placeholder:text-gray-400"
                     placeholder="0.00"
                     step="0.01"
                     min="0"
@@ -590,7 +590,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                   <select
                     value={paymentType}
                     onChange={(e) => setPaymentType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
                   >
                     <option value="">Select method</option>
                     <option value="CASH">Cash Payment</option>
@@ -612,7 +612,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     value={paymentDate}
                     onChange={(e) => setPaymentDate(e.target.value)}
                     max={today}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
                   />
                 </div>
 
@@ -627,7 +627,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                   <select
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
                   >
                     <option value="">Select note type</option>
                     <option value="Part Payment">Partial Payment</option>
@@ -638,7 +638,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
 
                 {/* SMS Notification Checkbox */}
                 <div className="md:col-span-2">
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="bg-purple-50 border border-purple-200 rounded p-4">
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -671,14 +671,14 @@ export default function CustomerPaymentForm({ customerId }: Props) {
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={() => router.back()}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded hover:bg-gray-50 transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {submitting ? (
                     <>
@@ -716,7 +716,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                       type="number"
                       value={creditAmount}
                       onChange={(e) => setCreditAmount(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 text-gray-900 placeholder:text-gray-400"
+                      className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 text-gray-900 placeholder:text-gray-400"
                       placeholder="0.00"
                       step="0.01"
                       min="0"
@@ -740,7 +740,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                     <select
                       value={creditDescription}
                       onChange={(e) => setCreditDescription(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
+                      className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
                     >
                       <option value="">Select description</option>
                       <option value="Returned Damaged Goods">Returned Damaged Goods</option>
@@ -761,7 +761,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                       value={creditDate}
                       onChange={(e) => setCreditDate(e.target.value)}
                       max={today}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
+                      className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 bg-white text-gray-900"
                     />
                   </div>
                 </div>
@@ -770,14 +770,14 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                 <div className="mt-8 flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={() => router.back()}
-                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded hover:bg-gray-50 transition-colors duration-200"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleCreditSubmit}
                     disabled={submitting}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg shadow-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded shadow-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {submitting ? (
                       <>

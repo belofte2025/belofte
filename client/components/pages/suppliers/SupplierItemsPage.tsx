@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getSupplierItems, addSupplierItem, updateSupplierItem, deleteSupplierItem, getSupplierById } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, Plus, Trash2, Package, X, TrendingUp, Edit, Search } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Package, X, TrendingUp, Edit, Search, Tag } from "lucide-react";
 import Link from "next/link";
 import { Dialog } from "@headlessui/react";
 
@@ -219,14 +219,14 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-all duration-200"
+                className="inline-flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 font-medium rounded hover:bg-blue-50 transition-all duration-200"
               >
                 <Plus className="w-4 h-4" />
                 Add Item
               </button>
               <button
                 onClick={() => setShowBulkAddModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-200"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded shadow-sm hover:bg-blue-700 transition-colors duration-200"
               >
                 <Package className="w-5 h-5" />
                 Bulk Add Items
@@ -239,23 +239,31 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
         <div className="bg-white shadow-sm border border-gray-200 mb-4 p-6">
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Item Management Tools</h3>
-            <p className="text-sm text-gray-500 mt-1">Manage prices and quantities for all items in this supplier</p>
+            <p className="text-sm text-gray-500 mt-1">Manage prices, quantities, and aliases for all items in this supplier</p>
           </div>
-          
+
           <div className="flex flex-wrap gap-4">
             <Link
               href={`/suppliers/${supplierId}/price-management`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
             >
               Manage Prices
             </Link>
-            
+
             <Link
               href={`/suppliers/${supplierId}/quantity-management`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200"
             >
               <TrendingUp className="w-4 h-4" />
               Manage Quantities
+            </Link>
+
+            <Link
+              href={`/suppliers/${supplierId}/alias-management`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors duration-200"
+            >
+              <Tag className="w-4 h-4" />
+              Manage Aliases
             </Link>
           </div>
         </div>
@@ -318,7 +326,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
               <p className="mt-2 text-gray-500">Get started by adding your first item.</p>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add Item
@@ -427,7 +435,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                     id="itemName"
                     value={newItem.itemName}
                     onChange={(e) => setNewItem(prev => ({ ...prev, itemName: e.target.value }))}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter item name"
                     required
                   />
@@ -443,7 +451,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                   id="alias"
                   value={newItem.alias}
                   onChange={(e) => setNewItem(prev => ({ ...prev, alias: e.target.value }))}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter search alias (e.g., sugar, rice)"
                 />
               </div>
@@ -457,7 +465,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                   id="price"
                   value={newItem.price || ""}
                   onChange={(e) => setNewItem(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -469,13 +477,13 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                 >
                   Add Item
                 </button>
@@ -495,7 +503,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
             </Dialog.Title>
             
             <form onSubmit={handleBulkAdd} className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
                 <h3 className="text-sm font-medium text-blue-900 mb-2">Bulk Add Instructions</h3>
                 <div className="text-sm text-blue-800 space-y-1">
                   <p>• Add multiple items at once for faster catalog setup</p>
@@ -524,7 +532,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                         type="text"
                         value={item.itemName}
                         onChange={(e) => updateBulkItem(index, 'itemName', e.target.value)}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter item name"
                       />
                     </div>
@@ -533,7 +541,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                         type="text"
                         value={item.alias}
                         onChange={(e) => updateBulkItem(index, 'alias', e.target.value)}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Alias (optional)"
                       />
                     </div>
@@ -542,7 +550,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                         type="number"
                         value={item.price || ""}
                         onChange={(e) => updateBulkItem(index, 'price', parseFloat(e.target.value) || 0)}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="0.00"
                         min="0"
                         step="0.01"
@@ -568,7 +576,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                 <button
                   type="button"
                   onClick={addBulkItemRow}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                 >
                   <Plus className="w-4 h-4" />
                   Add Row
@@ -581,13 +589,13 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                       setShowBulkAddModal(false);
                       setBulkItems([{ itemName: "", alias: "", price: 0 }]);
                     }}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                   >
                     Add All Items ({bulkItems.filter(item => item.itemName.trim() && item.price > 0).length})
                   </button>
@@ -619,7 +627,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                     type="text"
                     value={editingItem?.itemName || ""}
                     disabled
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded bg-gray-50 text-gray-500 cursor-not-allowed"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Item name cannot be changed</p>
@@ -635,7 +643,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                   id="editAlias"
                   value={editForm.alias}
                   onChange={(e) => setEditForm(prev => ({ ...prev, alias: e.target.value }))}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter search alias (e.g., sugar, rice)"
                 />
               </div>
@@ -650,7 +658,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                   id="editPrice"
                   value={editForm.price || ""}
                   onChange={(e) => setEditForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -665,13 +673,13 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                     setShowEditModal(false);
                     setEditingItem(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                 >
                   Save Changes
                 </button>

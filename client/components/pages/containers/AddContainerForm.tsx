@@ -26,6 +26,7 @@ type ParsedExcelItem = {
   itemName: string;
   quantity: number;
   unitPrice: number;
+  alias?: string;
 };
 
 type Supplier = {
@@ -35,6 +36,7 @@ type Supplier = {
 
 type SupplierItem = {
   itemName: string;
+  alias?: string | null;
   price: number;
 };
 
@@ -55,6 +57,7 @@ export default function AddContainerForm() {
   // New item form states
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItemName, setNewItemName] = useState("");
+  const [newItemAlias, setNewItemAlias] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
   const [newItemPrice, setNewItemPrice] = useState("");
 
@@ -103,6 +106,14 @@ export default function AddContainerForm() {
     );
   };
 
+  const handleAliasChange = (itemName: string, alias: string) => {
+    setSelectedItems((prev) =>
+      prev.map((item) =>
+        item.itemName === itemName ? { ...item, alias: alias || undefined } : item
+      )
+    );
+  };
+
   const handleRemoveItem = (itemName: string) => {
     setSelectedItems((prev) =>
       prev.filter((item) => item.itemName !== itemName)
@@ -143,6 +154,7 @@ export default function AddContainerForm() {
       ...prev,
       {
         itemName: newItemName.trim(),
+        alias: newItemAlias.trim() || undefined,
         quantity: quantity,
         unitPrice: price,
       },
@@ -150,6 +162,7 @@ export default function AddContainerForm() {
 
     // Reset form
     setNewItemName("");
+    setNewItemAlias("");
     setNewItemQuantity("");
     setNewItemPrice("");
     setShowAddItemForm(false);
@@ -388,6 +401,7 @@ export default function AddContainerForm() {
                       setSelectedItems(
                         supplierItems.map((item) => ({
                           itemName: item.itemName,
+                          alias: item.alias || undefined,
                           unitPrice: item.price,
                           quantity: 0,
                         }))
@@ -443,7 +457,7 @@ export default function AddContainerForm() {
                     </Badge>
                     <button
                       onClick={handleClearPreview}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                       Clear Items
@@ -481,7 +495,7 @@ export default function AddContainerForm() {
                           <X className="w-5 h-5" />
                         </button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Item Name *
@@ -491,9 +505,23 @@ export default function AddContainerForm() {
                             value={newItemName}
                             onChange={(e) => setNewItemName(e.target.value)}
                             placeholder="e.g., Rice Bags"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                           />
                         </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Alias (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={newItemAlias}
+                            onChange={(e) => setNewItemAlias(e.target.value)}
+                            placeholder="e.g., sugar, rice"
+                            className="w-full px-3 py-2 border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Quantity *
@@ -505,7 +533,7 @@ export default function AddContainerForm() {
                             value={newItemQuantity}
                             onChange={(e) => setNewItemQuantity(e.target.value)}
                             placeholder="0"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                           />
                         </div>
                         <div>
@@ -519,14 +547,14 @@ export default function AddContainerForm() {
                             value={newItemPrice}
                             onChange={(e) => setNewItemPrice(e.target.value)}
                             placeholder="0.00"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                           />
                         </div>
                       </div>
                       <div className="mt-4 flex gap-2">
                         <button
                           onClick={handleAddNewItem}
-                          className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                          className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors font-medium"
                         >
                           Add Item
                         </button>
@@ -534,10 +562,11 @@ export default function AddContainerForm() {
                           onClick={() => {
                             setShowAddItemForm(false);
                             setNewItemName("");
+                            setNewItemAlias("");
                             setNewItemQuantity("");
                             setNewItemPrice("");
                           }}
-                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
                         >
                           Cancel
                         </button>
@@ -550,22 +579,25 @@ export default function AddContainerForm() {
               {/* Items Table */}
               {mode !== "none" && selectedItems.length > 0 && (
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full table-auto">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Item Name
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Alias
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                           Quantity
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                           Unit Price
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                           Total Value
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                           Action
                         </th>
                       </tr>
@@ -573,12 +605,23 @@ export default function AddContainerForm() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {selectedItems.map((item, i) => (
                         <tr key={i} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
+                          <td className="px-3 py-2">
+                            <div className="text-sm font-medium text-gray-900 whitespace-nowrap">
                               {item.itemName}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-2">
+                            <input
+                              type="text"
+                              value={item.alias || ""}
+                              onChange={(e) =>
+                                handleAliasChange(item.itemName, e.target.value)
+                              }
+                              placeholder="Add alias..."
+                              className="w-full min-w-[120px] px-2 py-1.5 text-sm border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
                             <input
                               type="number"
                               min="0"
@@ -589,10 +632,10 @@ export default function AddContainerForm() {
                                   parseInt(e.target.value) || 0
                                 )
                               }
-                              className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center"
+                              className="w-20 px-2 py-1.5 text-sm border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center"
                             />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-2">
                             <input
                               type="number"
                               min="0"
@@ -604,19 +647,18 @@ export default function AddContainerForm() {
                                   parseFloat(e.target.value) || 0
                                 )
                               }
-                              className="w-28 px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              className="w-24 px-2 py-1.5 text-sm border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                             />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
-                            ₵{" "}
-                            {(
+                          <td className="px-3 py-2 text-sm font-semibold text-indigo-600 whitespace-nowrap">
+                            ₵{(
                               (item.quantity || 0) * (item.unitPrice || 0)
                             ).toFixed(2)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-2 text-center">
                             <button
                               onClick={() => handleRemoveItem(item.itemName)}
-                              className="text-red-600 hover:text-red-800 transition-colors"
+                              className="inline-flex items-center justify-center p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
                               title="Remove item"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -649,7 +691,7 @@ export default function AddContainerForm() {
               {/* Modal Header */}
               <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                  <div className="p-2 bg-white bg-opacity-20 rounded">
                     <Package className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -663,7 +705,7 @@ export default function AddContainerForm() {
                 </div>
                 <button
                   onClick={() => setShowPreview(false)}
-                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded transition-colors"
                 >
                   <X className="w-6 h-6" />
                 </button>

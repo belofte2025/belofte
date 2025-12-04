@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
   ArrowLeft, 
@@ -42,11 +42,7 @@ export default function ContainerSummaryPage() {
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       if (id) {
@@ -59,7 +55,11 @@ export default function ContainerSummaryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadData();
+  }, [id, loadData]);
 
   const exportToPDF = async () => {
     if (!container || isExporting) return;

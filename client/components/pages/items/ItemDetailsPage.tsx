@@ -101,7 +101,7 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
             <p className="mt-2 text-gray-500">The item you&apos;re looking for doesn&apos;t exist.</p>
             <Link
               href="/items"
-              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               Back to Items
             </Link>
@@ -134,14 +134,14 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
                 <>
                   <button
                     onClick={handleCancel}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                   >
                     <X className="w-4 h-4" />
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                   >
                     <Save className="w-4 h-4" />
                     Save
@@ -150,7 +150,7 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
               ) : (
                 <button
                   onClick={() => setEditing(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                 >
                   <Edit className="w-4 h-4" />
                   Edit
@@ -179,7 +179,7 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
                         type="text"
                         value={formData.itemName}
                         onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -192,7 +192,7 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
                       type="number"
                       value={formData.price || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       min="0"
                       step="0.01"
                     />
@@ -247,7 +247,7 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
                   href={`/suppliers/${item.supplier.id}`}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                 >
                   <Factory className="w-4 h-4" />
                   View Supplier
@@ -255,7 +255,7 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
                 
                 <Link
                   href={`/suppliers/${item.supplier.id}/items`}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                 >
                   <Package className="w-4 h-4" />
                   All Supplier Items
@@ -269,14 +269,14 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
                   href={`/suppliers/${item.supplier.id}/price-management`}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                 >
                   Manage Prices
                 </Link>
                 
                 <Link
                   href={`/suppliers/${item.supplier.id}/quantity-management`}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200"
                 >
                   <Package className="w-4 h-4" />
                   Manage Quantities
@@ -291,7 +291,7 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Uniqueness</h3>
               <div className="space-y-3 text-sm text-gray-600">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="bg-blue-50 border border-blue-200 rounded p-3">
                   <p className="font-medium text-blue-900 mb-1">Per-Supplier Item</p>
                   <p className="text-blue-800">
                     This item is unique to <strong>{item.supplier.suppliername}</strong>. 

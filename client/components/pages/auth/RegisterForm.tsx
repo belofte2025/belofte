@@ -134,7 +134,7 @@ export default function RegisterForm() {
           {/* Form Section */}
           <div className="space-y-6">
             {errors.general && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
                 {errors.general}
               </div>
             )}

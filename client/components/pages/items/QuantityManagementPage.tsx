@@ -252,7 +252,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setBulkMode(!bulkMode)}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded font-medium transition-all duration-200 ${
                   bulkMode
                     ? "bg-blue-100 text-blue-700 border border-blue-200"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
@@ -265,7 +265,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                 <button
                   onClick={handleBulkAdjust}
                   disabled={selectedItems.size === 0 || saving}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? "Adjusting..." : `Adjust ${selectedItems.size} Selected`}
@@ -288,7 +288,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
               {bulkMode && (
                 <button
                   onClick={handleSelectAll}
-                  className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
                 >
                   {selectedItems.size === data.items.length ? (
                     <CheckSquare className="w-4 h-4" />
@@ -309,7 +309,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Search by item name or container number..."
               />
               {searchQuery && (

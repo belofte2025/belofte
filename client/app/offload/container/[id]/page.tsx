@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -55,7 +55,7 @@ export default function OffloadPage() {
     useOffloadContext();
 
   // Load data on mount and from offload context
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       // Check if we have saved state
@@ -83,18 +83,18 @@ export default function OffloadPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [containerId, offloadState]);
 
   useEffect(() => {
     loadData();
-  }, [containerId]);
+  }, [loadData]);
 
   // Save offload state when data changes (but not during initial load)
   useEffect(() => {
     if (items.length > 0 && !isInitialLoad) {
       saveOffloadState(containerId, { items, receivedCounts });
     }
-  }, [items, receivedCounts, containerId, isInitialLoad]);
+  }, [items, receivedCounts, containerId, isInitialLoad, saveOffloadState]);
 
   // Utility functions
   const incrementQty = (itemId: string) => {

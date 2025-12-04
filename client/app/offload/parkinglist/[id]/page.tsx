@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -48,7 +48,7 @@ export default function OffloadSummaryPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const containerData = await getContainerById(id);
@@ -87,13 +87,13 @@ export default function OffloadSummaryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) {
       loadData();
     }
-  }, [id]);
+  }, [id, loadData]);
 
   const calculateTotals = () => {
     const totalExpected = summary.reduce((sum, item) => sum + item.expected, 0);

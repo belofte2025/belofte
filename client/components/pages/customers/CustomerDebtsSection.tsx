@@ -192,7 +192,7 @@ export default function CustomerDebtsSection({
               setEditingDebt(null);
               setFormData({ amount: "", description: "", debtType: "manual", debtDate: new Date().toISOString().split("T")[0] });
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors duration-200"
           >
             <Plus className="w-4 h-4" />
             Add Debt
@@ -216,7 +216,7 @@ export default function CustomerDebtsSection({
                 onChange={(e) =>
                   setFormData({ ...formData, amount: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="0.00"
               />
             </div>
@@ -231,7 +231,7 @@ export default function CustomerDebtsSection({
                   setFormData({ ...formData, description: e.target.value })
                 }
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Reason for debt..."
               />
             </div>
@@ -245,7 +245,7 @@ export default function CustomerDebtsSection({
                 onChange={(e) =>
                   setFormData({ ...formData, debtType: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="manual">Manual Entry</option>
                 <option value="credit_sale">Credit Sale</option>
@@ -267,14 +267,14 @@ export default function CustomerDebtsSection({
                   setFormData({ ...formData, debtDate: e.target.value })
                 }
                 max={new Date().toISOString().split("T")[0]}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors duration-200"
               >
                 {editingDebt ? "Update Debt" : "Add Debt"}
               </button>
@@ -290,7 +290,7 @@ export default function CustomerDebtsSection({
                     debtDate: new Date().toISOString().split("T")[0],
                   });
                 }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded hover:bg-gray-300 transition-colors duration-200"
               >
                 Cancel
               </button>

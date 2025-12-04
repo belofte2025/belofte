@@ -493,7 +493,7 @@ export default function DailyCash() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div className="flex-1 min-w-[200px]">
@@ -504,13 +504,13 @@ export default function DailyCash() {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <button
               onClick={fetchReport}
               disabled={loading}
-              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
             >
               <Search className="w-4 h-4" />
               {loading ? "Loading..." : "Generate Report"}
@@ -525,7 +525,7 @@ export default function DailyCash() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-green-100 rounded-lg">
+                  <div className="p-3 bg-green-100 rounded">
                     <Receipt className="w-6 h-6 text-green-600" />
                   </div>
                   <Badge variant="success" size="sm">
@@ -542,7 +542,7 @@ export default function DailyCash() {
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-blue-100 rounded-lg">
+                  <div className="p-3 bg-blue-100 rounded">
                     <CreditCard className="w-6 h-6 text-blue-600" />
                   </div>
                   <Badge variant="info" size="sm">
@@ -559,7 +559,7 @@ export default function DailyCash() {
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-purple-100 rounded-lg">
+                  <div className="p-3 bg-purple-100 rounded">
                     <TrendingUp className="w-6 h-6 text-purple-600" />
                   </div>
                   <Badge variant="default" size="sm">
@@ -604,21 +604,21 @@ export default function DailyCash() {
                 <div className="flex gap-3">
                   <button
                     onClick={handlePrint}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
                   >
                     <Printer className="w-4 h-4" />
                     Print
                   </button>
                   <button
                     onClick={handleExportCSV}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" />
                     Export CSV
                   </button>
                   <button
                     onClick={handleExportPDF}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors flex items-center gap-2"
                   >
                     <FileText className="w-4 h-4" />
                     Export PDF

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   ArrowLeft,
@@ -51,7 +51,7 @@ export default function SupplierSummaryPage() {
     return date.toISOString().split("T")[0];
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (new Date(endDate) < new Date(startDate)) {
       toast.error("End date must be after start date");
       return;
@@ -68,11 +68,11 @@ export default function SupplierSummaryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const filtered = useMemo(
     () =>

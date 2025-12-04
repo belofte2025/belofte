@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { login } from "@/services/authService";
 import { useAuth } from "@/context/AuthContext";
 
@@ -129,9 +130,11 @@ export default function LoginForm() {
                   {slide.type === "image" ? (
                     <div className="w-full h-full flex flex-col items-center justify-center px-12">
                       <div className="w-full h-[70vh] flex items-center justify-center overflow-hidden rounded-2xl shadow-2xl mb-8">
-                        <img
-                          src={slide.image}
+                        <Image
+                          src={slide.image || "/placeholder.png"}
                           alt={slide.title}
+                          width={800}
+                          height={600}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;

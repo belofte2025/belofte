@@ -136,13 +136,13 @@ export default function CustomerForm({ mode, customerId }: Props) {
         <button
           type="button"
           onClick={() => router.push("/customers")}
-          className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Customers
         </button>
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
+          <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded">
             <User className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -232,7 +232,7 @@ export default function CustomerForm({ mode, customerId }: Props) {
             <button
               type="submit"
               disabled={saving}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <>
@@ -292,7 +292,7 @@ export default function CustomerForm({ mode, customerId }: Props) {
                 A customer with a similar name already exists in the system. Please verify this is not a duplicate before continuing.
               </p>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+              <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-6 text-left">
                 <p className="text-sm font-semibold text-amber-800 mb-3">
                   Existing customers with similar names:
                 </p>
@@ -300,7 +300,7 @@ export default function CustomerForm({ mode, customerId }: Props) {
                   {similarCustomers.map((customer) => (
                     <li
                       key={customer.id}
-                      className="text-sm text-amber-900 flex items-center gap-2 bg-white p-2 rounded-lg border border-amber-200"
+                      className="text-sm text-amber-900 flex items-center gap-2 bg-white p-2 rounded border border-amber-200"
                     >
                       <User className="w-4 h-4 text-amber-600" />
                       <span className="font-semibold">{customer.customerName}</span>

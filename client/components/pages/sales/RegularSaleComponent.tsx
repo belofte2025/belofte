@@ -6,7 +6,6 @@ import { getSupplierItemsWithSales } from "@/services/supplierService";
 import { recordSale } from "@/services/salesService";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import Select from "react-select";
 import { Dialog } from "@headlessui/react";
@@ -338,7 +337,7 @@ export default function RegularSaleComponent() {
                 </div>
                 <button
                   onClick={() => setShowCustomerModal(true)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                   title="Add new customer"
                 >
                   <UserPlus className="w-5 h-5" />
@@ -432,7 +431,7 @@ export default function RegularSaleComponent() {
                 <div className="flex gap-2 mb-3">
                   <button
                     onClick={() => setDiscountType(discountType === "percentage" ? null : "percentage")}
-                    className={`flex-1 p-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                    className={`flex-1 p-2 rounded border-2 text-sm font-medium transition-all ${
                       discountType === "percentage"
                         ? "border-orange-500 bg-orange-50 text-orange-700"
                         : "border-gray-200 text-gray-600 hover:border-gray-300"
@@ -443,7 +442,7 @@ export default function RegularSaleComponent() {
                   </button>
                   <button
                     onClick={() => setDiscountType(discountType === "amount" ? null : "amount")}
-                    className={`flex-1 p-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                    className={`flex-1 p-2 rounded border-2 text-sm font-medium transition-all ${
                       discountType === "amount"
                         ? "border-orange-500 bg-orange-50 text-orange-700"
                         : "border-gray-200 text-gray-600 hover:border-gray-300"
@@ -460,7 +459,7 @@ export default function RegularSaleComponent() {
                       value={discountValue || ""}
                       onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
                       placeholder={discountType === "percentage" ? "Enter %" : "Enter amount"}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       min="0"
                       max={discountType === "percentage" ? 100 : subtotal}
                       step={discountType === "percentage" ? 1 : 0.01}
@@ -618,7 +617,7 @@ export default function RegularSaleComponent() {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => decreaseQty(item.id)}
-                                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                                 title="Decrease quantity"
                               >
                                 <Minus className="w-4 h-4" />
@@ -631,7 +630,7 @@ export default function RegularSaleComponent() {
                               </div>
                               <button
                                 onClick={() => increaseQty(item.id)}
-                                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                                 title="Increase quantity"
                               >
                                 <Plus className="w-4 h-4" />
@@ -654,7 +653,7 @@ export default function RegularSaleComponent() {
                                   onChange={(e) =>
                                     updatePriceInCart(item.id, e.target.value)
                                   }
-                                  className="w-20 px-2 py-1 text-sm border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  className="w-20 px-2 py-1 text-sm border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   step="0.01"
                                   min="0"
                                   title="Edit price"
@@ -678,7 +677,7 @@ export default function RegularSaleComponent() {
 
                             <button
                               onClick={() => removeFromCart(item.id)}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors"
                               title="Remove from cart"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -713,7 +712,7 @@ export default function RegularSaleComponent() {
               </Dialog.Title>
               <button
                 onClick={handleCustomerModalClose}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -748,7 +747,7 @@ export default function RegularSaleComponent() {
                 <p className="text-gray-600 mb-4">
                   Are you sure you want to finalize this sale?
                 </p>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="bg-gray-50 rounded p-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Date:</span>
                     <span className="font-medium">{saleDate}</span>
@@ -889,7 +888,7 @@ export default function RegularSaleComponent() {
                   This was a credit sale. Would you like to record a payment
                   now?
                 </p>
-                <div className="bg-blue-50 rounded-lg p-4">
+                <div className="bg-blue-50 rounded p-4">
                   <p className="text-sm text-blue-700">
                     Recording a payment now will help maintain accurate customer
                     balances.

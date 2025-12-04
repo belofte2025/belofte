@@ -134,7 +134,7 @@ export default function AddItemForm() {
   
   // Check for potential duplicates across all suppliers
   const duplicateWarning = formData.itemName.trim() && formData.supplierId ? (
-    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded">
       <p className="text-sm text-yellow-800">
         <strong>Note:</strong> This item name may already exist with other suppliers. 
         Each supplier can have their own version of items with the same name.
@@ -173,7 +173,7 @@ export default function AddItemForm() {
             </div>
           </div>
           <div className="mb-6">
-            <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+            <div className="inline-flex rounded border border-gray-200 bg-gray-50 p-1">
               <button
                 type="button"
                 onClick={() => setBulkMode(false)}
@@ -218,7 +218,7 @@ export default function AddItemForm() {
                   name="supplierId"
                   value={formData.supplierId}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
                   <option value="">Select a supplier</option>
@@ -239,7 +239,7 @@ export default function AddItemForm() {
             {bulkMode ? (
               /* Bulk Items Section */
               <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="bg-blue-50 border border-blue-200 rounded p-4">
                   <h3 className="text-sm font-medium text-blue-900 mb-2">Bulk Add Instructions</h3>
                   <div className="text-sm text-blue-800 space-y-1">
                     <p>• Add multiple items at once for the selected supplier</p>
@@ -268,7 +268,7 @@ export default function AddItemForm() {
                           type="text"
                           value={item.itemName}
                           onChange={(e) => updateBulkItem(index, 'itemName', e.target.value)}
-                          className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="block w-full px-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Enter item name"
                         />
                       </div>
@@ -277,7 +277,7 @@ export default function AddItemForm() {
                           type="text"
                           value={item.alias}
                           onChange={(e) => updateBulkItem(index, 'alias', e.target.value)}
-                          className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="block w-full px-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Alternative name"
                         />
                       </div>
@@ -286,7 +286,7 @@ export default function AddItemForm() {
                           type="number"
                           value={item.price || ""}
                           onChange={(e) => updateBulkItem(index, 'price', parseFloat(e.target.value) || 0)}
-                          className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="block w-full px-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="0.00"
                           min="0"
                           step="0.01"
@@ -311,7 +311,7 @@ export default function AddItemForm() {
                 <button
                   type="button"
                   onClick={addBulkItemRow}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
                 >
                   <Plus className="w-4 h-4" />
                   Add Row
@@ -335,7 +335,7 @@ export default function AddItemForm() {
                   name="itemName"
                   value={formData.itemName}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter item name (e.g., Rice, Vegetable Oil, Sugar)"
                   required
                 />
@@ -354,7 +354,7 @@ export default function AddItemForm() {
                 name="alias"
                 value={formData.alias}
                 onChange={handleChange}
-                className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full px-3 py-3 border border-gray-300 rounded shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter alternative name for searching (e.g., Rice 25kg, Premium Oil)"
               />
               <p className="mt-2 text-sm text-gray-500">
@@ -373,7 +373,7 @@ export default function AddItemForm() {
                 name="price"
                 value={formData.price || ""}
                 onChange={handleChange}
-                className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full px-3 py-3 border border-gray-300 rounded shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -385,7 +385,7 @@ export default function AddItemForm() {
             </div>
 
               {/* Uniqueness Information */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-blue-50 border border-blue-200 rounded p-4">
                 <h3 className="text-sm font-medium text-blue-900 mb-2">Item Uniqueness</h3>
                 <div className="text-sm text-blue-800 space-y-1">
                   <p>• Each item is unique per supplier (different suppliers can have items with the same name)</p>
@@ -400,14 +400,14 @@ export default function AddItemForm() {
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
               <Link
                 href="/items"
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
+                className="px-6 py-3 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200 font-medium"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {loading ? "Creating..." : bulkMode ? `Add All Items (${bulkItems.filter(item => item.itemName.trim() && item.price > 0).length})` : "Create Item"}
               </button>

@@ -12,6 +12,7 @@ import { toast } from "react-hot-toast";
 type ItemWithSales = {
   id: string;
   itemName: string;
+  alias?: string | null;
   quantity: number;
   sold: number;
   available: number;
@@ -159,14 +160,14 @@ export default function ItemsListPage() {
               <button
                 onClick={exportToPDF}
                 disabled={loading || items.length === 0}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-sm hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded shadow-sm hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-5 h-5" />
                 Export PDF
               </button>
               <Link
                 href="/items/new"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-200"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded shadow-sm hover:bg-blue-700 transition-colors duration-200"
               >
                 <PlusCircle className="w-5 h-5" />
                 Add Item
@@ -227,7 +228,7 @@ export default function ItemsListPage() {
                   setSelectedSupplier(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Suppliers</option>
                 {uniqueSuppliers.map((supplier) => (
@@ -259,13 +260,13 @@ export default function ItemsListPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => toast("Navigate to supplier page first for price management")}
-                    className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors duration-200"
                   >
                     Manage Prices
                   </button>
                   <button
                     onClick={() => toast("Navigate to supplier page first for quantity management")}
-                    className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors duration-200"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors duration-200"
                   >
                     <TrendingUp className="w-4 h-4" />
                     Manage Quantities
@@ -320,6 +321,11 @@ export default function ItemsListPage() {
                               <div className="text-sm font-medium text-gray-900">
                                 {item.itemName}
                               </div>
+                              {item.alias && (
+                                <div className="text-xs text-gray-600 italic">
+                                  Alias: {item.alias}
+                                </div>
+                              )}
                               <div className="text-xs text-gray-500">
                                 ID: {item.id.slice(0, 8)}...
                               </div>

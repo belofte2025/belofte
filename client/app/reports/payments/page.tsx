@@ -1,7 +1,7 @@
 "use client";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   CreditCard,
   Calendar,
@@ -56,7 +56,7 @@ export default function AllPaymentsReport() {
     limit: 50,
   });
 
-  const loadPayments = async () => {
+  const loadPayments = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getAllPayments({
@@ -73,11 +73,11 @@ export default function AllPaymentsReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     loadPayments();
-  }, [filters.page]);
+  }, [filters.page, loadPayments]);
 
   const handleFilterSubmit = () => {
     setFilters({ ...filters, page: 1 });

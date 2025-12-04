@@ -15,7 +15,6 @@ import { getRoles, type Role } from "@/services/roleService";
 import { toast } from "react-hot-toast";
 import { UserCog, Plus, Edit, Trash2, X, Mail, Lock, User as UserIcon, Shield } from "lucide-react";
 import { Dialog } from "@headlessui/react";
-import clsx from "clsx";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
