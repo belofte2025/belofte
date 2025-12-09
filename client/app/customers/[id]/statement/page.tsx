@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   } catch {
     return {
-      title: 'Customer Statement | Belofte Enterprise',
+      title: 'Customer Statement ',
       description: 'View customer account statement and transaction history',
     };
   }

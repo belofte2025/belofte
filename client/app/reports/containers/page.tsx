@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { 
-  ArrowLeft, 
-  Download, 
+import {
+  ArrowLeft,
+  Download,
   Container,
   Package,
   TrendingUp,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAllContainers } from "@/services/containerService";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 import toast from "react-hot-toast";
 
 interface ContainerData {
@@ -63,82 +64,67 @@ export default function ContainersReportPage() {
   const completedContainers = Array.isArray(containers) ? containers.filter(c => c.status === 'Completed').length : 0;
   const processingContainers = Array.isArray(containers) ? containers.filter(c => c.status === 'Processing').length : 0;
   
-  const totalItems = Array.isArray(containers) ? containers.reduce((sum, container) => 
+  const totalItems = Array.isArray(containers) ? containers.reduce((sum, container) =>
     sum + (Array.isArray(container.items) ? container.items.reduce((itemSum, item) => itemSum + item.quantity, 0) : 0), 0
   ) : 0;
-  
-  const totalReceived = Array.isArray(containers) ? containers.reduce((sum, container) => 
+
+  const totalReceived = Array.isArray(containers) ? containers.reduce((sum, container) =>
     sum + (Array.isArray(container.items) ? container.items.reduce((itemSum, item) => itemSum + item.receivedQty, 0) : 0), 0
-  ) : 0;
-  
-  const totalSold = Array.isArray(containers) ? containers.reduce((sum, container) => 
-    sum + (Array.isArray(container.items) ? container.items.reduce((itemSum, item) => itemSum + item.soldQty, 0) : 0), 0
   ) : 0;
 
 
   const exportToPDF = async () => {
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      
-      const content = `
-        <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              h1, h2 { color: #1f2937; }
-              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f3f4f6; }
-              .summary { background-color: #f9fafb; padding: 15px; margin: 15px 0; }
-              .status-pending { color: #f59e0b; }
-              .status-processing { color: #3b82f6; }
-              .status-completed { color: #059669; }
-            </style>
-          </head>
-          <body>
-            <h1>Container Reports</h1>
-            <p><strong>Generated on:</strong> ${new Date().toLocaleDateString()}</p>
-            
-            <div class="summary">
-              <h2>Container Summary</h2>
-              <p><strong>Total Containers:</strong> ${totalContainers}</p>
-              <p><strong>Pending:</strong> ${pendingContainers}</p>
-              <p><strong>Processing:</strong> ${processingContainers}</p>
-              <p><strong>Completed:</strong> ${completedContainers}</p>
-              <p><strong>Total Items Ordered:</strong> ${totalItems}</p>
-              <p><strong>Total Items Received:</strong> ${totalReceived}</p>
-              <p><strong>Total Items Sold:</strong> ${totalSold}</p>
-            </div>
-            
-            <table>
-              <thead>
-                <tr>
-                  <th>Container No</th>
-                  <th>Supplier</th>
-                  <th>Arrival Date</th>
-                  <th>Year</th>
-                  <th>Status</th>
-                  <th>Items Count</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${containers.map(container => `
-                  <tr>
-                    <td>${container.containerNo}</td>
-                    <td>${container.supplier.suppliername}</td>
-                    <td>${new Date(container.arrivalDate).toLocaleDateString()}</td>
-                    <td>${container.year}</td>
-                    <td class="status-${container.status.toLowerCase()}">${container.status}</td>
-                    <td>${container.items.length} items</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </body>
-        </html>
+
+      const tableContent = `
+        <table>
+          <thead>
+            <tr>
+              <th>Container No</th>
+              <th>Supplier</th>
+              <th>Arrival Date</th>
+              <th>Year</th>
+              <th>Status</th>
+              <th>Items Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${containers.map(container => `
+              <tr>
+                <td>${container.containerNo}</td>
+                <td>${container.supplier.suppliername}</td>
+                <td>${new Date(container.arrivalDate).toLocaleDateString()}</td>
+                <td>${container.year}</td>
+                <td>${container.status}</td>
+                <td>${container.items.length} items</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       `;
 
-      html2pdf().from(content).save(`Container_Report_${new Date().toLocaleDateString().replace(/\//g, '_')}.pdf`);
+      const htmlContent = createHTMLReportTemplate(
+        "Container Reports",
+        tableContent,
+        {
+          subtitle: "Container processing and inventory status",
+          summaryStats: [
+            { label: "Total Containers", value: totalContainers.toString() },
+            { label: "Pending", value: pendingContainers.toString() },
+            { label: "Processing", value: processingContainers.toString() },
+            { label: "Completed", value: completedContainers.toString() },
+            { label: "Items Ordered", value: totalItems.toString() },
+            { label: "Items Received", value: totalReceived.toString() },
+          ]
+        }
+      );
+
+      const options = {
+        ...getHTML2PDFOptions(),
+        filename: `Container_Report_${new Date().toISOString().split('T')[0]}.pdf`
+      };
+      html2pdf().set(options).from(htmlContent).save();
       toast.success("Report exported successfully!");
     } catch {
       toast.error("Failed to export report");

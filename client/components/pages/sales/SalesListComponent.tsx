@@ -5,6 +5,7 @@ import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
 import { useState } from "react";
 import Button from "@/components/shared/Button";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface Sale {
   id: string;
@@ -54,12 +55,18 @@ export default function SalesListComponent({
   const totalPages = Math.ceil(sales.length / ITEMS_PER_PAGE);
 
   const exportToPDF = () => {
-    const content = `
-      <h2>Sales Report</h2>
-      <table border="1" cellspacing="0" cellpadding="5">
+    const totalAmount = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const cashSales = sales.filter(s => s.saleType.toLowerCase() === 'cash').length;
+    const creditSales = sales.filter(s => s.saleType.toLowerCase() === 'credit').length;
+
+    const tableContent = `
+      <table>
         <thead>
           <tr>
-            <th>Type</th><th>Customer</th><th>Amount</th><th>Date</th>
+            <th>Type</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Date</th>
           </tr>
         </thead>
         <tbody>
@@ -69,7 +76,7 @@ export default function SalesListComponent({
             <tr>
               <td>${sale.saleType}</td>
               <td>${sale.customer.customerName}</td>
-              <td>¢${sale.totalAmount.toFixed(2)}</td>
+              <td>₵ ${sale.totalAmount.toFixed(2)}</td>
               <td>${new Date(sale.createdAt).toLocaleString()}</td>
             </tr>
           `
@@ -78,12 +85,27 @@ export default function SalesListComponent({
         </tbody>
       </table>`;
 
+    const htmlContent = createHTMLReportTemplate(
+      "Sales Report",
+      tableContent,
+      {
+        subtitle: "Sales transactions summary",
+        summaryStats: [
+          { label: "Total Transactions", value: sales.length.toString() },
+          { label: "Total Amount", value: `₵ ${totalAmount.toFixed(2)}` },
+          { label: "Cash Sales", value: cashSales.toString() },
+          { label: "Credit Sales", value: creditSales.toString() },
+        ]
+      }
+    );
+
+    const options = {
+      ...getHTML2PDFOptions(),
+      filename: `Sales_Report_${new Date().toISOString().split('T')[0]}.pdf`
+    };
     html2pdf()
-      .set({
-        filename: "Sales_Report.pdf",
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(content)
+      .set(options)
+      .from(htmlContent)
       .save();
   };
 

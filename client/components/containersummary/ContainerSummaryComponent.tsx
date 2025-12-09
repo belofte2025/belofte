@@ -4,9 +4,14 @@ import { useEffect, useState } from "react";
 import { getContainerSalesSummary } from "@/services/containerService";
 import { formatCurrency } from "@/utils/format";
 import { useParams } from "next/navigation";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import LoadingSpinner from "../shared/LoadingSpinner";
+import {
+  createPDFReport,
+  addPDFTable,
+  addPDFSummarySection,
+  formatPDFCurrency,
+  savePDF,
+} from "@/lib/pdfTemplates";
 
 type Item = {
   name: string;
@@ -48,34 +53,80 @@ export default function ContainerSummaryComponent() {
   const handleExportPDF = () => {
     if (!container) return;
 
-    const doc = new jsPDF();
-    const title = `Container Sales Summary - ${container.number}`;
     const deliveryDate = new Date(container.deliveryDate).toDateString();
 
-    doc.setFontSize(12);
-    doc.text(title, 14, 16);
-    doc.text(`Company: ${container.company}`, 14, 28);
-    doc.text(`Delivery Date: ${deliveryDate}`, 14, 40);
-
-    autoTable(doc, {
-      startY: 50,
-      head: [["Item", "Sold", "Remaining", "Unit Price", "Total"]],
-      body: container.items.map((item) => [
-        item.name,
-        item.sold.toString(),
-        item.remainingQty.toString(),
-        `${formatCurrency(item.unitPrice)}`,
-        `${formatCurrency(item.total)}`,
-      ]),
-      foot: [
-        [
-          { content: "Grand Total", colSpan: 4, styles: { halign: "right" } },
-          `${formatCurrency(container.totalSales)}`,
-        ],
-      ],
+    // Create PDF with company branding
+    const { doc, headerEndY } = createPDFReport({
+      title: `Container Sales Summary`,
+      subtitle: `Container: ${container.number} | Company: ${container.company} | Delivery: ${deliveryDate}`,
+      filename: `ContainerSummary-${container.number}`,
+      orientation: "portrait",
     });
 
-    doc.save(`ContainerSummary-${container.number}.pdf`);
+    // Calculate totals
+    const totalSold = container.items.reduce((sum, item) => sum + item.sold, 0);
+    const totalRemaining = container.items.reduce((sum, item) => sum + item.remainingQty, 0);
+
+    // Add summary section - start after header with proper spacing
+    const summaryY = addPDFSummarySection(
+      doc,
+      [
+        {
+          label: "Total Sales",
+          value: formatPDFCurrency(container.totalSales),
+          highlight: true,
+        },
+        {
+          label: "Items Sold",
+          value: totalSold.toString(),
+        },
+        {
+          label: "Remaining Items",
+          value: totalRemaining.toString(),
+        },
+        {
+          label: "Total Items",
+          value: container.items.length.toString(),
+        },
+      ],
+      headerEndY + 10,
+      "Summary"
+    );
+
+    // Prepare table data
+    const tableData = container.items.map((item) => [
+      item.name,
+      item.sold.toString(),
+      item.remainingQty.toString(),
+      formatPDFCurrency(item.unitPrice),
+      formatPDFCurrency(item.total),
+    ]);
+
+    // Add table with automatic page breaks
+    addPDFTable(
+      doc,
+      tableData,
+      ["Item", "Sold", "Remaining", "Unit Price", "Total"],
+      summaryY,
+      {
+        footerRows: [
+          [
+            { content: "Grand Total", colSpan: 4, styles: { halign: "right" } },
+            formatPDFCurrency(container.totalSales),
+          ],
+        ],
+        columnStyles: {
+          0: { cellWidth: 60 },
+          1: { cellWidth: 25, halign: "center" },
+          2: { cellWidth: 25, halign: "center" },
+          3: { cellWidth: 35, halign: "right" },
+          4: { cellWidth: 40, halign: "right" },
+        },
+      }
+    );
+
+    // Save PDF with proper filename
+    savePDF(doc, `ContainerSummary-${container.number}`);
   };
 
   if (loading) return <LoadingSpinner />;

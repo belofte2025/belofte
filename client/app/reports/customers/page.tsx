@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { 
-  ArrowLeft, 
-  Download, 
+import {
+  ArrowLeft,
+  Download,
   Users,
   Phone
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { getAllCustomers } from "@/services/customerService";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 import toast from "react-hot-toast";
 
 interface Customer {
@@ -58,72 +59,61 @@ export default function CustomersReportPage() {
   
   const customersWithDebt = Array.isArray(customers) ? customers.filter(c => c.balance > 0).length : 0;
   const customersWithCredit = Array.isArray(customers) ? customers.filter(c => c.balance < 0).length : 0;
-  const customersCleared = Array.isArray(customers) ? customers.filter(c => c.balance === 0).length : 0;
 
   const exportToPDF = async () => {
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      
-      const content = `
-        <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              h1, h2 { color: #1f2937; }
-              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f3f4f6; }
-              .summary { background-color: #f9fafb; padding: 15px; margin: 15px 0; }
-              .positive { color: #dc2626; }
-              .negative { color: #059669; }
-            </style>
-          </head>
-          <body>
-            <h1>Customer Analytics Report</h1>
-            <p><strong>Generated on:</strong> ${new Date().toLocaleDateString()}</p>
-            
-            <div class="summary">
-              <h2>Customer Summary</h2>
-              <p><strong>Total Customers:</strong> ${totalCustomers}</p>
-              <p><strong>Total Outstanding:</strong> ${formatCurrency(totalOutstanding)}</p>
-              <p><strong>Total Credits:</strong> ${formatCurrency(totalCredits)}</p>
-              <p><strong>Average Balance:</strong> ${formatCurrency(averageBalance)}</p>
-              <p><strong>Customers with Debt:</strong> ${customersWithDebt}</p>
-              <p><strong>Customers with Credit:</strong> ${customersWithCredit}</p>
-              <p><strong>Cleared Customers:</strong> ${customersCleared}</p>
-            </div>
-            
-            <table>
-              <thead>
-                <tr>
-                  <th>Customer Name</th>
-                  <th>Phone</th>
-                  <th>Balance</th>
-                  <th>Status</th>
-                  <th>Join Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${Array.isArray(customers) ? customers.map(customer => `
-                  <tr>
-                    <td>${customer.customerName || customer.name}</td>
-                    <td>${customer.phone}</td>
-                    <td class="${customer.balance > 0 ? 'positive' : customer.balance < 0 ? 'negative' : ''}">${formatCurrency(customer.balance)}</td>
-                    <td>${customer.balance > 0 ? 'Owes Money' : customer.balance < 0 ? 'Has Credit' : 'Cleared'}</td>
-                    <td>${new Date(customer.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                `).join('') : ''}
-              </tbody>
-            </table>
-          </body>
-        </html>
+
+      const tableContent = `
+        <table>
+          <thead>
+            <tr>
+              <th>Customer Name</th>
+              <th>Phone</th>
+              <th>Balance</th>
+              <th>Status</th>
+              <th>Join Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Array.isArray(customers) ? customers.map(customer => `
+              <tr>
+                <td>${customer.customerName || customer.name}</td>
+                <td>${customer.phone}</td>
+                <td>${formatCurrency(customer.balance)}</td>
+                <td>${customer.balance > 0 ? 'Owes Money' : customer.balance < 0 ? 'Has Credit' : 'Cleared'}</td>
+                <td>${new Date(customer.createdAt).toLocaleDateString()}</td>
+              </tr>
+            `).join('') : ''}
+          </tbody>
+        </table>
       `;
 
-      html2pdf().from(content).save(`Customer_Analytics_Report_${new Date().toLocaleDateString().replace(/\//g, '_')}.pdf`);
-      toast.success("Report exported successfully!");
-        } catch {
-          toast.error("Failed to export report");
+      const htmlContent = createHTMLReportTemplate(
+        "Customer Analytics Report",
+        tableContent,
+        {
+          subtitle: "Customer behavior and transaction insights",
+          summaryStats: [
+            { label: "Total Customers", value: totalCustomers.toString() },
+            { label: "Outstanding", value: formatCurrency(totalOutstanding) },
+            { label: "Credits", value: formatCurrency(totalCredits) },
+            { label: "Avg Balance", value: formatCurrency(averageBalance) },
+            { label: "With Debt", value: customersWithDebt.toString() },
+            { label: "With Credit", value: customersWithCredit.toString() },
+          ]
         }
+      );
+
+      const options = {
+        ...getHTML2PDFOptions(),
+        filename: `Customer_Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`
+      };
+      html2pdf().set(options).from(htmlContent).save();
+      toast.success("Report exported successfully!");
+    } catch {
+      toast.error("Failed to export report");
+    }
   };
 
   return (

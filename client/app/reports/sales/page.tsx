@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { getDetailedSalesReport } from "@/services/reportService";
 import toast from "react-hot-toast";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface SaleItem {
   itemName: string;
@@ -81,58 +82,54 @@ export default function SalesReportPage() {
   const exportToPDF = async () => {
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      
-      const content = `
-        <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              h1, h2 { color: #1f2937; }
-              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f3f4f6; }
-              .summary { background-color: #f9fafb; padding: 15px; margin: 15px 0; }
-            </style>
-          </head>
-          <body>
-            <h1>Sales Report</h1>
-            <p><strong>Period:</strong> ${startDate} to ${endDate}</p>
-            
-            <div class="summary">
-              <h2>Summary</h2>
-              <p><strong>Total Revenue:</strong> ${formatCurrency(totalRevenue)}</p>
-              <p><strong>Total Transactions:</strong> ${totalTransactions}</p>
-              <p><strong>Average Transaction:</strong> ${formatCurrency(avgTransaction)}</p>
-              <p><strong>Cash Sales:</strong> ${cashSales} | <strong>Credit Sales:</strong> ${creditSales}</p>
-            </div>
-            
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Customer</th>
-                  <th>Type</th>
-                  <th>Amount</th>
-                  <th>Items</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${Array.isArray(sales) ? sales.map(sale => `
-                  <tr>
-                    <td>${new Date(sale.createdAt).toLocaleDateString()}</td>
-                    <td>${sale.customerName}</td>
-                    <td>${sale.saleType}</td>
-                    <td>${formatCurrency(sale.totalAmount)}</td>
-                    <td>${Array.isArray(sale.items) ? sale.items.length : 0} items</td>
-                  </tr>
-                `).join('') : ''}
-              </tbody>
-            </table>
-          </body>
-        </html>
+
+      // Build table content
+      const tableContent = `
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Items</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Array.isArray(sales) ? sales.map(sale => `
+              <tr class="no-page-break">
+                <td>${new Date(sale.createdAt).toLocaleDateString()}</td>
+                <td>${sale.customerName}</td>
+                <td>${sale.saleType}</td>
+                <td class="text-right font-bold">${formatCurrency(sale.totalAmount)}</td>
+                <td class="text-center">${Array.isArray(sale.items) ? sale.items.length : 0} items</td>
+              </tr>
+            `).join('') : ''}
+          </tbody>
+        </table>
       `;
 
-      html2pdf().from(content).save(`Sales_Report_${startDate}_to_${endDate}.pdf`);
+      // Use standardized HTML template with company branding
+      const html = createHTMLReportTemplate(
+        "Sales Report",
+        tableContent,
+        {
+          subtitle: `Period: ${startDate} to ${endDate}`,
+          summaryStats: [
+            { label: "Total Revenue", value: formatCurrency(totalRevenue) },
+            { label: "Total Transactions", value: totalTransactions.toString() },
+            { label: "Average Transaction", value: formatCurrency(avgTransaction) },
+            { label: "Cash Sales", value: cashSales.toString() },
+            { label: "Credit Sales", value: creditSales.toString() },
+          ],
+        }
+      );
+
+      const options = {
+        ...getHTML2PDFOptions(),
+        filename: `Sales_Report_${startDate}_to_${endDate}.pdf`
+      };
+      html2pdf().set(options).from(html).save();
       toast.success("Report exported successfully!");
     } catch {
       toast.error("Failed to export report");

@@ -19,6 +19,7 @@ import {
   getOffloadSummary,
 } from "@/services/containerService";
 import toast from "react-hot-toast";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface SummaryItem {
   id: string;
@@ -140,91 +141,77 @@ export default function OffloadSummaryPage() {
       const totals = calculateTotals();
       const currentDate = new Date().toLocaleDateString();
 
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .container-info { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-            .totals { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #003366; color: white; }
-            .complete { color: #4caf50; font-weight: bold; }
-            .shortage { color: #ff9800; font-weight: bold; }
-            .overage { color: #2196f3; font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Container Offload Summary</h1>
-            <h2>Container: ${containerMeta.containerNo}</h2>
-            <p>Generated on: ${currentDate}</p>
-          </div>
-          
-          <div class="container-info">
-            <h3>Container Information</h3>
-            <p><strong>Container Number:</strong> ${
-              containerMeta.containerNo
-            }</p>
-            <p><strong>Supplier:</strong> ${containerMeta.supplierName}</p>
-            <p><strong>Arrival Date:</strong> ${new Date(
-              containerMeta.arrivalDate
-            ).toLocaleDateString()}</p>
-            <p><strong>Status:</strong> ${containerMeta.status}</p>
-          </div>
-
-          <div class="totals">
-            <h3>Summary Totals</h3>
-            <p><strong>Total Expected:</strong> ${
-              totals.totalExpected
-            } items</p>
-            <p><strong>Total Received:</strong> ${
-              totals.totalReceived
-            } items</p>
-            <p><strong>Total Variance:</strong> ${
-              totals.totalVariance
-            } items</p>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Item Name</th>
-                <th>Expected</th>
-                <th>Received</th>
-                <th>Variance</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${summary
-                .map((item) => {
-                  const status = getStatusInfo(item.expected, item.received);
-                  return `
-                  <tr>
-                    <td>${item.name}</td>
-                    <td>${item.expected}</td>
-                    <td>${item.received}</td>
-                    <td>${item.variance >= 0 ? "+" : ""}${item.variance}</td>
-                    <td class="${status.text.toLowerCase()}">${status.text}</td>
-                  </tr>
-                `;
-                })
-                .join("")}
-            </tbody>
-          </table>
-        </body>
-        </html>
+      // Build container info section
+      const containerInfo = `
+        <div class="no-page-break" style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="margin-top: 0; color: #1f2937;">Container Information</h3>
+          <p><strong>Container Number:</strong> ${containerMeta.containerNo}</p>
+          <p><strong>Supplier:</strong> ${containerMeta.supplierName}</p>
+          <p><strong>Arrival Date:</strong> ${new Date(
+            containerMeta.arrivalDate
+          ).toLocaleDateString()}</p>
+          <p><strong>Status:</strong> ${containerMeta.status}</p>
+        </div>
       `;
 
+      // Build table content
+      const tableContent = `
+        <table>
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Expected</th>
+              <th>Received</th>
+              <th>Variance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${summary
+              .map((item) => {
+                const status = getStatusInfo(item.expected, item.received);
+                return `
+                <tr class="no-page-break">
+                  <td>${item.name}</td>
+                  <td class="text-center">${item.expected}</td>
+                  <td class="text-center">${item.received}</td>
+                  <td class="text-center">${item.variance >= 0 ? "+" : ""}${item.variance}</td>
+                  <td class="font-bold" style="color: ${
+                    status.text === "Complete" ? "#4caf50" :
+                    status.text === "Shortage" ? "#ff9800" : "#2196f3"
+                  };">${status.text}</td>
+                </tr>
+              `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      `;
+
+      // Use standardized HTML template with company branding
+      const html = createHTMLReportTemplate(
+        `Container Offload Summary: ${containerMeta.containerNo}`,
+        containerInfo + tableContent,
+        {
+          subtitle: `Generated on: ${currentDate}`,
+          summaryStats: [
+            { label: "Total Expected", value: `${totals.totalExpected} items` },
+            { label: "Total Received", value: `${totals.totalReceived} items` },
+            { label: "Total Variance", value: `${totals.totalVariance} items` },
+            { label: "Overall %", value: `${totals.overallPercentage.toFixed(1)}%` },
+          ],
+        }
+      );
+
+      const options = {
+        ...getHTML2PDFOptions(),
+        filename: `Offload_Summary_${containerMeta.containerNo}_${currentDate}.pdf`
+      };
+
       html2pdf()
-        .from(htmlContent)
-        .save(
-          `Offload_Summary_${containerMeta.containerNo}_${currentDate}.pdf`
-        );
+        .set(options)
+        .from(html)
+        .save();
       toast.success("Report exported successfully!");
     } catch (error) {
       console.error("Failed to export PDF:", error);

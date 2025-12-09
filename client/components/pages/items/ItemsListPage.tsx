@@ -8,6 +8,7 @@ import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
 import { toast } from "react-hot-toast";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 type ItemWithSales = {
   id: string;
@@ -67,57 +68,55 @@ export default function ItemsListPage() {
   const exportToPDF = async () => {
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      
-      const content = `
-        <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              h1, h2 { color: #1f2937; }
-              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f3f4f6; }
-              .summary { background-color: #f9fafb; padding: 15px; margin: 15px 0; }
-            </style>
-          </head>
-          <body>
-            <h1>Items Report</h1>
-            <div class="summary">
-              <h2>Summary</h2>
-              <p><strong>Total Items:</strong> ${totalItems}</p>
-              <p><strong>Total Value:</strong> ${formatCurrency(totalValue)}</p>
-              <p><strong>Total Sold:</strong> ${totalSold}</p>
-              <p><strong>Total Available:</strong> ${totalAvailable}</p>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Item Name</th>
-                  <th>Supplier</th>
-                  <th>Unit Price</th>
-                  <th>Quantity</th>
-                  <th>Sold</th>
-                  <th>Available</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${filtered.map(item => `
-                  <tr>
-                    <td>${item.itemName}</td>
-                    <td>${item.supplierName}</td>
-                    <td>${formatCurrency(item.unitPrice)}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.sold}</td>
-                    <td>${item.available}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </body>
-        </html>
+
+      // Build table content
+      const tableContent = `
+        <table>
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Supplier</th>
+              <th>Unit Price</th>
+              <th>Quantity</th>
+              <th>Sold</th>
+              <th>Available</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(item => `
+              <tr class="no-page-break">
+                <td>${item.itemName}</td>
+                <td>${item.supplierName}</td>
+                <td class="text-right">${formatCurrency(item.unitPrice)}</td>
+                <td class="text-center">${item.quantity}</td>
+                <td class="text-center">${item.sold}</td>
+                <td class="text-center">${item.available}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       `;
 
-      html2pdf().from(content).save(`Items_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      // Use standardized HTML template with company branding
+      const html = createHTMLReportTemplate(
+        "Items Report",
+        tableContent,
+        {
+          subtitle: `Generated on: ${new Date().toLocaleDateString()}`,
+          summaryStats: [
+            { label: "Total Items", value: totalItems.toString() },
+            { label: "Total Value", value: formatCurrency(totalValue) },
+            { label: "Total Sold", value: totalSold.toString() },
+            { label: "Total Available", value: totalAvailable.toString() },
+          ],
+        }
+      );
+
+      const options = {
+        ...getHTML2PDFOptions(),
+        filename: `Items_Report_${new Date().toISOString().split('T')[0]}.pdf`
+      };
+      html2pdf().set(options).from(html).save();
       toast.success("Report exported successfully!");
     } catch {
       toast.error("Failed to export report");

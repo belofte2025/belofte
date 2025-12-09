@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getSalesSummaryBySupplier } from "@/services/reportService";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 type SupplierSalesItem = {
   itemName: string;
@@ -84,62 +85,70 @@ export default function SupplierSalesSummary() {
 
   const handleExport = async () => {
     const html2pdf = (await import("html2pdf.js")).default;
-    const html = `
-    <html>
-      <head><meta charset="utf-8">
-        <style>
-          body { font-family: Arial; padding: 20px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-          th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-          th { background-color: #f2f2f2; }
-          .total { text-align: right; font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <h2>${saleType.toUpperCase()} Sales Report</h2>
-        <p><strong>From:</strong> ${startDate.toDateString()} <strong>To:</strong> ${endDate.toDateString()}</p>
-        ${filtered
-          .map(
-            (s) => `
-            <div>
-              <h3>${s.customerName} (${s.saleType})</h3>
-              <p><strong>Date:</strong> ${new Date(
-                s.createdAt
-              ).toDateString()}</p>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Supplier</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${s.items
-                    .map(
-                      (i) => `
-                    <tr>
-                      <td>${i.itemName}</td>
-                      <td>${i.quantity}</td>
-                      <td>${formatCurrency(i.unitPrice)}</td>
-                      <td>${formatCurrency(i.total)}</td>
-                      <td>${i.supplierName || "N/A"}</td>
-                    </tr>`
-                    )
-                    .join("")}
-                </tbody>
-              </table>
-              <p class="total">Total: ₵${formatCurrency(
-                s.items.reduce((acc, i) => acc + i.total, 0)
-              )}</p>
-            </div>
-          `
-          )
-          .join("")}
-        <hr />
-        <h3>Grand Total: ₵${formatCurrency(grandTotal)}</h3>
-      </body>
-    </html>`;
 
-    html2pdf().from(html).save("supplier-sales-summary.pdf");
+    const transactionCount = filtered.length;
+    const averageTransaction = transactionCount > 0 ? grandTotal / transactionCount : 0;
+
+    const tableContent = `
+      ${filtered
+        .map(
+          (s) => `
+          <div style="margin-bottom: 20px; page-break-inside: avoid;">
+            <h3>${s.customerName} (${s.saleType})</h3>
+            <p><strong>Date:</strong> ${new Date(s.createdAt).toDateString()}</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                  <th>Supplier</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${s.items
+                  .map(
+                    (i) => `
+                  <tr>
+                    <td>${i.itemName}</td>
+                    <td>${i.quantity}</td>
+                    <td>₵${formatCurrency(i.unitPrice)}</td>
+                    <td>₵${formatCurrency(i.total)}</td>
+                    <td>${i.supplierName || "N/A"}</td>
+                  </tr>`
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            <p style="text-align: right; font-weight: bold; margin-top: 10px;">
+              Total: ₵${formatCurrency(s.items.reduce((acc, i) => acc + i.total, 0))}
+            </p>
+          </div>
+        `
+        )
+        .join("")}
+    `;
+
+    const htmlContent = createHTMLReportTemplate(
+      "Supplier Sales Summary",
+      tableContent,
+      {
+        subtitle: `${saleType ? saleType.toUpperCase() : 'All'} Sales from ${startDate.toDateString()} to ${endDate.toDateString()}`,
+        summaryStats: [
+          { label: "Total Transactions", value: transactionCount.toString() },
+          { label: "Grand Total", value: `₵ ${formatCurrency(grandTotal)}` },
+          { label: "Average Transaction", value: `₵ ${formatCurrency(averageTransaction)}` },
+          { label: "Sale Type", value: saleType || "All" },
+        ]
+      }
+    );
+
+    const options = {
+      ...getHTML2PDFOptions(),
+      filename: `Supplier_Sales_Summary_${new Date().toISOString().split('T')[0]}.pdf`
+    };
+    html2pdf().set(options).from(htmlContent).save();
   };
 
   return (

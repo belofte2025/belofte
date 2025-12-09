@@ -14,6 +14,7 @@ import { useRouter, useParams } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { getContainerSalesSummary } from "@/services/containerService";
 import toast from "react-hot-toast";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface Item {
   name: string;
@@ -63,65 +64,66 @@ export default function ContainerSummaryPage() {
 
   const exportToPDF = async () => {
     if (!container || isExporting) return;
-    
+
     setIsExporting(true);
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      
-      const html = `
-        <html>
-          <head>
-            <meta charset="utf-8" />
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              h1, h2 { color: #1f2937; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-              th { background-color: #f3f4f6; font-weight: 600; }
-              tfoot td { font-weight: bold; background-color: #f9fafb; }
-              .header-info { margin-bottom: 20px; }
-              .header-info p { margin: 5px 0; }
-            </style>
-          </head>
-          <body>
-            <h1>Container Sales Summary: ${container.number}</h1>
-            <div class="header-info">
-              <p><strong>Company:</strong> ${container.company}</p>
-              <p><strong>Delivery Date:</strong> ${new Date(container.deliveryDate).toLocaleDateString()}</p>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Sold</th>
-                  <th>Remaining</th>
-                  <th>Unit Price</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${container.items?.map(item => `
-                  <tr>
-                    <td>${item.name}</td>
-                    <td>${item.sold}</td>
-                    <td>${item.remainingQty}</td>
-                    <td>GHS ${formatCurrency(item.unitPrice)}</td>
-                    <td>GHS ${formatCurrency(item.total)}</td>
-                  </tr>
-                `).join('') || '<tr><td colspan="5">No items found.</td></tr>'}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="4">Grand Total</td>
-                  <td>GHS ${formatCurrency(container.totalSales)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </body>
-        </html>
+
+      const totalSold = container.items?.reduce((sum, item) => sum + item.sold, 0) || 0;
+      const totalRemaining = container.items?.reduce((sum, item) => sum + item.remainingQty, 0) || 0;
+
+      // Build table content
+      const tableContent = `
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Sold</th>
+              <th>Remaining</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${container.items?.map(item => `
+              <tr class="no-page-break">
+                <td>${item.name}</td>
+                <td class="text-center">${item.sold}</td>
+                <td class="text-center">${item.remainingQty}</td>
+                <td class="text-right">GHS ${formatCurrency(item.unitPrice)}</td>
+                <td class="text-right font-bold">GHS ${formatCurrency(item.total)}</td>
+              </tr>
+            `).join('') || '<tr><td colspan="5">No items found.</td></tr>'}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" class="text-right font-bold">Grand Total</td>
+              <td class="text-right font-bold">GHS ${formatCurrency(container.totalSales)}</td>
+            </tr>
+          </tfoot>
+        </table>
       `;
 
-      html2pdf().from(html).save(`Container_${container.number}_Summary.pdf`);
+      // Use standardized HTML template with company branding
+      const html = createHTMLReportTemplate(
+        `Container Sales Summary: ${container.number}`,
+        tableContent,
+        {
+          subtitle: `Company: ${container.company} | Delivery Date: ${new Date(container.deliveryDate).toLocaleDateString()}`,
+          summaryStats: [
+            { label: "Total Sales", value: `GHS ${formatCurrency(container.totalSales)}` },
+            { label: "Items Sold", value: totalSold.toString() },
+            { label: "Remaining Items", value: totalRemaining.toString() },
+            { label: "Item Types", value: (container.items?.length || 0).toString() },
+          ],
+        }
+      );
+
+      const options = {
+        ...getHTML2PDFOptions(),
+        filename: `Container_${container.number}_Summary.pdf`
+      };
+      html2pdf().set(options).from(html).save();
       toast.success("PDF exported successfully!");
     } catch (error) {
       console.error("Export error:", error);

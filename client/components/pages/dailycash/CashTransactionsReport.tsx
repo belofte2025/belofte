@@ -15,8 +15,13 @@ import {
 } from "lucide-react";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import {
+  createPDFReport,
+  addPDFTable,
+  addPDFSummarySection,
+  formatPDFCurrency,
+  savePDF,
+} from "@/lib/pdfTemplates";
 
 // Define proper types
 interface SaleItem {
@@ -346,55 +351,47 @@ export default function DailyCash() {
   const handleExportPDF = () => {
     if (!report) return;
 
-    const doc = new jsPDF();
-
-    // Add title
-    doc.setFontSize(20);
-    doc.setTextColor(5, 150, 105);
-    doc.text("Daily Cash Report", 14, 20);
-
-    // Add date range
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(
-      `Date Range: ${new Date(startDate).toLocaleDateString()} - ${new Date(
+    // Create PDF with company branding
+    const { doc, headerEndY } = createPDFReport({
+      title: "Daily Cash Report",
+      subtitle: `Date Range: ${new Date(startDate).toLocaleDateString()} - ${new Date(
         endDate
       ).toLocaleDateString()}`,
-      14,
-      28
-    );
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 34);
+      filename: `daily-cash-report-${startDate}-to-${endDate}`,
+      orientation: "portrait",
+    });
 
-    // Add summary
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text("Summary", 14, 45);
+    // Add summary section - start after header with proper spacing
+    const summaryY = addPDFSummarySection(
+      doc,
+      [
+        {
+          label: "Total Cash Sales",
+          value: `${formatPDFCurrency(report.summary.totalCashSales)} (${
+            report.summary.cashSalesCount
+          } txns)`,
+        },
+        {
+          label: "Total Payments",
+          value: `${formatPDFCurrency(report.summary.totalPayments)} (${
+            report.summary.paymentsCount
+          } txns)`,
+        },
+        {
+          label: "Total Revenue",
+          value: formatPDFCurrency(report.summary.totalRevenue),
+          highlight: true,
+        },
+        {
+          label: "Total Transactions",
+          value: report.summary.totalTransactions.toString(),
+        },
+      ],
+      headerEndY + 10,
+      "Summary"
+    );
 
-    doc.setFontSize(9);
-    const summaryY = 52;
-    doc.text(
-      `Total Cash Sales: ₵ ${report.summary.totalCashSales.toFixed(2)} (${
-        report.summary.cashSalesCount
-      } transactions)`,
-      14,
-      summaryY
-    );
-    doc.text(
-      `Total Payments: ₵ ${report.summary.totalPayments.toFixed(2)} (${
-        report.summary.paymentsCount
-      } transactions)`,
-      14,
-      summaryY + 6
-    );
-    doc.text(
-      `Total Revenue: ₵ ${report.summary.totalRevenue.toFixed(2)} (${
-        report.summary.totalTransactions
-      } transactions)`,
-      14,
-      summaryY + 12
-    );
-
-    // Add table
+    // Prepare table data
     const tableData =
       filteredTransactions?.map((t) => [
         new Date(t.date).toLocaleDateString() +
@@ -402,50 +399,40 @@ export default function DailyCash() {
           new Date(t.date).toLocaleTimeString(),
         t.type === "cash_sale" ? "Cash Sale" : "Payment",
         t.customerName + "\n" + t.customerPhone,
-        `₵ ${t.amount.toFixed(2)}`,
+        formatPDFCurrency(t.amount),
         t.type === "cash_sale"
           ? `${t.itemCount} item${t.itemCount !== 1 ? "s" : ""}`
           : t.note || "-",
       ]) || [];
 
-    autoTable(doc, {
-      startY: summaryY + 20,
-      head: [["Date & Time", "Type", "Customer", "Amount", "Details"]],
-      body: tableData,
-      foot: [
-        [
-          "",
-          "",
-          "TOTAL",
-          `₵ ${report.summary.totalRevenue.toFixed(2)}`,
-          `${report.summary.totalTransactions} transactions`,
+    // Add table with automatic page breaks
+    addPDFTable(
+      doc,
+      tableData,
+      ["Date & Time", "Type", "Customer", "Amount", "Details"],
+      summaryY,
+      {
+        footerRows: [
+          [
+            "",
+            "",
+            "TOTAL",
+            formatPDFCurrency(report.summary.totalRevenue),
+            `${report.summary.totalTransactions} transactions`,
+          ],
         ],
-      ],
-      theme: "grid",
-      headStyles: {
-        fillColor: [5, 150, 105],
-        textColor: 255,
-        fontStyle: "bold",
-      },
-      footStyles: {
-        fillColor: [243, 244, 246],
-        textColor: 0,
-        fontStyle: "bold",
-      },
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-      },
-      columnStyles: {
-        0: { cellWidth: 35 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 30, halign: "right" },
-        4: { cellWidth: 45 },
-      },
-    });
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 30, halign: "right" },
+          4: { cellWidth: 45 },
+        },
+      }
+    );
 
-    doc.save(`daily-cash-report-${startDate}-to-${endDate}.pdf`);
+    // Save PDF with proper filename
+    savePDF(doc, `daily-cash-report-${startDate}-to-${endDate}`);
     toast.success("PDF exported successfully");
   };
 

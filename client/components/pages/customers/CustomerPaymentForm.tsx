@@ -196,7 +196,9 @@ export default function CustomerPaymentForm({ customerId }: Props) {
       </head>
       <body>
         <div class="receipt-header">
-          <h1>PAYMENT RECEIPT</h1>
+          <h1 style="color: #1e3a8a; font-size: 28px; margin-bottom: 5px;">PETROS</h1>
+          <p style="color: #6b7280; font-size: 12px; margin-bottom: 15px;">Business Management Solutions</p>
+          <h2 style="color: #1e40af; margin: 10px 0;">PAYMENT RECEIPT</h2>
           <p>Thank you for your payment</p>
           <div class="receipt-number">Receipt #: ${receipt.receiptNumber}</div>
         </div>
@@ -264,6 +266,9 @@ export default function CustomerPaymentForm({ customerId }: Props) {
         <div class="footer">
           <p>This is a computer-generated receipt</p>
           <p style="margin-top: 10px; font-size: 12px;">
+            Powered by PETROS | EYO SOLUTIONS
+          </p>
+          <p style="margin-top: 5px; font-size: 12px;">
             Generated on ${new Date().toLocaleString()}
           </p>
         </div>

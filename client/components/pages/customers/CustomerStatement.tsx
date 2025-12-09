@@ -4,8 +4,13 @@ import {
   getCustomerStatement,
   getCustomerById,
 } from "@/services/customerService";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import {
+  createPDFReport,
+  addPDFTable,
+  addPDFSummarySection,
+  formatPDFCurrency,
+  savePDF,
+} from "@/lib/pdfTemplates";
 import {
   Calendar,
   Download,
@@ -86,34 +91,57 @@ export default function CustomerStatement({ customerId }: Props) {
   });
 
   const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text(`Customer Statement - ${customerName}`, 14, 14);
+    // Create PDF with standardized header and company branding
+    const subtitle = fromDate || toDate
+      ? `Period: ${fromDate || "Start"} to ${toDate || "End"}`
+      : undefined;
 
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
-    if (fromDate || toDate) {
-      doc.text(`Period: ${fromDate || "Start"} to ${toDate || "End"}`, 14, 28);
-    }
+    const { doc, headerEndY } = createPDFReport({
+      title: `Customer Statement - ${customerName}`,
+      subtitle,
+      filename: `statement_${customerName}`,
+      orientation: "portrait",
+    });
 
-    autoTable(doc, {
-      startY: fromDate || toDate ? 32 : 28,
-      head: [["Date", "Type", "Description", "Debit", "Credit", "Balance"]],
-      body: filteredEntries.map((e) => [
+    // Add summary section - start after header with proper spacing
+    const summaryY = addPDFSummarySection(
+      doc,
+      [
+        { label: "Total Debits", value: formatPDFCurrency(totalDebits) },
+        { label: "Total Credits", value: formatPDFCurrency(totalCredits) },
+        { label: "Current Balance", value: formatPDFCurrency(finalBalance), highlight: true },
+        { label: "Transactions", value: filteredEntries.length.toString() },
+      ],
+      headerEndY + 10, // Start after header with 10pt spacing
+      "Account Summary"
+    );
+
+    // Add transaction table with proper column widths (in points)
+    addPDFTable(
+      doc,
+      filteredEntries.map((e) => [
         new Date(e.date).toLocaleDateString(),
         e.type.replace("_", " ").toUpperCase(),
         e.description,
-        e.debit > 0 ? e.debit.toFixed(2) : "-",
-        e.credit > 0 ? e.credit.toFixed(2) : "-",
-        e.balance.toFixed(2),
+        e.debit > 0 ? formatPDFCurrency(e.debit) : "-",
+        e.credit > 0 ? formatPDFCurrency(e.credit) : "-",
+        formatPDFCurrency(e.balance),
       ]),
-      headStyles: { fillColor: [59, 130, 246] },
-      alternateRowStyles: { fillColor: [249, 250, 251] },
-    });
-
-    doc.save(
-      `statement_${customerName}_${new Date().toISOString().split("T")[0]}.pdf`
+      ["Date", "Type", "Description", "Debit", "Credit", "Balance"],
+      summaryY + 5,
+      {
+        columnStyles: {
+          0: { cellWidth: 70 },  // Date column
+          1: { cellWidth: 85 },  // Type column
+          2: { cellWidth: 140 }, // Description column
+          3: { cellWidth: 90, halign: "right" },  // Debit column
+          4: { cellWidth: 90, halign: "right" },  // Credit column
+          5: { cellWidth: 90, halign: "right" },  // Balance column
+        },
+      }
     );
+
+    savePDF(doc, `statement_${customerName}`);
   };
 
   // Calculate summary statistics from filtered entries

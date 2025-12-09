@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Button from "@/components/shared/Button";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 type InventoryItem = {
   id: string;
@@ -39,9 +40,11 @@ export default function InventoryReportComponent({
   const exportToPDF = async () => {
     const html2pdf = (await import("html2pdf.js")).default;
 
-    const content = `
-      <h2>Inventory Report for ${selectedSupplier || "All Suppliers"}</h2>
-      <table border="1" cellspacing="0" cellpadding="5">
+    const totalInventoryValue = filtered.reduce((sum, item) => sum + (item.available * item.unitPrice), 0);
+    const totalItems = filtered.reduce((sum, item) => sum + item.available, 0);
+
+    const tableContent = `
+      <table>
         <thead>
           <tr>
             <th>Supplier</th>
@@ -65,14 +68,28 @@ export default function InventoryReportComponent({
         </tbody>
       </table>`;
 
-    const opt = {
-      margin: 0.5,
-      filename: "Inventory_Report.pdf",
-      html2canvas: {},
-      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-    };
+    const htmlContent = createHTMLReportTemplate(
+      "Inventory Report",
+      tableContent,
+      {
+        subtitle: selectedSupplier ? `Items from ${selectedSupplier}` : "All suppliers inventory",
+        summaryStats: [
+          { label: "Total Items", value: filtered.length.toString() },
+          { label: "Total Quantity", value: totalItems.toString() },
+          { label: "Inventory Value", value: formatCurrency(totalInventoryValue) },
+          { label: "Avg Item Price", value: formatCurrency(totalItems > 0 ? totalInventoryValue / filtered.length : 0) },
+        ]
+      }
+    );
 
-    html2pdf().set(opt).from(content).save();
+    const options = {
+      ...getHTML2PDFOptions(),
+      filename: `Inventory_Report_${new Date().toISOString().split('T')[0]}.pdf`
+    };
+    html2pdf()
+      .set(options)
+      .from(htmlContent)
+      .save();
   };
 
   const exportToExcel = async () => {

@@ -16,6 +16,7 @@ import {
   getOffloadSummary,
 } from "@/services/containerService";
 import toast from "react-hot-toast";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface SummaryItem {
   id: string;
@@ -112,83 +113,70 @@ export default function OffloadSummaryPage() {
       const totals = calculateTotals();
       const currentDate = new Date().toLocaleDateString();
 
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .container-info { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-            .totals { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-            th { background-color: #003366; color: white; }
-            tr:nth-child(even) { background-color: #f9f9f9; }
-            tfoot { background-color: #e3f2fd; font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Container Parking List</h1>
-            <h2>Container: ${containerMeta.containerNo}</h2>
-            <p>Generated on: ${currentDate}</p>
-          </div>
-          
-          <div class="container-info">
-            <h3>Container Information</h3>
-            <p><strong>Container Number:</strong> ${
-              containerMeta.containerNo
-            }</p>
-            <p><strong>Supplier:</strong> ${containerMeta.supplierName}</p>
-            <p><strong>Arrival Date:</strong> ${new Date(
-              containerMeta.arrivalDate
-            ).toLocaleDateString()}</p>
-            <p><strong>Status:</strong> ${containerMeta.status}</p>
-          </div>
-
-          <div class="totals">
-            <h3>Summary Totals</h3>
-            <p><strong>Total Expected:</strong> ${
-              totals.totalExpected
-            } items</p>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Item Name</th>
-                <th style="text-align: center;">Expected Quantity</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${summary
-                .map((item) => {
-                  return `
-                  <tr>
-                    <td>${item.name}</td>
-                    <td style="text-align: center;">${item.expected}</td>
-                  </tr>
-                `;
-                })
-                .join("")}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td>TOTAL</td>
-                <td style="text-align: center;">${totals.totalExpected}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </body>
-        </html>
+      // Build container info section
+      const containerInfo = `
+        <div class="no-page-break" style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="margin-top: 0; color: #1f2937;">Container Information</h3>
+          <p><strong>Container Number:</strong> ${containerMeta.containerNo}</p>
+          <p><strong>Supplier:</strong> ${containerMeta.supplierName}</p>
+          <p><strong>Arrival Date:</strong> ${new Date(
+            containerMeta.arrivalDate
+          ).toLocaleDateString()}</p>
+          <p><strong>Status:</strong> ${containerMeta.status}</p>
+        </div>
       `;
 
+      // Build table content
+      const tableContent = `
+        <table>
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th class="text-center">Expected Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${summary
+              .map((item) => {
+                return `
+                <tr class="no-page-break">
+                  <td>${item.name}</td>
+                  <td class="text-center">${item.expected}</td>
+                </tr>
+              `;
+              })
+              .join("")}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td class="font-bold">TOTAL</td>
+              <td class="text-center font-bold">${totals.totalExpected}</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+
+      // Use standardized HTML template with company branding
+      const html = createHTMLReportTemplate(
+        `Container Parking List: ${containerMeta.containerNo}`,
+        containerInfo + tableContent,
+        {
+          subtitle: `Generated on: ${currentDate}`,
+          summaryStats: [
+            { label: "Total Expected", value: `${totals.totalExpected} items` },
+            { label: "Item Types", value: summary.length.toString() },
+          ],
+        }
+      );
+
+      const options = {
+        ...getHTML2PDFOptions(),
+        filename: `Parking_List_${containerMeta.containerNo}_${currentDate}.pdf`
+      };
       html2pdf()
-        .from(htmlContent)
-        .save(
-          `Offload_Summary_${containerMeta.containerNo}_${currentDate}.pdf`
-        );
+        .set(options)
+        .from(html)
+        .save();
       toast.success("Report exported successfully!");
     } catch (error) {
       console.error("Failed to export PDF:", error);
