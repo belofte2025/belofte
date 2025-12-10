@@ -32,6 +32,7 @@ out/
 .Trashes
 ehthumbs.db
 Thumbs.db
+nul
 
 # Logs
 *.log

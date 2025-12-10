@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(npm run build:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(nul)",
+      "Bash(npx ts-node:*)",
+      "Bash(dir \"c:\\Users\\eewil\\Documents\\belofteEnt\" /s /b)",
+      "Bash(findstr:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npm run build:client:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx replace-in-file:*)",
+      "Bash(npx tsx:*)",
+      "Bash(dir:*)",
+      "Bash(npx prisma db seed:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

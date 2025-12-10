@@ -1,24 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  getSupplierItemsForQuantityManagement, 
-  bulkAdjustQuantities 
+import {
+  getSupplierItemsForQuantityManagement,
+  bulkAdjustQuantities,
 } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
-import { 
-  ArrowLeft, 
-  Package, 
-  TrendingUp, 
-  TrendingDown, 
-  Save, 
-  CheckSquare, 
+import {
+  ArrowLeft,
+  Package,
+  TrendingUp,
+  TrendingDown,
+  Save,
+  CheckSquare,
   Square,
   Factory,
   Calendar,
   Minus,
   Plus,
-  Search
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
@@ -56,12 +56,16 @@ type QuantityAdjustment = {
   reason: string;
 };
 
-export default function QuantityManagementPage({ supplierId }: QuantityManagementPageProps) {
+export default function QuantityManagementPage({
+  supplierId,
+}: QuantityManagementPageProps) {
   const [data, setData] = useState<SupplierData | null>(null);
   const [loading, setLoading] = useState(true);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [adjustments, setAdjustments] = useState<Record<string, QuantityAdjustment>>({});
+  const [adjustments, setAdjustments] = useState<
+    Record<string, QuantityAdjustment>
+  >({});
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -86,7 +90,7 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
     if (newSelected.has(itemName)) {
       newSelected.delete(itemName);
       // Remove adjustment when unselecting
-      setAdjustments(prev => {
+      setAdjustments((prev) => {
         const newAdjustments = { ...prev };
         delete newAdjustments[itemName];
         return newAdjustments;
@@ -94,13 +98,13 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
     } else {
       newSelected.add(itemName);
       // Initialize adjustment when selecting
-      setAdjustments(prev => ({
+      setAdjustments((prev) => ({
         ...prev,
         [itemName]: {
           itemName,
           quantityChange: 0,
           reason: "",
-        }
+        },
       }));
     }
     setSelectedItems(newSelected);
@@ -108,15 +112,15 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
 
   const handleSelectAll = () => {
     if (!data) return;
-    const itemNames = data.items.map(item => item.itemName);
-    
+    const itemNames = data.items.map((item) => item.itemName);
+
     if (selectedItems.size === itemNames.length) {
       setSelectedItems(new Set());
       setAdjustments({});
     } else {
       setSelectedItems(new Set(itemNames));
       const newAdjustments: Record<string, QuantityAdjustment> = {};
-      itemNames.forEach(itemName => {
+      itemNames.forEach((itemName) => {
         newAdjustments[itemName] = {
           itemName,
           quantityChange: 0,
@@ -127,21 +131,29 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
     }
   };
 
-  const handleAdjustmentChange = (itemName: string, field: keyof QuantityAdjustment, value: string | number) => {
-    setAdjustments(prev => ({
+  const handleAdjustmentChange = (
+    itemName: string,
+    field: keyof QuantityAdjustment,
+    value: string | number
+  ) => {
+    setAdjustments((prev) => ({
       ...prev,
       [itemName]: {
         ...prev[itemName],
         [field]: value,
-      }
+      },
     }));
   };
 
   const handleQuickAdjust = (itemName: string, change: number) => {
     const currentAdjustment = adjustments[itemName];
     if (!currentAdjustment) return;
-    
-    handleAdjustmentChange(itemName, "quantityChange", currentAdjustment.quantityChange + change);
+
+    handleAdjustmentChange(
+      itemName,
+      "quantityChange",
+      currentAdjustment.quantityChange + change
+    );
   };
 
   const handleBulkAdjust = async () => {
@@ -151,8 +163,8 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
     }
 
     const validAdjustments = Array.from(selectedItems)
-      .map(itemName => adjustments[itemName])
-      .filter(adj => adj && adj.quantityChange !== 0);
+      .map((itemName) => adjustments[itemName])
+      .filter((adj) => adj && adj.quantityChange !== 0);
 
     if (validAdjustments.length === 0) {
       toast.error("Please specify quantity changes for selected items");
@@ -162,16 +174,20 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
     try {
       setSaving(true);
       const result = await bulkAdjustQuantities(supplierId, validAdjustments);
-      
+
       // Refresh data after successful adjustment
-      const updatedData = await getSupplierItemsForQuantityManagement(supplierId);
+      const updatedData = await getSupplierItemsForQuantityManagement(
+        supplierId
+      );
       setData(updatedData);
-      
+
       setSelectedItems(new Set());
       setAdjustments({});
       setBulkMode(false);
-      
-      const successCount = result.results.filter((r: { status: string }) => r.status === 'updated').length;
+
+      const successCount = result.results.filter(
+        (r: { status: string }) => r.status === "updated"
+      ).length;
       toast.success(`Successfully adjusted ${successCount} items`);
     } catch (error) {
       console.error("Failed to bulk adjust quantities:", error);
@@ -182,25 +198,31 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getStockStatus = (item: ContainerItem) => {
     const remaining = item.quantity - item.soldQty;
-    if (remaining <= 0) return { status: 'out', color: 'text-red-600', bg: 'bg-red-100' };
-    if (remaining < item.quantity * 0.2) return { status: 'low', color: 'text-orange-600', bg: 'bg-orange-100' };
-    return { status: 'good', color: 'text-green-600', bg: 'bg-green-100' };
+    if (remaining <= 0)
+      return { status: "out", color: "text-red-600", bg: "bg-red-100" };
+    if (remaining < item.quantity * 0.2)
+      return { status: "low", color: "text-orange-600", bg: "bg-orange-100" };
+    return { status: "good", color: "text-green-600", bg: "bg-green-100" };
   };
 
   // Filter items based on search query
-  const filteredItems = data?.items.filter(item => 
-    item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.container.containerNo.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredItems =
+    data?.items.filter(
+      (item) =>
+        item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.container.containerNo
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+    ) || [];
 
   if (loading) {
     return (
@@ -208,7 +230,9 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">Loading quantity management...</span>
+            <span className="ml-3 text-gray-600">
+              Loading quantity management...
+            </span>
           </div>
         </div>
       </div>
@@ -220,8 +244,12 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="text-center py-16">
-            <h3 className="text-lg font-medium text-gray-900">No data available</h3>
-            <p className="mt-2 text-gray-500">Unable to load quantity management data.</p>
+            <h3 className="text-lg font-medium text-gray-900">
+              No data available
+            </h3>
+            <p className="mt-2 text-gray-500">
+              Unable to load quantity management data.
+            </p>
           </div>
         </div>
       </div>
@@ -242,10 +270,14 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Quantity Management</h1>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Quantity Management
+                </h1>
                 <div className="flex items-center gap-2 mt-1">
                   <Factory className="w-4 h-4 text-gray-500" />
-                  <p className="text-gray-600">{data.supplier.name} ({data.supplier.country})</p>
+                  <p className="text-gray-600">
+                    {data.supplier.name} ({data.supplier.country})
+                  </p>
                 </div>
               </div>
             </div>
@@ -268,7 +300,9 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                   className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save className="w-4 h-4" />
-                  {saving ? "Adjusting..." : `Adjust ${selectedItems.size} Selected`}
+                  {saving
+                    ? "Adjusting..."
+                    : `Adjust ${selectedItems.size} Selected`}
                 </button>
               )}
             </div>
@@ -280,9 +314,13 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Item Quantities</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Item Quantities
+                </h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {bulkMode ? "Select items and specify quantity adjustments" : "View current stock levels and container information"}
+                  {bulkMode
+                    ? "Select items and specify quantity adjustments"
+                    : "View current stock levels and container information"}
                 </p>
               </div>
               {bulkMode && (
@@ -295,11 +333,13 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                   ) : (
                     <Square className="w-4 h-4" />
                   )}
-                  {selectedItems.size === data.items.length ? "Deselect All" : "Select All"}
+                  {selectedItems.size === data.items.length
+                    ? "Deselect All"
+                    : "Select All"}
                 </button>
               )}
             </div>
-            
+
             {/* Search Filter */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -319,14 +359,24 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <span className="sr-only">Clear search</span>
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
               )}
             </div>
-            
+
             {/* Search Results Count */}
             {searchQuery && (
               <div className="mt-3 text-sm text-gray-600">
@@ -373,9 +423,12 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                   const stockStatus = getStockStatus(item);
                   const remaining = item.quantity - item.soldQty;
                   const adjustment = adjustments[item.itemName];
-                  
+
                   return (
-                    <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-200">
+                    <tr
+                      key={item.id}
+                      className="hover:bg-gray-50 transition-colors duration-200"
+                    >
                       {bulkMode && (
                         <td className="px-6 py-4">
                           <button
@@ -401,24 +454,30 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                             <div className="text-sm font-medium text-gray-900">
                               {item.itemName}
                             </div>
-                            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.bg} ${stockStatus.color}`}>
-                              {stockStatus.status === 'out' ? 'Out of Stock' : 
-                               stockStatus.status === 'low' ? 'Low Stock' : 'In Stock'}
+                            <div
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.bg} ${stockStatus.color}`}
+                            >
+                              {stockStatus.status === "out"
+                                ? "Out of Stock"
+                                : stockStatus.status === "low"
+                                ? "Low Stock"
+                                : "In Stock"}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          <div className="font-semibold">Total: {item.quantity}</div>
-                          <div className="text-xs text-gray-500">Received: {item.receivedQty}</div>
-                          <div className="text-xs text-gray-500">Sold: {item.soldQty}</div>
-                          <div className="text-xs font-medium">Remaining: {remaining}</div>
+                          <div className="font-semibold">
+                            Total Received: {item.quantity}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                         <div className="text-sm text-gray-900">
-                          <div className="font-medium">{item.container.containerNo}</div>
+                          <div className="font-medium">
+                            {item.container.containerNo}
+                          </div>
                           <div className="flex items-center text-xs text-gray-500">
                             <Calendar className="w-3 h-3 mr-1" />
                             {formatDate(item.container.arrivalDate)}
@@ -436,7 +495,9 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                             {selectedItems.has(item.itemName) && adjustment ? (
                               <div className="flex items-center space-x-2">
                                 <button
-                                  onClick={() => handleQuickAdjust(item.itemName, -1)}
+                                  onClick={() =>
+                                    handleQuickAdjust(item.itemName, -1)
+                                  }
                                   className="inline-flex items-center p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
                                 >
                                   <Minus className="w-3 h-3" />
@@ -444,12 +505,20 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                                 <input
                                   type="number"
                                   value={adjustment.quantityChange}
-                                  onChange={(e) => handleAdjustmentChange(item.itemName, "quantityChange", parseInt(e.target.value) || 0)}
+                                  onChange={(e) =>
+                                    handleAdjustmentChange(
+                                      item.itemName,
+                                      "quantityChange",
+                                      parseInt(e.target.value) || 0
+                                    )
+                                  }
                                   className="block w-20 text-center py-1 text-sm border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                   placeholder="0"
                                 />
                                 <button
-                                  onClick={() => handleQuickAdjust(item.itemName, 1)}
+                                  onClick={() =>
+                                    handleQuickAdjust(item.itemName, 1)
+                                  }
                                   className="inline-flex items-center p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded"
                                 >
                                   <Plus className="w-3 h-3" />
@@ -462,7 +531,9 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                                 )}
                               </div>
                             ) : (
-                              <span className="text-sm text-gray-400">Select to adjust</span>
+                              <span className="text-sm text-gray-400">
+                                Select to adjust
+                              </span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -470,7 +541,13 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
                               <input
                                 type="text"
                                 value={adjustment.reason}
-                                onChange={(e) => handleAdjustmentChange(item.itemName, "reason", e.target.value)}
+                                onChange={(e) =>
+                                  handleAdjustmentChange(
+                                    item.itemName,
+                                    "reason",
+                                    e.target.value
+                                  )
+                                }
                                 className="block w-full py-1 px-2 text-sm border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="Adjustment reason..."
                               />
@@ -490,9 +567,12 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
           {filteredItems.length === 0 && searchQuery && (
             <div className="text-center py-16">
               <Search className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No items found
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                No items match &quot;{searchQuery}&quot;. Try a different search term.
+                No items match &quot;{searchQuery}&quot;. Try a different search
+                term.
               </p>
               <button
                 onClick={() => setSearchQuery("")}
@@ -506,9 +586,12 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
           {data.items.length === 0 && (
             <div className="text-center py-16">
               <Package className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No items found
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                This supplier doesn&apos;t have any container items to manage quantities for.
+                This supplier doesn&apos;t have any container items to manage
+                quantities for.
               </p>
             </div>
           )}
@@ -517,13 +600,26 @@ export default function QuantityManagementPage({ supplierId }: QuantityManagemen
         {/* Help Section */}
         {bulkMode && (
           <div className="mt-6 bg-blue-50 border border-blue-200 p-6">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Quantity Adjustment Help</h4>
+            <h4 className="text-sm font-medium text-blue-900 mb-2">
+              Quantity Adjustment Help
+            </h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Positive numbers increase quantities, negative numbers decrease them</li>
+              <li>
+                • This interface helps users to update items quanties recieved from a container from a Supplier
+              </li>
+              <li>
+                • Positive numbers increase quantities, negative numbers
+                decrease them
+              </li>
               <li>• Use the +/- buttons for quick adjustments</li>
               <li>• Quantities cannot go below zero</li>
-              <li>• Providing a reason for adjustments is recommended for audit purposes</li>
-              <li>• Changes are applied to the most recent container for each item</li>
+              <li>
+                • Providing a reason for adjustments is recommended for audit
+                purposes
+              </li>
+              <li>
+                • Changes are applied to the most recent container for each item
+              </li>
             </ul>
           </div>
         )}
