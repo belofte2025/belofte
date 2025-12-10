@@ -390,28 +390,28 @@ export default function QuantityManagementPage({
               <thead className="bg-gray-50">
                 <tr>
                   {bulkMode && (
-                    <th className="w-12 px-6 py-4 text-left">
+                    <th className="w-12 px-3 py-2 text-left">
                       <span className="sr-only">Select</span>
                     </th>
                   )}
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Item
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Current Stock
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                     Container Info
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                     Unit Price
                   </th>
                   {bulkMode && (
                     <>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Adjustment
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Reason
                       </th>
                     </>
@@ -421,7 +421,6 @@ export default function QuantityManagementPage({
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredItems.map((item) => {
                   const stockStatus = getStockStatus(item);
-                  const remaining = item.quantity - item.soldQty;
                   const adjustment = adjustments[item.itemName];
 
                   return (
@@ -430,32 +429,32 @@ export default function QuantityManagementPage({
                       className="hover:bg-gray-50 transition-colors duration-200"
                     >
                       {bulkMode && (
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-2">
                           <button
                             onClick={() => handleToggleItem(item.itemName)}
                             className="text-blue-600 hover:text-blue-800"
                           >
                             {selectedItems.has(item.itemName) ? (
-                              <CheckSquare className="w-5 h-5" />
+                              <CheckSquare className="w-4 h-4" />
                             ) : (
-                              <Square className="w-5 h-5" />
+                              <Square className="w-4 h-4" />
                             )}
                           </button>
                         </td>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8">
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs">
+                          <div className="flex-shrink-0 h-7 w-7">
+                            <div className="h-7 w-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs">
                               {item.itemName.charAt(0).toUpperCase()}
                             </div>
                           </div>
-                          <div className="ml-4">
+                          <div className="ml-3">
                             <div className="text-sm font-medium text-gray-900">
                               {item.itemName}
                             </div>
                             <div
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.bg} ${stockStatus.color}`}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${stockStatus.bg} ${stockStatus.color}`}
                             >
                               {stockStatus.status === "out"
                                 ? "Out of Stock"
@@ -466,14 +465,14 @@ export default function QuantityManagementPage({
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           <div className="font-semibold">
                             Total Received: {item.receivedQty}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                      <td className="px-4 py-2 whitespace-nowrap hidden md:table-cell">
                         <div className="text-sm text-gray-900">
                           <div className="font-medium">
                             {item.container.containerNo}
@@ -484,14 +483,14 @@ export default function QuantityManagementPage({
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                      <td className="px-4 py-2 whitespace-nowrap hidden lg:table-cell">
                         <div className="text-sm font-semibold text-green-600">
                           {formatCurrency(item.unitPrice)}
                         </div>
                       </td>
                       {bulkMode && (
                         <>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-2 whitespace-nowrap">
                             {selectedItems.has(item.itemName) && adjustment ? (
                               <div className="flex items-center space-x-2">
                                 <button
@@ -536,7 +535,7 @@ export default function QuantityManagementPage({
                               </span>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-2 whitespace-nowrap">
                             {selectedItems.has(item.itemName) && adjustment ? (
                               <input
                                 type="text"

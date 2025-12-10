@@ -108,12 +108,6 @@ export default function InventoryReportPage() {
         .length
     : 0;
 
-  const totalOrdered = Array.isArray(inventory)
-    ? inventory.reduce((sum, item) => sum + item.totalOrdered, 0)
-    : 0;
-  const totalReceived = Array.isArray(inventory)
-    ? inventory.reduce((sum, item) => sum + item.totalReceived, 0)
-    : 0;
   const totalSold = Array.isArray(inventory)
     ? inventory.reduce((sum, item) => sum + item.totalSold, 0)
     : 0;
