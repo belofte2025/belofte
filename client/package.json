@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@tailwindcss/oxide": "^4.1.17",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/classnames": "^2.3.4",
     "@types/estree": "^1.0.8",
