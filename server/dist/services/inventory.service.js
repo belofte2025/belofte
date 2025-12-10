@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getInventoryReport = exports.getInventoryBySupplier = exports.getInventoryByContainer = void 0;
+exports.getInventoryReport_22 = exports.getInventoryReport = exports.getInventoryBySupplier = exports.getInventoryByContainer = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const getInventoryByContainer = async (containerId) => {
     // Get container items
@@ -13,8 +13,8 @@ const getInventoryByContainer = async (containerId) => {
             container: {
                 select: {
                     containerNo: true,
-                    companyId: true
-                }
+                    companyId: true,
+                },
             },
         },
     });
@@ -58,17 +58,17 @@ const getInventoryBySupplier = async (supplierId) => {
         include: {
             items: true,
             supplier: {
-                select: { suppliername: true }
-            }
+                select: { suppliername: true },
+            },
         },
     });
     if (containers.length === 0) {
         return [];
     }
     // Get all company IDs from these containers
-    const companyIds = [...new Set(containers.map(c => c.companyId))];
+    const companyIds = [...new Set(containers.map((c) => c.companyId))];
     // Get all container IDs for this supplier
-    const containerIds = containers.map(c => c.id);
+    const containerIds = containers.map((c) => c.id);
     // Get all container items for this supplier
     const allContainerItems = await prisma_1.default.containerItem.findMany({
         where: {
@@ -109,7 +109,7 @@ const getInventoryBySupplier = async (supplierId) => {
         where: { supplierId: supplierId },
         select: { id: true, itemName: true },
     });
-    const supplierItemIdList = supplierItemIds.map(si => si.id);
+    const supplierItemIdList = supplierItemIds.map((si) => si.id);
     // Get all regular sale items where sourceId points to this supplier's supplierItems
     const regularSaleItems = await prisma_1.default.saleItem.findMany({
         where: {
@@ -140,7 +140,7 @@ const getInventoryBySupplier = async (supplierId) => {
             summaryMap[item.itemName] = {
                 received: 0,
                 sold: 0,
-                companyIds: []
+                companyIds: [],
             };
         }
         summaryMap[item.itemName].received += item.quantity;
@@ -166,6 +166,131 @@ const getInventoryBySupplier = async (supplierId) => {
 };
 exports.getInventoryBySupplier = getInventoryBySupplier;
 const getInventoryReport = async (companyId) => {
+    // 1. Run all initial queries in parallel
+    const [allContainerItems, containerSaleItems, regularSaleItems] = await Promise.all([
+        prisma_1.default.containerItem.findMany({
+            where: {
+                container: { companyId },
+            },
+            include: {
+                container: {
+                    include: {
+                        supplier: true,
+                    },
+                },
+            },
+        }),
+        prisma_1.default.saleItem.findMany({
+            where: {
+                sale: {
+                    companyId,
+                    sourceType: "container",
+                },
+            },
+            select: {
+                itemName: true,
+                quantity: true,
+                sale: {
+                    select: { sourceId: true },
+                },
+            },
+        }),
+        prisma_1.default.saleItem.findMany({
+            where: {
+                sale: {
+                    companyId,
+                    sourceType: "regular",
+                },
+            },
+            select: {
+                itemName: true,
+                quantity: true,
+                sale: {
+                    select: { sourceId: true },
+                },
+            },
+        }),
+    ]);
+    // 2. Batch fetch all supplier items in ONE query (fixes N+1 problem)
+    const supplierItemIds = [
+        ...new Set(regularSaleItems
+            .map((item) => item.sale.sourceId)
+            .filter((id) => id !== null)),
+    ];
+    const supplierItems = supplierItemIds.length > 0
+        ? await prisma_1.default.supplierItem.findMany({
+            where: { id: { in: supplierItemIds } },
+            include: { supplier: true },
+        })
+        : [];
+    // 3. Create lookup maps for O(1) access
+    const supplierItemMap = new Map(supplierItems.map((item) => [item.id, item]));
+    // Pre-index regular sales by supplier name
+    const regularSalesBySupplier = new Map();
+    for (const saleItem of regularSaleItems) {
+        if (saleItem.sale.sourceId) {
+            const supplierItem = supplierItemMap.get(saleItem.sale.sourceId);
+            if (supplierItem) {
+                const supplierName = supplierItem.supplier.suppliername;
+                if (!regularSalesBySupplier.has(supplierName)) {
+                    regularSalesBySupplier.set(supplierName, new Map());
+                }
+                const itemSales = regularSalesBySupplier.get(supplierName);
+                itemSales.set(saleItem.itemName, (itemSales.get(saleItem.itemName) || 0) + saleItem.quantity);
+            }
+        }
+    }
+    // Pre-index container sales by itemName + sourceId for O(1) lookup
+    const containerSalesIndex = new Map();
+    for (const sale of containerSaleItems) {
+        const key = `${sale.itemName}-${sale.sale.sourceId}`;
+        containerSalesIndex.set(key, (containerSalesIndex.get(key) || 0) + (sale.quantity || 0));
+    }
+    const inventoryMap = new Map();
+    for (const item of allContainerItems) {
+        const key = `${item.itemName}-${item.container.supplier.suppliername}`;
+        const existing = inventoryMap.get(key);
+        if (existing) {
+            existing.received += item.quantity;
+            existing.containerIds.add(item.containerId);
+        }
+        else {
+            inventoryMap.set(key, {
+                itemName: item.itemName,
+                supplierName: item.container.supplier.suppliername,
+                received: item.quantity,
+                unitPrice: item.unitPrice,
+                containerIds: new Set([item.containerId]),
+            });
+        }
+    }
+    // 5. Calculate final values in a single pass
+    const inventoryArray = Array.from(inventoryMap.values()).map((item) => {
+        // Sum container sales using pre-indexed data
+        let containerSoldQty = 0;
+        for (const containerId of item.containerIds) {
+            const key = `${item.itemName}-${containerId}`;
+            containerSoldQty += containerSalesIndex.get(key) || 0;
+        }
+        // Get regular sales (already aggregated by supplier + item)
+        const supplierSales = regularSalesBySupplier.get(item.supplierName);
+        const regularSoldQty = supplierSales?.get(item.itemName) || 0;
+        const sold = containerSoldQty + regularSoldQty;
+        const available = item.received - sold;
+        return {
+            itemName: item.itemName,
+            supplierName: item.supplierName,
+            received: item.received,
+            sold,
+            available,
+            unitPrice: item.unitPrice,
+            totalValue: available * item.unitPrice,
+        };
+    });
+    return inventoryArray;
+};
+exports.getInventoryReport = getInventoryReport;
+const getInventoryReport_22 = async (companyId) => {
     // Fetch all container items with their containers and suppliers
     const allContainerItems = await prisma_1.default.containerItem.findMany({
         where: {
@@ -231,7 +356,7 @@ const getInventoryReport = async (companyId) => {
                 regularSalesBySupplier[supplierName].push({
                     itemName: saleItem.itemName,
                     quantity: saleItem.quantity,
-                    containerId: '', // Regular sales don't have containerIds, we'll handle this separately
+                    containerId: "", // Regular sales don't have containerIds, we'll handle this separately
                 });
             }
         }
@@ -270,15 +395,16 @@ const getInventoryReport = async (companyId) => {
         // Count regular sales for this supplier
         const regularSales = regularSalesBySupplier[inventoryItem.supplierName] || [];
         const regularSoldQty = regularSales
-            .filter(s => s.itemName === inventoryItem.itemName)
+            .filter((s) => s.itemName === inventoryItem.itemName)
             .reduce((sum, s) => sum + (s.quantity || 0), 0);
         const totalSoldQty = containerSoldQty + regularSoldQty;
         inventoryItem.sold = totalSoldQty;
         inventoryItem.available = inventoryItem.received - totalSoldQty;
-        inventoryItem.totalValue = inventoryItem.available * inventoryItem.unitPrice;
+        inventoryItem.totalValue =
+            inventoryItem.available * inventoryItem.unitPrice;
     });
     // Convert map to array and remove containerIds before returning
-    const inventoryArray = Array.from(inventoryMap.values()).map(item => ({
+    const inventoryArray = Array.from(inventoryMap.values()).map((item) => ({
         itemName: item.itemName,
         supplierName: item.supplierName,
         received: item.received,
@@ -289,4 +415,4 @@ const getInventoryReport = async (companyId) => {
     }));
     return inventoryArray;
 };
-exports.getInventoryReport = getInventoryReport;
+exports.getInventoryReport_22 = getInventoryReport_22;
