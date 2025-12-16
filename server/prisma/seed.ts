@@ -23,6 +23,7 @@ const permissions = [
   { code: 'items.create', name: 'Create Items', category: 'items', description: 'Add new items' },
   { code: 'items.edit', name: 'Edit Items', category: 'items', description: 'Update item information and prices' },
   { code: 'items.delete', name: 'Delete Items', category: 'items', description: 'Remove items' },
+  { code: 'items.deduplicate', name: 'Deduplicate Items', category: 'items', description: 'Merge duplicate supplier items' },
 
   // Containers
   { code: 'containers.view', name: 'View Containers', category: 'containers', description: 'View container list' },
@@ -74,7 +75,7 @@ const roleTemplates = {
       'dashboard.view',
       'customers.view', 'customers.create', 'customers.edit', 'customers.delete',
       'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete',
-      'items.view', 'items.create', 'items.edit', 'items.delete',
+      'items.view', 'items.create', 'items.edit', 'items.delete', 'items.deduplicate',
       'containers.view', 'containers.create', 'containers.edit', 'containers.delete',
       'sales.view', 'sales.create', 'sales.edit', 'sales.delete',
       'reports.view', 'reports.export',
@@ -93,7 +94,7 @@ const roleTemplates = {
       'dashboard.view',
       'customers.view', 'customers.create', 'customers.edit',
       'suppliers.view', 'suppliers.create', 'suppliers.edit',
-      'items.view', 'items.create', 'items.edit',
+      'items.view', 'items.create', 'items.edit', 'items.deduplicate',
       'containers.view', 'containers.create', 'containers.edit',
       'sales.view', 'sales.create', 'sales.edit',
       'reports.view', 'reports.export',
