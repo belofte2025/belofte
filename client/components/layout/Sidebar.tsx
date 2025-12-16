@@ -76,6 +76,7 @@ const reportItems = [
 const settingsItems = [
   { name: "Role Management", href: "/settings/roles", icon: Shield, permission: "roles.manage" },
   { name: "User Management", href: "/settings/users", icon: UserCog, permission: "users.view" },
+  { name: "Item Deduplication", href: "/settings/item-deduplication", icon: Package, permission: "items.deduplicate" },
 ];
 
 type SidebarProps = {
