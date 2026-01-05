@@ -15,7 +15,12 @@
       "Bash(npx tsx:*)",
       "Bash(dir:*)",
       "Bash(npx prisma db seed:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx rimraf .next)",
+      "Bash(npx rimraf node_modules)",
+      "Bash(npm cache clean:*)",
+      "Bash(del:*)"
     ],
     "deny": [],
     "ask": []

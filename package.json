@@ -24,7 +24,8 @@
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.0",
-    "rimraf": "^5.0.0"
+    "rimraf": "^5.0.0",
+    "ts-node-dev": "^2.0.0"
   },
   "dependencies": {
     "jspdf": "^3.0.3",
