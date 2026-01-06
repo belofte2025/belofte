@@ -303,7 +303,6 @@ export const getInventoryReport = async (companyId: string) => {
     itemName: string;
     supplierName: string;
     received: number;
-    unitPrice: number;
     containerIds: Set<string>;
   };
 
@@ -321,7 +320,6 @@ export const getInventoryReport = async (companyId: string) => {
         itemName: item.itemName,
         supplierName: item.container.supplier.suppliername,
         received: item.quantity,
-        unitPrice: item.unitPrice,
         containerIds: new Set([item.containerId]),
       });
     }
@@ -349,8 +347,6 @@ export const getInventoryReport = async (companyId: string) => {
       received: item.received,
       sold,
       available,
-      unitPrice: item.unitPrice,
-      totalValue: available * item.unitPrice,
     };
   });
 
