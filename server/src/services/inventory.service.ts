@@ -344,8 +344,6 @@ export const getInventoryReport = async (companyId: string) => {
     return {
       itemName: item.itemName,
       supplierName: item.supplierName,
-      received: item.received,
-      sold,
       available,
     };
   });

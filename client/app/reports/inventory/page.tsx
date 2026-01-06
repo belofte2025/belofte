@@ -4,21 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft, Download, Package, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { formatCurrency } from "@/utils/format";
 import { getInventoryReport } from "@/services/inventoryService";
 import toast from "react-hot-toast";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface InventoryItem {
-  id: string;
   itemName: string;
   supplierName: string;
-  totalOrdered: number;
-  totalReceived: number;
-  totalSold: number;
   available: number;
-  unitPrice: number;
-  totalValue: number;
 }
 
 export default function InventoryReportPage() {
@@ -94,9 +87,6 @@ export default function InventoryReportPage() {
 
   // Calculate inventory statistics for PDF export
   const totalItems = Array.isArray(inventory) ? inventory.length : 0;
-  const totalValue = Array.isArray(inventory)
-    ? inventory.reduce((sum, item) => sum + item.totalValue, 0)
-    : 0;
   const inStockItems = Array.isArray(inventory)
     ? inventory.filter((item) => item.available > 0).length
     : 0;
@@ -107,9 +97,8 @@ export default function InventoryReportPage() {
     ? inventory.filter((item) => item.available > 0 && item.available < 10)
         .length
     : 0;
-
-  const totalSold = Array.isArray(inventory)
-    ? inventory.reduce((sum, item) => sum + item.totalSold, 0)
+  const totalAvailable = Array.isArray(inventory)
+    ? inventory.reduce((sum, item) => sum + item.available, 0)
     : 0;
 
   const suppliers = Array.isArray(inventory)
@@ -128,8 +117,6 @@ export default function InventoryReportPage() {
               <th>Item Name</th>
               <th>Supplier</th>
               <th>Available</th>
-              <th>Unit Price</th>
-              <th>Total Value</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -137,20 +124,10 @@ export default function InventoryReportPage() {
             ${filteredInventory
               .map(
                 (item) => `
-              <tr class="no-page-break" style="color: ${
-                item.available === 0
-                  ? "#000000"
-                  : item.available < 10
-                  ? "#000000"
-                  : "#000000"
-              };">
+              <tr class="no-page-break">
                 <td>${item.itemName}</td>
                 <td>${item.supplierName}</td>
                 <td class="text-center">${item.available}</td>
-                <td class="text-right">${formatCurrency(item.unitPrice)}</td>
-                <td class="text-right font-bold">${formatCurrency(
-                  item.totalValue
-                )}</td>
                 <td class="font-bold">${
                   item.available === 0
                     ? "Out of Stock"
@@ -174,11 +151,10 @@ export default function InventoryReportPage() {
           subtitle: `Generated on: ${new Date().toLocaleDateString()}`,
           summaryStats: [
             { label: "Total Items", value: totalItems.toString() },
-            { label: "Total Value", value: formatCurrency(totalValue) },
+            { label: "Total Available", value: `${totalAvailable} units` },
             { label: "In Stock", value: inStockItems.toString() },
             { label: "Out of Stock", value: outOfStockItems.toString() },
             { label: "Low Stock", value: lowStockItems.toString() },
-            { label: "Total Sold", value: `${totalSold} units` },
           ],
         }
       );
@@ -323,24 +299,15 @@ export default function InventoryReportPage() {
                         Available
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Unit Price
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Value
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Movement
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredInventory.map((item) => {
+                    {filteredInventory.map((item, index) => {
                       const status = getStockStatus(item.available);
                       return (
-                        <tr key={item.id} className="hover:bg-gray-50">
+                        <tr key={`${item.itemName}-${item.supplierName}-${index}`} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mr-4">
@@ -357,25 +324,12 @@ export default function InventoryReportPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                             {item.available}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(item.unitPrice)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                            {formatCurrency(item.totalValue)}
-                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
                               className={`px-2 py-1 text-xs font-semibold rounded-full ${status.color}`}
                             >
                               {status.text}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
-                            <div>
-                              <p>Ordered: {item.totalOrdered}</p>
-                              <p>Received: {item.totalReceived}</p>
-                              <p>Sold: {item.totalSold}</p>
-                            </div>
                           </td>
                         </tr>
                       );
