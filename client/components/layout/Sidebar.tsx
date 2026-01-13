@@ -28,6 +28,7 @@ import {
   PiggyBankIcon,
   Shield,
   UserCog,
+  Edit,
 } from "lucide-react";
 
 const navItems = [
@@ -54,6 +55,7 @@ const salesReportItems = [
   { name: "Sales Summary", href: "/reports/sales", icon: ShoppingBag },
   { name: "Sales Details", href: "/reports/sales/saledetails", icon: FileText },
   { name: "Sales List", href: "/reports/sales/saleslist", icon: Factory },
+  { name: "Edit Sales", href: "/reports/sales/editsales", icon: Edit },
 ];
 
 const reportItems = [

@@ -63,3 +63,41 @@ export const deleteSaleById = async (id: string) => {
   const res = await api.delete(`/sales/deletesales/${id}`);
   return res.data;
 };
+
+/**
+ * Search sales by item name with optional filters
+ */
+export const searchSalesByItem = async (filters: {
+  itemName: string;
+  startDate?: string;
+  endDate?: string;
+  saleType?: string;
+}) => {
+  const params = new URLSearchParams();
+  params.append('itemName', filters.itemName);
+  if (filters.startDate) params.append('startDate', filters.startDate);
+  if (filters.endDate) params.append('endDate', filters.endDate);
+  if (filters.saleType) params.append('saleType', filters.saleType);
+
+  const res = await api.get(`/sales/search/by-item?${params.toString()}`);
+  return res.data;
+};
+
+/**
+ * Bulk update multiple sales
+ */
+export const bulkUpdateSales = async (
+  saleIds: string[],
+  updates: {
+    saleType?: string;
+    saleDate?: string;
+    items?: Array<{
+      itemName: string;
+      quantity: number;
+      unitPrice: number;
+    }>;
+  }
+) => {
+  const res = await api.put('/sales/bulk-update', { saleIds, updates });
+  return res.data;
+};
