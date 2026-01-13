@@ -112,7 +112,7 @@ export const getSalesSummaryBySupplier = async (
         items: true,
         customer: true,
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
     });
 
     // Fetch supplier items with supplier names - filtered by companyId through supplier relation

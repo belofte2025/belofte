@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
+import { logUpdate, EntityType } from "../utils/auditLogger";
 
 export const recordSale = async (req: Request, res: Response) => {
   const { saleType, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
@@ -107,6 +108,7 @@ export const getSales = async (req: Request, res: Response) => {
   const sales = await prisma.sale.findMany({
     where: { companyId },
     include: { items: true, customer: true },
+    orderBy: { createdAt: "desc" },
   });
   res.json(sales);
 };
@@ -224,6 +226,7 @@ export const getSaleById = async (req: Request, res: Response) => {
 export const updateSale = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { saleType, items, saleDate } = req.body;
+  const userId = req.user?.id;
 
   try {
     const updateData: any = {
@@ -255,6 +258,22 @@ export const updateSale = async (req: Request, res: Response) => {
       where: { id },
       data: updateData,
     });
+
+    // Log the update to audit trail
+    if (userId) {
+      const changes = [];
+      if (saleType) changes.push(`Type: ${saleType}`);
+      if (saleDate) changes.push(`Date: ${saleDate}`);
+      if (items) changes.push(`Items: ${items.length} items`);
+
+      await logUpdate(
+        userId,
+        EntityType.SALE,
+        id,
+        id,
+        `Updated sale - ${changes.join(', ')}`
+      );
+    }
 
     res.json({ message: "Sale updated successfully" });
   } catch (error) {
@@ -365,5 +384,79 @@ export const deleteSaleById = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Failed to delete sale", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// GET /sales/search/by-item - Search sales by item name
+export const searchSalesByItem = async (req: Request, res: Response) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { itemName, startDate, endDate, saleType } = req.query;
+
+    if (!itemName) {
+      res.status(400).json({ error: "itemName query parameter is required" });
+      return;
+    }
+
+    const whereClause: any = {
+      companyId,
+      items: {
+        some: {
+          itemName: {
+            contains: itemName as string,
+            mode: 'insensitive'
+          }
+        }
+      }
+    };
+
+    if (saleType) {
+      whereClause.saleType = saleType;
+    }
+
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) {
+        whereClause.createdAt.gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999); // include entire end day
+        whereClause.createdAt.lte = end;
+      }
+    }
+
+    const sales = await prisma.sale.findMany({
+      where: whereClause,
+      include: {
+        items: true,
+        customer: true,
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Format response to match frontend expectations
+    const response = sales.map((sale) => ({
+      id: sale.id,
+      saleType: sale.saleType,
+      sourceType: sale.sourceType,
+      customer: {
+        customerName: sale.customer.customerName,
+      },
+      totalAmount: sale.totalAmount,
+      createdAt: sale.createdAt,
+      items: sale.items.map((i) => ({
+        itemName: i.itemName,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+      })),
+    }));
+
+    res.json(response);
+    return;
+  } catch (error) {
+    console.error("Failed to search sales by item", error);
+    res.status(500).json({ error: "Internal Server Error" });
+    return;
   }
 };

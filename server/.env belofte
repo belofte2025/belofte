@@ -3,8 +3,8 @@ PORT=4000
 NODE_ENV=development
 
 # Database
-DATABASE_URL="postgresql://postgres.ttjzkuhdezrjztnirits:Year2025belofte@aws-1-eu-north-1.pooler.supabase.com:5432/postgres"
-DIRECT_URL="postgresql://postgres.ttjzkuhdezrjztnirits:Year2025belofte@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DATABASE_URL="postgresql://postgres.ttjzkuhdezrjztnirits:Year2025belofte@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.ttjzkuhdezrjztnirits:Year2025belofte@aws-1-eu-north-1.pooler.supabase.com:5432/postgres"
 # JWT
 JWT_SECRET="your_jwt_secret_here"
 CORS_ORIGIN=https://petros-ivory.vercel.app,http://localhost:3000

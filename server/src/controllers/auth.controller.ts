@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import prisma from "../utils/prisma";
 import { generateToken } from "../utils/jwt";
+import { logLogin, logCreate, EntityType } from "../utils/auditLogger";
 
 // 🔐 REGISTER
 export const register = async (req: Request, res: Response) => {
@@ -61,6 +62,9 @@ export const register = async (req: Request, res: Response) => {
       roleId: user.roleId,
       permissions,
     });
+
+    // Log user registration
+    await logCreate(user.id, EntityType.USER, user.id, user.userName);
 
     res.status(201).json({
       user: {
@@ -127,6 +131,9 @@ export const login = async (req: Request, res: Response) => {
       roleId: user.roleId,
       permissions,
     });
+
+    // Log successful login
+    await logLogin(user.id, user.email);
 
     res.json({
       user: {
