@@ -386,7 +386,7 @@ const getCustomerStatement = async (req, res) => {
                 status: d.status,
             })),
         ].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-        // Calculate running balance for each transaction
+        // Calculate running balance for each transaction (in chronological order)
         let runningBalance = 0;
         const statement = statementItems.map((item) => {
             runningBalance = runningBalance + item.debit - item.credit;
@@ -395,6 +395,8 @@ const getCustomerStatement = async (req, res) => {
                 balance: runningBalance,
             };
         });
+        // Reverse to show latest transactions first
+        statement.reverse();
         // Calculate summary
         const totalDebits = statement.reduce((sum, item) => sum + item.debit, 0);
         const totalCredits = statement.reduce((sum, item) => sum + item.credit, 0);

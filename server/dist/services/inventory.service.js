@@ -156,13 +156,16 @@ const getInventoryBySupplier = async (supplierId) => {
         const soldQty = relatedSales.reduce((sum, s) => sum + (s.quantity || 0), 0);
         summaryMap[itemName].sold = soldQty;
     });
-    return Object.entries(summaryMap).map(([itemName, data]) => ({
+    // Sort items alphabetically by item name
+    return Object.entries(summaryMap)
+        .map(([itemName, data]) => ({
         itemName,
         supplierName: containers[0]?.supplier.suppliername || "Unknown",
         received: data.received,
         sold: data.sold,
         available: data.received - data.sold,
-    }));
+    }))
+        .sort((a, b) => a.itemName.localeCompare(b.itemName));
 };
 exports.getInventoryBySupplier = getInventoryBySupplier;
 const getInventoryReport = async (companyId) => {
@@ -259,7 +262,6 @@ const getInventoryReport = async (companyId) => {
                 itemName: item.itemName,
                 supplierName: item.container.supplier.suppliername,
                 received: item.quantity,
-                unitPrice: item.unitPrice,
                 containerIds: new Set([item.containerId]),
             });
         }
@@ -280,12 +282,16 @@ const getInventoryReport = async (companyId) => {
         return {
             itemName: item.itemName,
             supplierName: item.supplierName,
-            received: item.received,
-            sold,
             available,
-            unitPrice: item.unitPrice,
-            totalValue: available * item.unitPrice,
         };
+    });
+    // Sort by supplier name (alphabetically), then by item name (alphabetically)
+    inventoryArray.sort((a, b) => {
+        const supplierCompare = a.supplierName.localeCompare(b.supplierName);
+        if (supplierCompare !== 0) {
+            return supplierCompare;
+        }
+        return a.itemName.localeCompare(b.itemName);
     });
     return inventoryArray;
 };

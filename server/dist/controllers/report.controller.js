@@ -93,7 +93,7 @@ const getSalesSummaryBySupplier = async (req, res) => {
                 items: true,
                 customer: true,
             },
-            orderBy: { createdAt: "asc" },
+            orderBy: { createdAt: "desc" },
         });
         // Fetch supplier items with supplier names - filtered by companyId through supplier relation
         const supplierItems = await prisma_1.default.supplierItem.findMany({

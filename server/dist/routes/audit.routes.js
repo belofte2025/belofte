@@ -7,4 +7,6 @@ const audit_controller_1 = require("../controllers/audit.controller");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate);
 router.get("/", (0, authorizePermission_1.requirePermission)("audit.view"), audit_controller_1.getAuditLogs);
+router.get("/stats", (0, authorizePermission_1.requirePermission)("audit.view"), audit_controller_1.getAuditStats);
+router.get("/entity/:entityType/:entityId", (0, authorizePermission_1.requirePermission)("audit.view"), audit_controller_1.getEntityAuditHistory);
 exports.default = router;

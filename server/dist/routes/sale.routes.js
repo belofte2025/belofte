@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const sale_controller_1 = require("../controllers/sale.controller");
+const bulkSale_controller_1 = require("../controllers/bulkSale.controller");
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const authorizePermission_1 = require("../middlewares/authorizePermission");
 const router = (0, express_1.Router)();
@@ -94,6 +95,80 @@ router.get("/listsales", sale_controller_1.listSales);
  */
 // IMPORTANT: This must come BEFORE /:id route
 router.delete("/deletesales/:id", (0, authorizePermission_1.requirePermission)("sales.delete"), sale_controller_1.deleteSaleById);
+/**
+ * @swagger
+ * /sales/search/by-item:
+ *   get:
+ *     summary: Search sales by item name
+ *     description: Search for sales that contain a specific item, with optional filters
+ *     tags:
+ *       - Sales
+ *     parameters:
+ *       - in: query
+ *         name: itemName
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Item name to search for (case-insensitive)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: false
+ *         description: Start date filter
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: false
+ *         description: End date filter
+ *       - in: query
+ *         name: saleType
+ *         schema:
+ *           type: string
+ *           enum: [cash, credit]
+ *         required: false
+ *         description: Filter by sale type
+ *     responses:
+ *       200:
+ *         description: List of sales containing the item
+ */
+router.get("/search/by-item", sale_controller_1.searchSalesByItem);
+/**
+ * @swagger
+ * /sales/bulk-update:
+ *   put:
+ *     summary: Bulk update multiple sales
+ *     description: Update multiple sales at once (max 100)
+ *     tags:
+ *       - Sales
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               saleIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               updates:
+ *                 type: object
+ *                 properties:
+ *                   saleType:
+ *                     type: string
+ *                     enum: [cash, credit]
+ *                   saleDate:
+ *                     type: string
+ *                     format: date
+ *     responses:
+ *       200:
+ *         description: Bulk update successful
+ */
+router.put("/bulk-update", (0, authorizePermission_1.requirePermission)("sales.edit"), bulkSale_controller_1.bulkUpdateSales);
 // Get sales by customer - specific route before dynamic :id
 router.get("/customer/:id", sale_controller_1.getSalesByCustomerId);
 // Dynamic routes come last

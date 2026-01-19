@@ -186,13 +186,16 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     summaryMap[itemName].sold = soldQty;
   });
 
-  return Object.entries(summaryMap).map(([itemName, data]) => ({
-    itemName,
-    supplierName: containers[0]?.supplier.suppliername || "Unknown",
-    received: data.received,
-    sold: data.sold,
-    available: data.received - data.sold,
-  }));
+  // Sort items alphabetically by item name
+  return Object.entries(summaryMap)
+    .map(([itemName, data]) => ({
+      itemName,
+      supplierName: containers[0]?.supplier.suppliername || "Unknown",
+      received: data.received,
+      sold: data.sold,
+      available: data.received - data.sold,
+    }))
+    .sort((a, b) => a.itemName.localeCompare(b.itemName));
 };
 
 export const getInventoryReport = async (companyId: string) => {
@@ -346,6 +349,15 @@ export const getInventoryReport = async (companyId: string) => {
       supplierName: item.supplierName,
       available,
     };
+  });
+
+  // Sort by supplier name (alphabetically), then by item name (alphabetically)
+  inventoryArray.sort((a, b) => {
+    const supplierCompare = a.supplierName.localeCompare(b.supplierName);
+    if (supplierCompare !== 0) {
+      return supplierCompare;
+    }
+    return a.itemName.localeCompare(b.itemName);
   });
 
   return inventoryArray;

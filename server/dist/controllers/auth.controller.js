@@ -7,6 +7,7 @@ exports.updatePassword = exports.login = exports.register = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const jwt_1 = require("../utils/jwt");
+const auditLogger_1 = require("../utils/auditLogger");
 // 🔐 REGISTER
 const register = async (req, res) => {
     try {
@@ -60,6 +61,8 @@ const register = async (req, res) => {
             roleId: user.roleId,
             permissions,
         });
+        // Log user registration
+        await (0, auditLogger_1.logCreate)(user.id, auditLogger_1.EntityType.USER, user.id, user.userName);
         res.status(201).json({
             user: {
                 id: user.id,
@@ -122,6 +125,8 @@ const login = async (req, res) => {
             roleId: user.roleId,
             permissions,
         });
+        // Log successful login
+        await (0, auditLogger_1.logLogin)(user.id, user.email);
         res.json({
             user: {
                 id: user.id,

@@ -3,8 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteSaleById = exports.listSales = exports.updateSaleTotalAmount = exports.updateSale = exports.getSaleById = exports.getSalesByCustomerId = exports.getContainerItemsBySupplier = exports.getSales = exports.recordSale = void 0;
+exports.searchSalesByItem = exports.deleteSaleById = exports.listSales = exports.updateSaleTotalAmount = exports.updateSale = exports.getSaleById = exports.getSalesByCustomerId = exports.getContainerItemsBySupplier = exports.getSales = exports.recordSale = void 0;
 const prisma_1 = __importDefault(require("../utils/prisma"));
+const auditLogger_1 = require("../utils/auditLogger");
 const recordSale = async (req, res) => {
     const { saleType, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
     const companyId = req.user?.companyId;
@@ -93,6 +94,7 @@ const getSales = async (req, res) => {
     const sales = await prisma_1.default.sale.findMany({
         where: { companyId },
         include: { items: true, customer: true },
+        orderBy: { createdAt: "desc" },
     });
     res.json(sales);
 };
@@ -182,6 +184,7 @@ exports.getSaleById = getSaleById;
 const updateSale = async (req, res) => {
     const { id } = req.params;
     const { saleType, items, saleDate } = req.body;
+    const userId = req.user?.id;
     try {
         const updateData = {
             saleType,
@@ -204,6 +207,17 @@ const updateSale = async (req, res) => {
             where: { id },
             data: updateData,
         });
+        // Log the update to audit trail
+        if (userId) {
+            const changes = [];
+            if (saleType)
+                changes.push(`Type: ${saleType}`);
+            if (saleDate)
+                changes.push(`Date: ${saleDate}`);
+            if (items)
+                changes.push(`Items: ${items.length} items`);
+            await (0, auditLogger_1.logUpdate)(userId, auditLogger_1.EntityType.SALE, id, id, `Updated sale - ${changes.join(', ')}`);
+        }
         res.json({ message: "Sale updated successfully" });
     }
     catch (error) {
@@ -310,3 +324,71 @@ const deleteSaleById = async (req, res) => {
     }
 };
 exports.deleteSaleById = deleteSaleById;
+// GET /sales/search/by-item - Search sales by item name
+const searchSalesByItem = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        const { itemName, startDate, endDate, saleType } = req.query;
+        if (!itemName) {
+            res.status(400).json({ error: "itemName query parameter is required" });
+            return;
+        }
+        const whereClause = {
+            companyId,
+            items: {
+                some: {
+                    itemName: {
+                        contains: itemName,
+                        mode: 'insensitive'
+                    }
+                }
+            }
+        };
+        if (saleType) {
+            whereClause.saleType = saleType;
+        }
+        if (startDate || endDate) {
+            whereClause.createdAt = {};
+            if (startDate) {
+                whereClause.createdAt.gte = new Date(startDate);
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999); // include entire end day
+                whereClause.createdAt.lte = end;
+            }
+        }
+        const sales = await prisma_1.default.sale.findMany({
+            where: whereClause,
+            include: {
+                items: true,
+                customer: true,
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        // Format response to match frontend expectations
+        const response = sales.map((sale) => ({
+            id: sale.id,
+            saleType: sale.saleType,
+            sourceType: sale.sourceType,
+            customer: {
+                customerName: sale.customer.customerName,
+            },
+            totalAmount: sale.totalAmount,
+            createdAt: sale.createdAt,
+            items: sale.items.map((i) => ({
+                itemName: i.itemName,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+            })),
+        }));
+        res.json(response);
+        return;
+    }
+    catch (error) {
+        console.error("Failed to search sales by item", error);
+        res.status(500).json({ error: "Internal Server Error" });
+        return;
+    }
+};
+exports.searchSalesByItem = searchSalesByItem;
