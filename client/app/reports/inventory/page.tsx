@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft, Download, Package, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -304,36 +304,86 @@ export default function InventoryReportPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredInventory.map((item, index) => {
-                      const status = getStockStatus(item.available);
-                      return (
-                        <tr key={`${item.itemName}-${item.supplierName}-${index}`} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mr-4">
-                                {item.itemName.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {item.itemName}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {item.supplierName}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                            {item.available}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-2 py-1 text-xs font-semibold rounded-full ${status.color}`}
-                            >
-                              {status.text}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {(() => {
+                      // Group items by supplier if no specific supplier is selected
+                      if (!supplierFilter) {
+                        let currentSupplier = "";
+                        return filteredInventory.map((item, index) => {
+                          const status = getStockStatus(item.available);
+                          const isNewSupplier = item.supplierName !== currentSupplier;
+                          currentSupplier = item.supplierName;
+
+                          return (
+                            <Fragment key={`${item.itemName}-${item.supplierName}-${index}`}>
+                              {isNewSupplier && (
+                                <tr key={`supplier-${item.supplierName}`} className="bg-blue-50">
+                                  <td colSpan={4} className="px-6 py-3 text-sm font-bold text-blue-900 uppercase tracking-wide border-t-2 border-blue-200">
+                                    {item.supplierName}
+                                  </td>
+                                </tr>
+                              )}
+                              <tr className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mr-4">
+                                      {item.itemName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {item.itemName}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {item.supplierName}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                  {item.available}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span
+                                    className={`px-2 py-1 text-xs font-semibold rounded-full ${status.color}`}
+                                  >
+                                    {status.text}
+                                  </span>
+                                </td>
+                              </tr>
+                            </Fragment>
+                          );
+                        });
+                      } else {
+                        // When a specific supplier is selected, show flat list
+                        return filteredInventory.map((item, index) => {
+                          const status = getStockStatus(item.available);
+                          return (
+                            <tr key={`${item.itemName}-${item.supplierName}-${index}`} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mr-4">
+                                    {item.itemName.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {item.itemName}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {item.supplierName}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                {item.available}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`px-2 py-1 text-xs font-semibold rounded-full ${status.color}`}
+                                >
+                                  {status.text}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      }
+                    })()}
                   </tbody>
                 </table>
               </div>
