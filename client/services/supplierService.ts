@@ -139,3 +139,79 @@ export const bulkUpdateAliases = async (
   });
   return res.data;
 };
+
+// ========== STOCK ADJUSTMENTS ==========
+
+export interface StockAdjustment {
+  itemName: string;
+  adjustmentQty: number;
+  adjustmentType: "manual" | "damage" | "found";
+  reason?: string;
+  notes?: string;
+}
+
+export interface StockAdjustmentHistory {
+  id: string;
+  itemName: string;
+  adjustmentQty: number;
+  adjustmentType: string;
+  reason?: string;
+  notes?: string;
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: string;
+}
+
+export interface StockAdjustmentSummary {
+  itemName: string;
+  totalAdjustments: number;
+  adjustmentCount: number;
+  byType: Record<string, number>;
+  recentAdjustments: Array<{
+    adjustmentQty: number;
+    adjustmentType: string;
+    createdAt: string;
+  }>;
+}
+
+export const createStockAdjustments = async (
+  supplierId: string,
+  adjustments: StockAdjustment[]
+) => {
+  const res = await api.post(`/suppliers/${supplierId}/stock-adjustments`, {
+    adjustments,
+  });
+  return res.data;
+};
+
+export const getStockAdjustmentHistory = async (
+  supplierId: string,
+  itemName?: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<{ total: number; adjustments: StockAdjustmentHistory[] }> => {
+  const params = new URLSearchParams();
+  if (itemName) params.append("itemName", itemName);
+  params.append("limit", limit.toString());
+  params.append("offset", offset.toString());
+
+  const res = await api.get(
+    `/suppliers/${supplierId}/stock-adjustments?${params.toString()}`
+  );
+  return res.data;
+};
+
+export const getStockAdjustmentSummary = async (
+  supplierId: string,
+  itemName: string
+): Promise<StockAdjustmentSummary> => {
+  const res = await api.get(
+    `/suppliers/${supplierId}/stock-adjustments/summary/${encodeURIComponent(itemName)}`
+  );
+  return res.data;
+};
+
+export const getSupplierStockWithAdjustments = async (supplierId: string) => {
+  const res = await api.get(`/suppliers/${supplierId}/stock/summary`);
+  return res.data;
+};
