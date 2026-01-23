@@ -92,6 +92,18 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     },
   });
 
+  // Get all stock adjustments for this supplier
+  const stockAdjustments = await prisma.stockAdjustment.findMany({
+    where: {
+      supplierId: supplierId,
+      companyId: { in: companyIds },
+    },
+    select: {
+      itemName: true,
+      adjustmentQty: true,
+    },
+  });
+
   // Get all sale items for these companies WHERE sourceId is one of this supplier's containers
   const containerSaleItems = await prisma.saleItem.findMany({
     where: {
@@ -151,6 +163,7 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     {
       received: number;
       sold: number;
+      adjustments: number;
       companyIds: string[];
     }
   > = {};
@@ -161,6 +174,7 @@ export const getInventoryBySupplier = async (supplierId: string) => {
       summaryMap[item.itemName] = {
         received: 0,
         sold: 0,
+        adjustments: 0,
         companyIds: [],
       };
     }
@@ -170,6 +184,19 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     ) {
       summaryMap[item.itemName].companyIds.push(item.container.companyId);
     }
+  });
+
+  // Aggregate stock adjustments
+  stockAdjustments.forEach((adj) => {
+    if (!summaryMap[adj.itemName]) {
+      summaryMap[adj.itemName] = {
+        received: 0,
+        sold: 0,
+        adjustments: 0,
+        companyIds: [],
+      };
+    }
+    summaryMap[adj.itemName].adjustments += adj.adjustmentQty;
   });
 
   // Calculate sold quantities - now filtered by supplier's containers
@@ -193,14 +220,14 @@ export const getInventoryBySupplier = async (supplierId: string) => {
       supplierName: containers[0]?.supplier.suppliername || "Unknown",
       received: data.received,
       sold: data.sold,
-      available: data.received - data.sold,
+      available: data.received - data.sold + data.adjustments,
     }))
     .sort((a, b) => a.itemName.localeCompare(b.itemName));
 };
 
 export const getInventoryReport = async (companyId: string) => {
   // 1. Run all initial queries in parallel
-  const [allContainerItems, containerSaleItems, regularSaleItems] =
+  const [allContainerItems, containerSaleItems, regularSaleItems, stockAdjustments] =
     await Promise.all([
       prisma.containerItem.findMany({
         where: {
@@ -243,6 +270,21 @@ export const getInventoryReport = async (companyId: string) => {
           quantity: true,
           sale: {
             select: { sourceId: true },
+          },
+        },
+      }),
+
+      prisma.stockAdjustment.findMany({
+        where: {
+          companyId,
+        },
+        select: {
+          itemName: true,
+          adjustmentQty: true,
+          supplier: {
+            select: {
+              suppliername: true,
+            },
           },
         },
       }),
@@ -301,6 +343,17 @@ export const getInventoryReport = async (companyId: string) => {
     );
   }
 
+  // Pre-index stock adjustments by itemName + supplierName for O(1) lookup
+  const adjustmentsBySupplierItem = new Map<string, number>();
+
+  for (const adj of stockAdjustments) {
+    const key = `${adj.itemName}-${adj.supplier.suppliername}`;
+    adjustmentsBySupplierItem.set(
+      key,
+      (adjustmentsBySupplierItem.get(key) || 0) + adj.adjustmentQty
+    );
+  }
+
   // 4. Build inventory with Set for O(1) container lookups
   type InventoryItem = {
     itemName: string;
@@ -341,8 +394,12 @@ export const getInventoryReport = async (companyId: string) => {
     const supplierSales = regularSalesBySupplier.get(item.supplierName);
     const regularSoldQty = supplierSales?.get(item.itemName) || 0;
 
+    // Get stock adjustments (already aggregated by supplier + item)
+    const adjustmentKey = `${item.itemName}-${item.supplierName}`;
+    const totalAdjustments = adjustmentsBySupplierItem.get(adjustmentKey) || 0;
+
     const sold = containerSoldQty + regularSoldQty;
-    const available = item.received - sold;
+    const available = item.received - sold + totalAdjustments;
 
     return {
       itemName: item.itemName,

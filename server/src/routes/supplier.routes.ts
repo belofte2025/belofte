@@ -17,6 +17,10 @@ import {
   getSupplierItemsForQuantityManagement,
   getSupplierItemsForAliasManagement,
   bulkUpdateAliases,
+  createStockAdjustments,
+  getStockAdjustmentHistory,
+  getStockAdjustmentSummary,
+  getSupplierStockWithAdjustments,
 } from "../controllers/supplier.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { requirePermission } from "../middlewares/authorizePermission";
@@ -429,5 +433,113 @@ router.get("/:supplierId/alias-management", getSupplierItemsForAliasManagement);
  *         description: Aliases updated successfully
  */
 router.put("/:supplierId/alias-management/bulk", requirePermission("suppliers.edit"), bulkUpdateAliases);
+
+/**
+ * @openapi
+ * /suppliers/{supplierId}/stock-adjustments:
+ *   post:
+ *     tags: [Stock Adjustments]
+ *     summary: Create stock adjustments for supplier items
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [adjustments]
+ *             properties:
+ *               adjustments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     itemName: { type: string }
+ *                     adjustmentQty: { type: number }
+ *                     adjustmentType: { type: string, enum: [manual, damage, found] }
+ *                     reason: { type: string }
+ *                     notes: { type: string }
+ *     responses:
+ *       201:
+ *         description: Stock adjustments created successfully
+ */
+router.post("/:supplierId/stock-adjustments", requirePermission("suppliers.edit"), createStockAdjustments);
+
+/**
+ * @openapi
+ * /suppliers/{supplierId}/stock-adjustments:
+ *   get:
+ *     tags: [Stock Adjustments]
+ *     summary: Get stock adjustment history for a supplier
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *       - name: itemName
+ *         in: query
+ *         required: false
+ *         schema: { type: string }
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         schema: { type: number, default: 50 }
+ *       - name: offset
+ *         in: query
+ *         required: false
+ *         schema: { type: number, default: 0 }
+ *     responses:
+ *       200:
+ *         description: Adjustment history retrieved successfully
+ */
+router.get("/:supplierId/stock-adjustments", getStockAdjustmentHistory);
+
+/**
+ * @openapi
+ * /suppliers/{supplierId}/stock-adjustments/summary/{itemName}:
+ *   get:
+ *     tags: [Stock Adjustments]
+ *     summary: Get stock adjustment summary for a specific item
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *       - name: itemName
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Adjustment summary retrieved successfully
+ */
+router.get("/:supplierId/stock-adjustments/summary/:itemName", getStockAdjustmentSummary);
+
+/**
+ * @openapi
+ * /suppliers/{supplierId}/stock/summary:
+ *   get:
+ *     tags: [Stock Adjustments]
+ *     summary: Get supplier stock with adjustments included
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Supplier stock with adjustments retrieved successfully
+ */
+router.get("/:supplierId/stock/summary", getSupplierStockWithAdjustments);
 
 export default router;

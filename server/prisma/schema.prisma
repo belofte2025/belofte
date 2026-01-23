@@ -8,202 +8,226 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model Company {
-  id           String            @id @default(uuid())
-  address      String?
-  phone        String?
-  createdAt    DateTime          @default(now())
-  companyName  String
-  containers   Container[]
-  customer     Customer[]
-  custpayment  CustomerPayment[]
-  sale         Sale[]
-  suppliers    Supplier[]
-  users        User[]
-  customerDebt CustomerDebt[]
-  smsLogs      SMSLog[]
-  roles        Role[]
-}
-
-model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  companyId String
-  createdAt DateTime   @default(now())
-  roleId    String?
-  userName  String
-  auditLog  AuditLog[]
-  company   Company    @relation(fields: [companyId], references: [id])
-  role      Role?      @relation(fields: [roleId], references: [id])
-}
-
-model Customer {
-  id           String            @id @default(uuid())
-  phone        String
-  balance      Float             @default(0)
-  companyId    String
-  createdAt    DateTime          @default(now())
-  customerName String
-  company      Company           @relation(fields: [companyId], references: [id])
-  custpayment  CustomerPayment[]
-  sale         Sale[]
-  debts        CustomerDebt[]
-  smsLogs    SMSLog[]
-}
-
-model Container {
-  id          String          @id @default(uuid())
-  containerNo String
-  arrivalDate DateTime
-  year        Int
-  status      String          @default("Pending")
-  supplierId  String
-  companyId   String
-  createdAt   DateTime        @default(now())
-  company     Company         @relation(fields: [companyId], references: [id])
-  supplier    Supplier        @relation(fields: [supplierId], references: [id])
-  items       ContainerItem[]
-}
-
-model ContainerItem {
-  id          String    @id @default(uuid())
-  containerId String
-  itemName    String
-  quantity    Int
-  receivedQty Int       @default(0)
-  unitPrice   Float
-  soldQty     Int       @default(0)
-  container   Container @relation(fields: [containerId], references: [id])
-}
-
-model SupplierItem {
-  id         String   @id @default(uuid())
-  supplierId String
-  itemName   String
-  alias      String?
-  price      Float
-  supplier   Supplier @relation(fields: [supplierId], references: [id])
-}
-
-model Supplier {
-  id           String         @id @default(uuid())
-  contact      String
-  country      String
-  companyId    String
-  createdAt    DateTime       @default(now())
-  suppliername String
-  containers   Container[]
-  company      Company        @relation(fields: [companyId], references: [id])
-  items        SupplierItem[]
-}
-
-model Sale {
-  id             String     @id @default(uuid())
-  saleType       String
-  sourceType     String
-  sourceId       String
-  customerId     String
-  companyId      String
-  subtotal       Float      @default(0)
-  discountType   String?    // "percentage" or "amount"
-  discountValue  Float      @default(0)
-  totalAmount    Float
-  createdAt      DateTime   @default(now())
-  company        Company    @relation(fields: [companyId], references: [id])
-  customer       Customer   @relation(fields: [customerId], references: [id])
-  items          SaleItem[]
-}
-
-model SaleItem {
-  id        String @id @default(uuid())
-  saleId    String
-  itemName  String
-  quantity  Int
-  unitPrice Float
-  sale      Sale   @relation(fields: [saleId], references: [id])
-}
-
-model CustomerPayment {
-  id          String   @id @default(uuid())
-  customerId  String
-  companyId   String
-  amount      Float
-  note        String?
-  createdAt   DateTime @default(now())
-  paymentType String?  @db.VarChar
-  company     Company  @relation(fields: [companyId], references: [id])
-  customer    Customer @relation(fields: [customerId], references: [id])
-}
-
 model AuditLog {
-  id          String   @id @default(uuid())
+  id          String   @id
   userId      String
   actionType  String
   entityType  String
   entityId    String
   description String
   timestamp   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+  User        User     @relation(fields: [userId], references: [id])
+}
+
+model Company {
+  id              String            @id
+  address         String?
+  phone           String?
+  createdAt       DateTime          @default(now())
+  companyName     String
+  Container       Container[]
+  Customer        Customer[]
+  CustomerDebt    CustomerDebt[]
+  CustomerPayment CustomerPayment[]
+  Role            Role[]
+  SMSLog          SMSLog[]
+  Sale            Sale[]
+  StockAdjustment StockAdjustment[]
+  Supplier        Supplier[]
+  User            User[]
+}
+
+model Container {
+  id            String          @id
+  containerNo   String
+  arrivalDate   DateTime
+  year          Int
+  status        String          @default("Pending")
+  supplierId    String
+  companyId     String
+  createdAt     DateTime        @default(now())
+  Company       Company         @relation(fields: [companyId], references: [id])
+  Supplier      Supplier        @relation(fields: [supplierId], references: [id])
+  ContainerItem ContainerItem[]
+}
+
+model ContainerItem {
+  id          String    @id
+  containerId String
+  itemName    String
+  quantity    Int
+  receivedQty Int       @default(0)
+  unitPrice   Float
+  soldQty     Int       @default(0)
+  Container   Container @relation(fields: [containerId], references: [id])
+}
+
+model Customer {
+  id              String            @id
+  phone           String
+  balance         Float             @default(0)
+  companyId       String
+  createdAt       DateTime          @default(now())
+  customerName    String
+  Company         Company           @relation(fields: [companyId], references: [id])
+  CustomerDebt    CustomerDebt[]
+  CustomerPayment CustomerPayment[]
+  SMSLog          SMSLog[]
+  Sale            Sale[]
 }
 
 model CustomerDebt {
-  id          String   @id @default(uuid())
+  id          String   @id
   customerId  String
   companyId   String
   amount      Float
   description String?
-  debtType    String   @default("manual") // manual, credit_sale, other
-  status      String   @default("unpaid") // unpaid, paid, partial
+  debtType    String   @default("manual")
+  status      String   @default("unpaid")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  customer    Customer @relation(fields: [customerId], references: [id])
-  company     Company  @relation(fields: [companyId], references: [id])
+  updatedAt   DateTime
+  Company     Company  @relation(fields: [companyId], references: [id])
+  Customer    Customer @relation(fields: [customerId], references: [id])
 }
 
-model SMSLog {
-  id         String    @id @default(uuid())
-  companyId  String
-  customerId String?
-  recipient  String
-  message    String
-  status     String    // sent, failed, pending
-  provider   String    // twilio, hubtel, arkesel, mnotify
-  messageId  String?
-  error      String?
-  createdAt  DateTime  @default(now())
-  company    Company   @relation(fields: [companyId], references: [id])
-  customer   Customer? @relation(fields: [customerId], references: [id])
-}
-
-model Role {
-  id          String           @id @default(uuid())
-  name        String
-  description String?
+model CustomerPayment {
+  id          String   @id
+  customerId  String
   companyId   String
-  isDefault   Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  permissions RolePermission[]
-  users       User[]
-  company     Company          @relation(fields: [companyId], references: [id])
-
-  @@unique([name, companyId])
+  amount      Float
+  note        String?
+  createdAt   DateTime @default(now())
+  paymentType String?  @db.VarChar
+  Company     Company  @relation(fields: [companyId], references: [id])
+  Customer    Customer @relation(fields: [customerId], references: [id])
 }
 
 model Permission {
-  id          String           @id @default(uuid())
-  code        String           @unique
-  name        String
-  category    String
-  description String?
-  roles       RolePermission[]
+  id             String           @id
+  code           String           @unique
+  name           String
+  category       String
+  description    String?
+  RolePermission RolePermission[]
+}
+
+model Role {
+  id             String           @id
+  name           String
+  description    String?
+  companyId      String
+  isDefault      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  Company        Company          @relation(fields: [companyId], references: [id])
+  RolePermission RolePermission[]
+  User           User[]
+
+  @@unique([name, companyId])
 }
 
 model RolePermission {
   roleId       String
   permissionId String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  Permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  Role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
+}
+
+model SMSLog {
+  id         String    @id
+  companyId  String
+  customerId String?
+  recipient  String
+  message    String
+  status     String
+  provider   String
+  messageId  String?
+  error      String?
+  createdAt  DateTime  @default(now())
+  Company    Company   @relation(fields: [companyId], references: [id])
+  Customer   Customer? @relation(fields: [customerId], references: [id])
+}
+
+model Sale {
+  id            String     @id
+  saleType      String
+  sourceType    String
+  sourceId      String
+  customerId    String
+  companyId     String
+  totalAmount   Float
+  createdAt     DateTime   @default(now())
+  subtotal      Float      @default(0)
+  discountType  String?
+  discountValue Float      @default(0)
+  Company       Company    @relation(fields: [companyId], references: [id])
+  Customer      Customer   @relation(fields: [customerId], references: [id])
+  SaleItem      SaleItem[]
+}
+
+model SaleItem {
+  id        String @id
+  saleId    String
+  itemName  String
+  quantity  Int
+  unitPrice Float
+  Sale      Sale   @relation(fields: [saleId], references: [id])
+}
+
+model StockAdjustment {
+  id             String   @id
+  supplierId     String
+  itemName       String
+  companyId      String
+  adjustmentQty  Int
+  reason         String?
+  adjustmentType String
+  notes          String?
+  createdBy      String
+  createdAt      DateTime @default(now())
+  Company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User           User     @relation(fields: [createdBy], references: [id])
+  Supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([supplierId, itemName])
+}
+
+model Supplier {
+  id              String            @id
+  contact         String
+  country         String
+  companyId       String
+  createdAt       DateTime          @default(now())
+  suppliername    String
+  Container       Container[]
+  StockAdjustment StockAdjustment[]
+  Company         Company           @relation(fields: [companyId], references: [id])
+  SupplierItem    SupplierItem[]
+}
+
+model SupplierItem {
+  id         String   @id
+  supplierId String
+  itemName   String
+  price      Float
+  alias      String?
+  Supplier   Supplier @relation(fields: [supplierId], references: [id])
+}
+
+model User {
+  id              String            @id
+  email           String            @unique
+  password        String
+  companyId       String
+  createdAt       DateTime          @default(now())
+  role            String            @default("user")
+  userName        String
+  roleId          String?
+  AuditLog        AuditLog[]
+  StockAdjustment StockAdjustment[]
+  Company         Company           @relation(fields: [companyId], references: [id])
+  Role            Role?             @relation(fields: [roleId], references: [id])
 }

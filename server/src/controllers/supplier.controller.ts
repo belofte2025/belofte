@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
+import * as stockAdjustmentService from "../services/stockAdjustment.service";
 
 // ------------------------------
 // SUPPLIERS
@@ -906,6 +907,170 @@ export const bulkUpdateAliases = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Failed to bulk update aliases:", error);
     res.status(500).json({ error: "Failed to update aliases", detail: error });
+  }
+};
+
+// ------------------------------
+// STOCK ADJUSTMENTS
+// ------------------------------
+
+export const createStockAdjustments = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const { adjustments } = req.body;
+    const companyId = req.user?.companyId;
+    const userId = req.user?.id;
+
+    if (!companyId || !userId) {
+      res.status(400).json({ error: "Company ID or User ID is missing" });
+      return;
+    }
+
+    if (!adjustments || !Array.isArray(adjustments) || adjustments.length === 0) {
+      res.status(400).json({ error: "Adjustments array is required" });
+      return;
+    }
+
+    // Validate adjustment structure
+    for (const adj of adjustments) {
+      if (!adj.itemName || adj.adjustmentQty === undefined || !adj.adjustmentType) {
+        res.status(400).json({
+          error: "Each adjustment must have itemName, adjustmentQty, and adjustmentType",
+        });
+        return;
+      }
+    }
+
+    const result = await stockAdjustmentService.createStockAdjustments(
+      supplierId,
+      adjustments,
+      userId,
+      companyId
+    );
+
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.status(201).json({
+      message: `Created ${result.adjustments?.length} adjustment(s)`,
+      adjustments: result.adjustments,
+    });
+  } catch (error) {
+    console.error("Failed to create stock adjustments:", error);
+    res.status(500).json({
+      error: "Failed to create stock adjustments",
+      detail: error instanceof Error ? error.message : error,
+    });
+  }
+};
+
+export const getStockAdjustmentHistory = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const { itemName, limit = "50", offset = "0" } = req.query;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    const result = await stockAdjustmentService.getAdjustmentHistory(
+      supplierId,
+      companyId,
+      itemName as string | undefined,
+      parseInt(limit as string),
+      parseInt(offset as string)
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error("Failed to fetch adjustment history:", error);
+    res.status(500).json({
+      error: "Failed to fetch adjustment history",
+      detail: error instanceof Error ? error.message : error,
+    });
+  }
+};
+
+export const getStockAdjustmentSummary = async (req: Request, res: Response) => {
+  try {
+    const { supplierId, itemName } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    const result = await stockAdjustmentService.getAdjustmentSummary(
+      supplierId,
+      itemName,
+      companyId
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error("Failed to fetch adjustment summary:", error);
+    res.status(500).json({
+      error: "Failed to fetch adjustment summary",
+      detail: error instanceof Error ? error.message : error,
+    });
+  }
+};
+
+export const getSupplierStockWithAdjustments = async (req: Request, res: Response) => {
+  try {
+    const { supplierId } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      res.status(400).json({ error: "Company ID is missing" });
+      return;
+    }
+
+    // Verify supplier belongs to company
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, companyId },
+    });
+
+    if (!supplier) {
+      res.status(404).json({ error: "Supplier not found" });
+      return;
+    }
+
+    // Get inventory by supplier (now includes adjustments)
+    const { getInventoryBySupplier } = await import("../services/inventory.service");
+    const inventory = await getInventoryBySupplier(supplierId);
+
+    // Get adjustment totals by item
+    const adjustmentTotals = await stockAdjustmentService.getTotalAdjustmentsBySupplierId(
+      supplierId,
+      companyId
+    );
+
+    // Enhance inventory with adjustment details
+    const enhancedInventory = inventory.map((item) => ({
+      ...item,
+      totalAdjustments: adjustmentTotals[item.itemName] || 0,
+    }));
+
+    res.json({
+      supplier: {
+        id: supplier.id,
+        name: supplier.suppliername,
+        country: supplier.country,
+      },
+      inventory: enhancedInventory,
+    });
+  } catch (error) {
+    console.error("Failed to fetch supplier stock with adjustments:", error);
+    res.status(500).json({
+      error: "Failed to fetch supplier stock",
+      detail: error instanceof Error ? error.message : error,
+    });
   }
 };
 9
