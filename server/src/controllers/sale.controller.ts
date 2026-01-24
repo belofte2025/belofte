@@ -14,6 +14,28 @@ export const recordSale = async (req: Request, res: Response) => {
   }
 
   try {
+    // Enforce container status for container sales
+    if (sourceType === "container" && sourceId) {
+      const container = await prisma.container.findUnique({
+        where: { id: sourceId },
+        select: { status: true, containerNo: true },
+      });
+
+      if (!container) {
+        res.status(404).json({ error: "Container not found" });
+        return;
+      }
+
+      // Only allow sales from containers with status "Received" or "Done"
+      if (container.status !== "Received" && container.status !== "Done") {
+        res.status(400).json({
+          error: "Invalid container status",
+          detail: `Cannot sell from container ${container.containerNo} with status "${container.status}". Container must be "Received" or "Done" to make sales.`,
+        });
+        return;
+      }
+    }
+
     // If user cannot edit prices, validate that submitted prices match current prices
     if (!canEditPrice) {
       // Get all supplier items for the company to check current prices
@@ -41,6 +63,109 @@ export const recordSale = async (req: Request, res: Response) => {
           res.status(403).json({
             error: "Forbidden: You don't have permission to modify prices",
             detail: `Item "${item.itemName}" has a different price than the current price. Contact an admin or manager to override prices.`,
+          });
+          return;
+        }
+      }
+    }
+
+    // Validate stock availability for regular sales
+    if (sourceType === "regular" && sourceId) {
+      // Get the supplier from the sourceId (which is a SupplierItem id)
+      const supplierItem = await prisma.supplierItem.findUnique({
+        where: { id: sourceId },
+        select: { supplierId: true },
+      });
+
+      if (!supplierItem) {
+        res.status(400).json({ error: "Invalid source item" });
+        return;
+      }
+
+      const supplierId = supplierItem.supplierId;
+
+      // For each item, check if there's enough stock
+      for (const item of items) {
+        const itemName = item.itemName;
+        const requestedQty = item.quantity;
+
+        // Get total received from containers
+        const containerItems = await prisma.containerItem.findMany({
+          where: {
+            itemName,
+            Container: {
+              supplierId,
+              companyId,
+            },
+          },
+          select: { quantity: true, containerId: true },
+        });
+
+        const totalReceived = containerItems.reduce((sum, ci) => sum + ci.quantity, 0);
+        const containerIds = containerItems.map((ci) => ci.containerId);
+
+        // Get total sold from all sales (container + regular)
+        const [containerSales, regularSales] = await Promise.all([
+          // Container sales
+          prisma.saleItem.findMany({
+            where: {
+              itemName,
+              Sale: {
+                companyId,
+                sourceType: "container",
+                sourceId: { in: containerIds },
+              },
+            },
+            select: { quantity: true },
+          }),
+          // Regular sales
+          prisma.saleItem.findMany({
+            where: {
+              itemName,
+              Sale: {
+                companyId,
+                sourceType: "regular",
+                sourceId: {
+                  in: await prisma.supplierItem
+                    .findMany({
+                      where: { supplierId, itemName },
+                      select: { id: true },
+                    })
+                    .then((items) => items.map((i) => i.id)),
+                },
+              },
+            },
+            select: { quantity: true },
+          }),
+        ]);
+
+        const totalSold =
+          containerSales.reduce((sum, s) => sum + s.quantity, 0) +
+          regularSales.reduce((sum, s) => sum + s.quantity, 0);
+
+        // Get total stock adjustments
+        const adjustments = await prisma.stockAdjustment.findMany({
+          where: {
+            supplierId,
+            itemName,
+            companyId,
+          },
+          select: { adjustmentQty: true },
+        });
+
+        const totalAdjustments = adjustments.reduce((sum, adj) => sum + adj.adjustmentQty, 0);
+
+        // Calculate available stock
+        const available = totalReceived - totalSold + totalAdjustments;
+
+        // Validate
+        if (requestedQty > available) {
+          res.status(400).json({
+            error: "Insufficient stock",
+            detail: `Item "${itemName}" has only ${available} units available, but you're trying to sell ${requestedQty} units.`,
+            itemName,
+            available,
+            requested: requestedQty,
           });
           return;
         }

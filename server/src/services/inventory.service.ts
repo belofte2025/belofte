@@ -199,18 +199,34 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     summaryMap[adj.itemName].adjustments += adj.adjustmentQty;
   });
 
-  // Calculate sold quantities - now filtered by supplier's containers
+  // Calculate sold quantities - separate handling for container and regular sales
   Object.keys(summaryMap).forEach((itemName) => {
-    const relatedSales = allSaleItems.filter(
+    // Filter container sales (sourceId must be in containerIds)
+    const relatedContainerSales = containerSaleItems.filter(
       (s) =>
         s.itemName === itemName &&
         summaryMap[itemName].companyIds.includes(s.Sale.companyId) &&
         containerIds.includes(s.Sale.sourceId)
     );
 
-    const soldQty = relatedSales.reduce((sum, s) => sum + (s.quantity || 0), 0);
+    // Filter regular sales (sourceId must be in supplierItemIdList)
+    const relatedRegularSales = regularSaleItems.filter(
+      (s) =>
+        s.itemName === itemName &&
+        summaryMap[itemName].companyIds.includes(s.Sale.companyId) &&
+        supplierItemIdList.includes(s.Sale.sourceId)
+    );
 
-    summaryMap[itemName].sold = soldQty;
+    const containerSoldQty = relatedContainerSales.reduce(
+      (sum, s) => sum + (s.quantity || 0),
+      0
+    );
+    const regularSoldQty = relatedRegularSales.reduce(
+      (sum, s) => sum + (s.quantity || 0),
+      0
+    );
+
+    summaryMap[itemName].sold = containerSoldQty + regularSoldQty;
   });
 
   // Sort items alphabetically by item name

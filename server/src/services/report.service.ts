@@ -11,19 +11,39 @@ export const getContainerReport = async (containerId: string, companyId: string)
 
   if (!container) throw new Error("Container not found");
 
+  // Get sales for this container to calculate sold quantities
+  const sales = await prisma.sale.findMany({
+    where: {
+      sourceId: containerId,
+      sourceType: "container",
+      companyId,
+    },
+    include: { SaleItem: true },
+  });
+
+  // Aggregate sold quantities by item name
+  const soldMap: Record<string, number> = {};
+  sales.forEach((sale) => {
+    sale.SaleItem.forEach((saleItem) => {
+      soldMap[saleItem.itemName] = (soldMap[saleItem.itemName] || 0) + saleItem.quantity;
+    });
+  });
+
   const itemSummary = container.ContainerItem.map(
     (item: {
       itemName: any;
       quantity: any;
       receivedQty: number;
-      soldQty: number;
-    }) => ({
-      itemName: item.itemName,
-      expected: item.quantity,
-      received: item.receivedQty,
-      sold: item.soldQty,
-      remaining: item.quantity - item.soldQty,
-    })
+    }) => {
+      const soldQty = soldMap[item.itemName] || 0;
+      return {
+        itemName: item.itemName,
+        expected: item.quantity,
+        received: item.receivedQty,
+        sold: soldQty,
+        remaining: item.quantity - soldQty,
+      };
+    }
   );
 
   return {
@@ -38,6 +58,7 @@ export const getSupplierReport = async (supplierId: string, companyId: string) =
     where: {
       Container: {
         supplierId,
+        companyId,
       },
     },
     include: {
@@ -45,20 +66,68 @@ export const getSupplierReport = async (supplierId: string, companyId: string) =
     },
   });
 
+  // Get container IDs for this supplier
+  const containerIds = [...new Set(items.map((item) => item.containerId))];
+
+  // Get all sales from these containers
+  const containerSales = await prisma.sale.findMany({
+    where: {
+      sourceType: "container",
+      sourceId: { in: containerIds },
+      companyId,
+    },
+    include: { SaleItem: true },
+  });
+
+  // Get all supplier items for regular sales
+  const supplierItems = await prisma.supplierItem.findMany({
+    where: { supplierId },
+    select: { id: true, itemName: true },
+  });
+
+  const supplierItemIds = supplierItems.map((si) => si.id);
+
+  // Get regular sales from this supplier
+  const regularSales = await prisma.sale.findMany({
+    where: {
+      sourceType: "regular",
+      sourceId: { in: supplierItemIds },
+      companyId,
+    },
+    include: { SaleItem: true },
+  });
+
+  // Aggregate sold quantities by item name across all sales
+  const soldMap: Record<string, number> = {};
+
+  [...containerSales, ...regularSales].forEach((sale) => {
+    sale.SaleItem.forEach((saleItem) => {
+      soldMap[saleItem.itemName] = (soldMap[saleItem.itemName] || 0) + saleItem.quantity;
+    });
+  });
+
+  // Aggregate items by name and calculate totals
+  const itemMap: Record<string, { id: string; quantity: number }> = {};
+
+  items.forEach((item) => {
+    if (!itemMap[item.itemName]) {
+      itemMap[item.itemName] = {
+        id: item.id,
+        quantity: 0,
+      };
+    }
+    itemMap[item.itemName].quantity += item.quantity;
+  });
+
   return {
     supplierId,
-    items: items.map(
-      (item: {
-        id: any;
-        itemName: any;
-        quantity: number;
-        soldQty: number;
-      }) => ({
-        itemId: item.id,
-        name: item.itemName,
-        remaining: item.quantity - item.soldQty,
-      })
-    ),
+    items: Object.entries(itemMap).map(([itemName, data]) => ({
+      itemId: data.id,
+      name: itemName,
+      totalQuantity: data.quantity,
+      sold: soldMap[itemName] || 0,
+      remaining: data.quantity - (soldMap[itemName] || 0),
+    })),
   };
 };
 
