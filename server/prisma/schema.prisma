@@ -218,12 +218,11 @@ model SupplierItem {
 }
 
 model User {
-  id              String          @id @default(uuid())
+  id              String            @id @default(uuid())
   email           String            @unique
   password        String
   companyId       String
   createdAt       DateTime          @default(now())
-  role            String            @default("user")
   userName        String
   roleId          String?
   AuditLog        AuditLog[]

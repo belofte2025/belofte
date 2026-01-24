@@ -51,7 +51,7 @@ export const createUser = async (
     userName: user.userName,
     email: user.email,
     roleId: user.roleId,
-    role: user.role,
+    role: user.Role?.name,
   });
 };
 
@@ -80,6 +80,6 @@ export const updateUser = async (
     userName: user.userName,
     email: user.email,
     roleId: user.roleId,
-    role: user.role,
+    role: user.Role?.name,
   });
 };
