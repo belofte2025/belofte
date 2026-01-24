@@ -33,11 +33,12 @@ export const OffloadProvider = ({
   useEffect(() => {
     try {
       const savedState = localStorage.getItem(STORAGE_KEY);
-      if (savedState) {
+      if (savedState && savedState !== "undefined" && savedState !== "null") {
         setOffloadState(JSON.parse(savedState));
       }
     } catch (error) {
       console.error("Failed to load offload state from localStorage:", error);
+      localStorage.removeItem(STORAGE_KEY);
     } finally {
       setIsHydrated(true);
     }

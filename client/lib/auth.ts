@@ -12,6 +12,15 @@ export type User = {
 export const getCurrentUser = (): User | null => {
   if (typeof window === "undefined") return null;
 
-  const userJson = localStorage.getItem("user");
-  return userJson ? (JSON.parse(userJson) as User) : null;
+  try {
+    const userJson = localStorage.getItem("user");
+    if (!userJson || userJson === "undefined" || userJson === "null") {
+      return null;
+    }
+    return JSON.parse(userJson) as User;
+  } catch (error) {
+    console.error("Failed to parse user from localStorage:", error);
+    localStorage.removeItem("user");
+    return null;
+  }
 };

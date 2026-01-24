@@ -29,11 +29,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const userJson = localStorage.getItem("user");
-    if (userJson) {
-      setUser(JSON.parse(userJson));
+    try {
+      const userJson = localStorage.getItem("user");
+      if (userJson && userJson !== "undefined" && userJson !== "null") {
+        setUser(JSON.parse(userJson));
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage:", error);
+      localStorage.removeItem("user");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const logout = () => {
