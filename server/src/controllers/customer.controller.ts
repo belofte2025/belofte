@@ -101,14 +101,14 @@ export const getCustomers = async (req: Request, res: Response) => {
         customerName: true,
         phone: true,
         balance: true,
-        sale: {
+        Sale: {
           where: { saleType: "credit" },
           select: { totalAmount: true },
         },
-        custpayment: {
+        CustomerPayment: {
           select: { amount: true },
         },
-        debts: {
+        CustomerDebt: {
           where: {
             OR: [{ status: "unpaid" }, { status: "partial" }],
           },
@@ -121,19 +121,19 @@ export const getCustomers = async (req: Request, res: Response) => {
     // Calculate accurate balance for each customer
     const enrichedCustomers = customers.map((customer) => {
       // Calculate total credit sales
-      const totalCreditSales = customer.sale.reduce(
+      const totalCreditSales = customer.Sale.reduce(
         (sum, s) => sum + s.totalAmount,
         0
       );
 
       // Calculate total payments
-      const totalPayments = customer.custpayment.reduce(
+      const totalPayments = customer.CustomerPayment.reduce(
         (sum, p) => sum + p.amount,
         0
       );
 
       // Calculate total unpaid debts
-      const totalUnpaidDebts = customer.debts.reduce(
+      const totalUnpaidDebts = customer.CustomerDebt.reduce(
         (sum, d) => sum + d.amount,
         0
       );
@@ -166,7 +166,7 @@ export const getCustomerById = async (req: Request, res: Response) => {
     const customer = await prisma.customer.findFirst({
       where: { id, companyId },
       include: {
-        debts: {
+        CustomerDebt: {
           where: { status: { not: "paid" } },
         },
       },
@@ -199,14 +199,14 @@ export const getCustomerByIdBal = async (req: Request, res: Response) => {
         id: true,
         customerName: true,
         phone: true,
-        sale: {
+        Sale: {
           where: { saleType: "credit" },
           select: { totalAmount: true },
         },
-        custpayment: {
+        CustomerPayment: {
           select: { amount: true },
         },
-        debts: {
+        CustomerDebt: {
           where: {
             OR: [{ status: "unpaid" }, { status: "partial" }],
           },
@@ -221,17 +221,17 @@ export const getCustomerByIdBal = async (req: Request, res: Response) => {
     }
 
     // Calculate balance (same as getCustomers)
-    const totalCreditSales = customer.sale.reduce(
+    const totalCreditSales = customer.Sale.reduce(
       (sum, s) => sum + s.totalAmount,
       0
     );
 
-    const totalPayments = customer.custpayment.reduce(
+    const totalPayments = customer.CustomerPayment.reduce(
       (sum, p) => sum + p.amount,
       0
     );
 
-    const totalUnpaidDebts = customer.debts.reduce(
+    const totalUnpaidDebts = customer.CustomerDebt.reduce(
       (sum, d) => sum + d.amount,
       0
     );
@@ -368,7 +368,7 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
         id: true,
         createdAt: true,
         totalAmount: true,
-        items: true,
+        SaleItem: true,
       },
     });
 
@@ -405,7 +405,7 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
         date: s.createdAt.toISOString().split("T")[0],
         timestamp: s.createdAt,
         type: "credit_sale" as const,
-        description: s.items
+        description: s.SaleItem
           .map(
             (i: { quantity: number; itemName: string }) =>
               `${i.quantity}x ${i.itemName}`

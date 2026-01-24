@@ -171,14 +171,14 @@ export const sendBulkDebtReminders = async (req: Request, res: Response) => {
       where: {
         companyId,
         phone: { not: "" },
-        debts: {
+        CustomerDebt: {
           some: {
             status: { in: ["unpaid", "partial"] },
           },
         },
       },
       include: {
-        debts: {
+        CustomerDebt: {
           where: {
             status: { in: ["unpaid", "partial"] },
           },
@@ -189,7 +189,7 @@ export const sendBulkDebtReminders = async (req: Request, res: Response) => {
     const results = [];
 
     for (const customer of customers) {
-      const totalDebt = customer.debts.reduce((sum, d) => sum + d.amount, 0);
+      const totalDebt = customer.CustomerDebt.reduce((sum, d) => sum + d.amount, 0);
       const message = smsService.generateDebtReminder(
         customer.customerName,
         totalDebt
@@ -216,7 +216,7 @@ export const sendBulkDebtReminders = async (req: Request, res: Response) => {
       });
 
       results.push({
-        customer: customer.customerName,
+        Customer: customer.customerName,
         phone: customer.phone,
         success: result.success,
         error: result.error,
@@ -252,7 +252,7 @@ export const getSMSLogs = async (req: Request, res: Response) => {
     const logs = await prisma.sMSLog.findMany({
       where: { companyId },
       include: {
-        customer: {
+        Customer: {
           select: {
             customerName: true,
           },

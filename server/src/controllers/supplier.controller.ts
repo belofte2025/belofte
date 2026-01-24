@@ -43,7 +43,7 @@ export const createSupplier = async (req: Request, res: Response) => {
     res.status(201).json(supplier);
     return;
   } catch (err) {
-    console.error("Failed to create supplier:", err);
+    console.error("Failed to create Supplier:", err);
     res.status(500).json({
       error: "Failed to create supplier",
       detail: err instanceof Error ? err.message : err,
@@ -63,7 +63,7 @@ export const getSuppliers = async (req: Request, res: Response) => {
 
     const suppliers = await prisma.supplier.findMany({
       where: { companyId },
-      include: { items: true },
+      include: { SupplierItem: true },
     });
 
     res.json(suppliers);
@@ -85,7 +85,7 @@ export const getSupplierById = async (req: Request, res: Response) => {
 
     const supplier = await prisma.supplier.findFirst({
       where: { id, companyId },
-      include: { items: true },
+      include: { SupplierItem: true },
     });
 
     if (!supplier) {
@@ -95,7 +95,7 @@ export const getSupplierById = async (req: Request, res: Response) => {
 
     res.json(supplier);
   } catch (err) {
-    console.error("Failed to fetch supplier:", err);
+    console.error("Failed to fetch Supplier:", err);
     res.status(500).json({ error: "Failed to load supplier" });
   }
 };
@@ -128,7 +128,7 @@ export const updateSupplier = async (req: Request, res: Response) => {
 
     res.json(supplier);
   } catch (err) {
-    console.error("Failed to update supplier:", err);
+    console.error("Failed to update Supplier:", err);
     res.status(400).json({ error: "Failed to update supplier", detail: err });
   }
 };
@@ -157,7 +157,7 @@ export const deleteSupplier = async (req: Request, res: Response) => {
 
     res.json({ message: "Supplier deleted" });
   } catch (err) {
-    console.error("Failed to delete supplier:", err);
+    console.error("Failed to delete Supplier:", err);
     res.status(400).json({ error: "Failed to delete supplier", detail: err });
   }
 };
@@ -230,7 +230,7 @@ export const addMultipleSupplierItems = async (req: Request, res: Response) => {
 
     res.status(201).json({ count: created.count });
   } catch (err) {
-    console.error("Failed to add multiple supplier items:", err);
+    console.error("Failed to add multiple supplier SaleItem:", err);
     res.status(400).json({ error: "Failed to add items", detail: err });
   }
 };
@@ -267,7 +267,7 @@ export const getSupplierItems = async (req: Request, res: Response) => {
 
     res.json(items);
   } catch (err) {
-    console.error("Error fetching supplier items:", err);
+    console.error("Error fetching supplier SaleItem:", err);
     res.status(500).json({ error: "Failed to fetch supplier items" });
   }
 };
@@ -287,7 +287,7 @@ export const updateSupplierItem = async (req: Request, res: Response) => {
     const existingItem = await prisma.supplierItem.findFirst({
       where: {
         id,
-        supplier: {
+        Supplier: {
           companyId,
         },
       },
@@ -324,7 +324,7 @@ export const deleteSupplierItem = async (req: Request, res: Response) => {
     const existingItem = await prisma.supplierItem.findFirst({
       where: {
         id,
-        supplier: {
+        Supplier: {
           companyId,
         },
       },
@@ -380,12 +380,12 @@ export const listSupplierItemsWithSales = async (
     // Step 1: Fetch supplier items for this company only
     const supplierItems = await prisma.supplierItem.findMany({
       where: {
-        supplier: {
+        Supplier: {
           companyId,
         },
       },
       include: {
-        supplier: true,
+        Supplier: true,
       },
     });
 
@@ -396,25 +396,25 @@ export const listSupplierItemsWithSales = async (
       alias?: string | null;
       supplierId: string;
       price: number;
-      supplier: { suppliername: string } | null;
+      Supplier: { suppliername: string } | null;
     }) => ({
       id: item.id,
       itemName: item.itemName,
       alias: item.alias,
       supplierId: item.supplierId,
-      supplierName: item.supplier?.suppliername || "Unknown",
+      supplierName: item.Supplier?.suppliername || "Unknown",
       price: item.price,
     }));
 
     // Step 3: Fetch container items for this company only
     const allContainerItems = await prisma.containerItem.findMany({
       where: {
-        container: {
+        Container: {
           companyId,
         },
       },
       include: {
-        container: {
+        Container: {
           select: {
             id: true,
             supplierId: true,
@@ -427,14 +427,14 @@ export const listSupplierItemsWithSales = async (
     // Step 4: Fetch sale items for this company only (with source info)
     const allSaleItems = await prisma.saleItem.findMany({
       where: {
-        sale: {
+        Sale: {
           companyId,
         },
       },
       select: {
         itemName: true,
         quantity: true,
-        sale: {
+        Sale: {
           select: {
             companyId: true,
             sourceType: true,
@@ -447,13 +447,13 @@ export const listSupplierItemsWithSales = async (
     // Step 4b: Get all container IDs for this company grouped by supplier
     const allContainersBySupplierId: Record<string, string[]> = {};
     allContainerItems.forEach((item: any) => {
-      const supplierId = item.container?.supplierId;
+      const supplierId = item.Container?.supplierId;
       if (supplierId) {
         if (!allContainersBySupplierId[supplierId]) {
           allContainersBySupplierId[supplierId] = [];
         }
-        if (!allContainersBySupplierId[supplierId].includes(item.container.id)) {
-          allContainersBySupplierId[supplierId].push(item.container.id);
+        if (!allContainersBySupplierId[supplierId].includes(item.Container.id)) {
+          allContainersBySupplierId[supplierId].push(item.Container.id);
         }
       }
     });
@@ -480,10 +480,10 @@ export const listSupplierItemsWithSales = async (
         (c: {
           itemName: string;
           quantity: number;
-          container: { supplierId: string; companyId: string } | null;
+          Container: { supplierId: string; companyId: string } | null;
         }) =>
           c.itemName === sItem.itemName &&
-          c.container?.supplierId === sItem.supplierId
+          c.Container?.supplierId === sItem.supplierId
       );
 
       const totalQty = relatedContainers.reduce(
@@ -498,19 +498,19 @@ export const listSupplierItemsWithSales = async (
       const relatedSales = allSaleItems.filter(
         (s: {
           itemName: string;
-          sale: { companyId: string; sourceType: string; sourceId: string };
+          Sale: { companyId: string; sourceType: string; sourceId: string };
         }) => {
           // Only count sales for this item name
           if (s.itemName !== sItem.itemName) return false;
 
           // For container sales: check if container belongs to this supplier
-          if (s.sale.sourceType === 'container') {
-            return containerIds.includes(s.sale.sourceId);
+          if (s.Sale.sourceType === 'container') {
+            return containerIds.includes(s.Sale.sourceId);
           }
 
           // For regular sales: check if supplierItem belongs to this supplier
-          if (s.sale.sourceType === 'regular') {
-            return supplierItemIds.includes(s.sale.sourceId);
+          if (s.Sale.sourceType === 'regular') {
+            return supplierItemIds.includes(s.Sale.sourceId);
           }
 
           return false;
@@ -599,7 +599,7 @@ export const bulkUpdatePrices = async (req: Request, res: Response) => {
       updatedItems,
     });
   } catch (error) {
-    console.error("Failed to bulk update items:", error);
+    console.error("Failed to bulk update SaleItem:", error);
     res.status(500).json({ error: "Failed to update items", detail: error });
   }
 };
@@ -635,16 +635,16 @@ export const bulkAdjustQuantities = async (req: Request, res: Response) => {
       const containerItems = await prisma.containerItem.findMany({
         where: {
           itemName,
-          container: {
+          Container: {
             supplierId,
             companyId,
           },
         },
         include: {
-          container: true,
+          Container: true,
         },
         orderBy: {
-          container: {
+          Container: {
             arrivalDate: 'desc',
           },
         },
@@ -703,7 +703,7 @@ export const getSupplierItemsForPriceManagement = async (req: Request, res: Resp
     const supplier = await prisma.supplier.findFirst({
       where: { id: supplierId, companyId },
       include: {
-        items: true,
+        SupplierItem: true,
       },
     });
 
@@ -713,12 +713,12 @@ export const getSupplierItemsForPriceManagement = async (req: Request, res: Resp
     }
 
     res.json({
-      supplier: {
+      Supplier: {
         id: supplier.id,
         name: supplier.suppliername,
         country: supplier.country,
       },
-      items: supplier.items.map(item => ({
+      items: supplier.SupplierItem.map((item: any) => ({
         id: item.id,
         itemName: item.itemName,
         price: item.price,
@@ -753,13 +753,13 @@ export const getSupplierItemsForQuantityManagement = async (req: Request, res: R
     // Get all container items for this supplier
     const containerItems = await prisma.containerItem.findMany({
       where: {
-        container: {
+        Container: {
           supplierId,
           companyId,
         },
       },
       include: {
-        container: {
+        Container: {
           select: {
             id: true,
             containerNo: true,
@@ -768,7 +768,7 @@ export const getSupplierItemsForQuantityManagement = async (req: Request, res: R
         },
       },
       orderBy: {
-        container: {
+        Container: {
           arrivalDate: 'desc',
         },
       },
@@ -778,7 +778,7 @@ export const getSupplierItemsForQuantityManagement = async (req: Request, res: R
     const itemMap = new Map();
     containerItems.forEach(item => {
       if (!itemMap.has(item.itemName) ||
-          new Date(item.container.arrivalDate) > new Date(itemMap.get(item.itemName).container.arrivalDate)) {
+          new Date(item.Container.arrivalDate) > new Date(itemMap.get(item.itemName).Container.arrivalDate)) {
         itemMap.set(item.itemName, item);
       }
     });
@@ -790,15 +790,15 @@ export const getSupplierItemsForQuantityManagement = async (req: Request, res: R
       receivedQty: item.receivedQty,
       soldQty: item.soldQty,
       unitPrice: item.unitPrice,
-      container: {
-        id: item.container.id,
-        containerNo: item.container.containerNo,
-        arrivalDate: item.container.arrivalDate,
+      Container: {
+        id: item.Container.id,
+        containerNo: item.Container.ContainerNo,
+        arrivalDate: item.Container.arrivalDate,
       },
     }));
 
     res.json({
-      supplier: {
+      Supplier: {
         id: supplier.id,
         name: supplier.suppliername,
         country: supplier.country,
@@ -825,7 +825,7 @@ export const getSupplierItemsForAliasManagement = async (req: Request, res: Resp
     const supplier = await prisma.supplier.findFirst({
       where: { id: supplierId, companyId },
       include: {
-        items: {
+        SupplierItem: {
           orderBy: { itemName: 'asc' },
         },
       },
@@ -837,12 +837,12 @@ export const getSupplierItemsForAliasManagement = async (req: Request, res: Resp
     }
 
     res.json({
-      supplier: {
+      Supplier: {
         id: supplier.id,
         name: supplier.suppliername,
         country: supplier.country,
       },
-      items: supplier.items.map(item => ({
+      items: supplier.SupplierItem.map((item: any) => ({
         id: item.id,
         itemName: item.itemName,
         alias: item.alias,
@@ -1058,7 +1058,7 @@ export const getSupplierStockWithAdjustments = async (req: Request, res: Respons
     }));
 
     res.json({
-      supplier: {
+      Supplier: {
         id: supplier.id,
         name: supplier.suppliername,
         country: supplier.country,

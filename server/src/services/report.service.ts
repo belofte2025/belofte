@@ -4,14 +4,14 @@ export const getContainerReport = async (containerId: string, companyId: string)
   const container = await prisma.container.findUnique({
     where: { id: containerId },
     include: {
-      supplier: true,
-      items: true,
+      Supplier: true,
+      ContainerItem: true,
     },
   });
 
   if (!container) throw new Error("Container not found");
 
-  const itemSummary = container.items.map(
+  const itemSummary = container.ContainerItem.map(
     (item: {
       itemName: any;
       quantity: any;
@@ -29,19 +29,19 @@ export const getContainerReport = async (containerId: string, companyId: string)
   return {
     containerNo: container.containerNo,
     arrivalDate: container.arrivalDate,
-    supplier: container.supplier?.suppliername || "N/A",
+    supplier: container.Supplier?.suppliername || "N/A",
     itemSummary,
   };
 };
 export const getSupplierReport = async (supplierId: string, companyId: string) => {
   const items = await prisma.containerItem.findMany({
     where: {
-      container: {
+      Container: {
         supplierId,
       },
     },
     include: {
-      container: true,
+      Container: true,
     },
   });
 
@@ -72,8 +72,8 @@ startDate: string, endDate: string, companyId: string) => {
       },
     },
     include: {
-      items: true,
-      customer: true,
+      SaleItem: true,
+      Customer: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -84,10 +84,10 @@ startDate: string, endDate: string, companyId: string) => {
   const transformedSales = sales.map((sale) => ({
     id: sale.id,
     saleType: sale.saleType,
-    customerName: sale.customer?.customerName || "Walk-in",
+    customerName: sale.Customer?.customerName || "Walk-in",
     totalAmount: sale.totalAmount,
     createdAt: sale.createdAt,
-    items: sale.items,
+    items: sale.SaleItem,
   }));
 
   return transformedSales;
@@ -118,8 +118,8 @@ export const getCashSalesAndPayments = async (
       },
     },
     include: {
-      items: true,
-      customer: {
+      SaleItem: true,
+      Customer: {
         select: {
           id: true,
           customerName: true,
@@ -142,7 +142,7 @@ export const getCashSalesAndPayments = async (
       },
     },
     include: {
-      customer: {
+      Customer: {
         select: {
           id: true,
           customerName: true,
@@ -165,11 +165,11 @@ export const getCashSalesAndPayments = async (
     id: sale.id,
     type: "cash_sale",
     date: sale.createdAt,
-    customerName: sale.customer?.customerName || "Walk-in",
-    customerPhone: sale.customer?.phone || "N/A",
+    customerName: sale.Customer?.customerName || "Walk-in",
+    customerPhone: sale.Customer?.phone || "N/A",
     amount: sale.totalAmount,
-    itemCount: sale.items.length,
-    items: sale.items.map((item) => ({
+    itemCount: sale.SaleItem.length,
+    items: sale.SaleItem.map((item) => ({
       itemName: item.itemName,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
@@ -183,8 +183,8 @@ export const getCashSalesAndPayments = async (
     id: payment.id,
     type: "payment",
     date: payment.createdAt,
-    customerName: payment.customer?.customerName || "Unknown",
-    customerPhone: payment.customer?.phone || "N/A",
+    customerName: payment.Customer?.customerName || "Unknown",
+    customerPhone: payment.Customer?.phone || "N/A",
     amount: payment.amount,
     paymentType: payment.paymentType || "cash",
     note: payment.note,

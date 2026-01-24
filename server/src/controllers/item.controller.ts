@@ -13,7 +13,7 @@ export const getSupplierItemStatistics = async (req: Request, res: Response): Pr
     const items = await prisma.containerItem.groupBy({
       by: ["itemName"],
       where: {
-        container: {
+        Container: {
           supplierId,
         },
       },
@@ -41,7 +41,7 @@ export const getSupplierItemStatistics = async (req: Request, res: Response): Pr
         const salesCount = await prisma.saleItem.count({
           where: {
             itemName: item.itemName,
-            sale: {
+            Sale: {
               sourceType: "container",
               sourceId: { in: containerIds },
             },
@@ -52,7 +52,7 @@ export const getSupplierItemStatistics = async (req: Request, res: Response): Pr
         const sampleItem = await prisma.containerItem.findFirst({
           where: {
             itemName: item.itemName,
-            container: {
+            Container: {
               supplierId,
             },
           },
@@ -113,7 +113,7 @@ export const mergeDuplicateItems = async (req: Request, res: Response): Promise<
         await tx.containerItem.updateMany({
           where: {
             itemName: { in: duplicateNames },
-            container: { supplierId },
+            Container: { supplierId },
           },
           data: {
             itemName: masterName,
@@ -131,7 +131,7 @@ export const mergeDuplicateItems = async (req: Request, res: Response): Promise<
         await tx.saleItem.updateMany({
           where: {
             itemName: { in: duplicateNames },
-            sale: {
+            Sale: {
               sourceType: "container",
               sourceId: { in: containerIds },
             },

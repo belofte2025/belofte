@@ -5,7 +5,7 @@ export const getInventoryByContainer = async (containerId: string) => {
   const items = await prisma.containerItem.findMany({
     where: { containerId },
     include: {
-      container: {
+      Container: {
         select: {
           containerNo: true,
           companyId: true,
@@ -18,12 +18,12 @@ export const getInventoryByContainer = async (containerId: string) => {
     return [];
   }
 
-  const companyId = items[0].container.companyId;
+  const companyId = items[0].Container.companyId;
 
   // Get all sale items for this specific container
   const allSaleItems = await prisma.saleItem.findMany({
     where: {
-      sale: {
+      Sale: {
         companyId: companyId,
         sourceType: "container",
         sourceId: containerId,
@@ -45,7 +45,7 @@ export const getInventoryByContainer = async (containerId: string) => {
 
     return {
       itemName: item.itemName,
-      containerNo: item.container.containerNo,
+      containerNo: item.Container.containerNo,
       received: item.quantity,
       sold: soldQty,
       remaining: item.quantity - soldQty,
@@ -59,8 +59,8 @@ export const getInventoryBySupplier = async (supplierId: string) => {
   const containers = await prisma.container.findMany({
     where: { supplierId },
     include: {
-      items: true,
-      supplier: {
+      ContainerItem: true,
+      Supplier: {
         select: { suppliername: true },
       },
     },
@@ -71,20 +71,20 @@ export const getInventoryBySupplier = async (supplierId: string) => {
   }
 
   // Get all company IDs from these containers
-  const companyIds = [...new Set(containers.map((c) => c.companyId))];
+  const companyIds: string[] = [...new Set(containers.map((c) => c.companyId))];
 
   // Get all container IDs for this supplier
-  const containerIds = containers.map((c) => c.id);
+  const containerIds: string[] = containers.map((c) => c.id);
 
   // Get all container items for this supplier
   const allContainerItems = await prisma.containerItem.findMany({
     where: {
-      container: {
+      Container: {
         supplierId: supplierId,
       },
     },
     include: {
-      container: {
+      Container: {
         select: {
           companyId: true,
         },
@@ -107,7 +107,7 @@ export const getInventoryBySupplier = async (supplierId: string) => {
   // Get all sale items for these companies WHERE sourceId is one of this supplier's containers
   const containerSaleItems = await prisma.saleItem.findMany({
     where: {
-      sale: {
+      Sale: {
         companyId: { in: companyIds },
         sourceType: "container",
         sourceId: { in: containerIds },
@@ -116,7 +116,7 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     select: {
       itemName: true,
       quantity: true,
-      sale: {
+      Sale: {
         select: {
           companyId: true,
           sourceId: true,
@@ -131,12 +131,12 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     select: { id: true, itemName: true },
   });
 
-  const supplierItemIdList = supplierItemIds.map((si) => si.id);
+  const supplierItemIdList: string[] = supplierItemIds.map((si) => si.id);
 
   // Get all regular sale items where sourceId points to this supplier's supplierItems
   const regularSaleItems = await prisma.saleItem.findMany({
     where: {
-      sale: {
+      Sale: {
         companyId: { in: companyIds },
         sourceType: "regular",
         sourceId: { in: supplierItemIdList },
@@ -145,7 +145,7 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     select: {
       itemName: true,
       quantity: true,
-      sale: {
+      Sale: {
         select: {
           companyId: true,
           sourceId: true,
@@ -180,9 +180,9 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     }
     summaryMap[item.itemName].received += item.quantity;
     if (
-      !summaryMap[item.itemName].companyIds.includes(item.container.companyId)
+      !summaryMap[item.itemName].companyIds.includes(item.Container.companyId)
     ) {
-      summaryMap[item.itemName].companyIds.push(item.container.companyId);
+      summaryMap[item.itemName].companyIds.push(item.Container.companyId);
     }
   });
 
@@ -204,8 +204,8 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     const relatedSales = allSaleItems.filter(
       (s) =>
         s.itemName === itemName &&
-        summaryMap[itemName].companyIds.includes(s.sale.companyId) &&
-        containerIds.includes(s.sale.sourceId)
+        summaryMap[itemName].companyIds.includes(s.Sale.companyId) &&
+        containerIds.includes(s.Sale.sourceId)
     );
 
     const soldQty = relatedSales.reduce((sum, s) => sum + (s.quantity || 0), 0);
@@ -217,7 +217,7 @@ export const getInventoryBySupplier = async (supplierId: string) => {
   return Object.entries(summaryMap)
     .map(([itemName, data]) => ({
       itemName,
-      supplierName: containers[0]?.supplier.suppliername || "Unknown",
+      supplierName: containers[0]?.Supplier.suppliername || "Unknown",
       received: data.received,
       sold: data.sold,
       available: data.received - data.sold + data.adjustments,
@@ -231,12 +231,12 @@ export const getInventoryReport = async (companyId: string) => {
     await Promise.all([
       prisma.containerItem.findMany({
         where: {
-          container: { companyId },
+          Container: { companyId },
         },
         include: {
-          container: {
+          Container: {
             include: {
-              supplier: true,
+              Supplier: true,
             },
           },
         },
@@ -244,7 +244,7 @@ export const getInventoryReport = async (companyId: string) => {
 
       prisma.saleItem.findMany({
         where: {
-          sale: {
+          Sale: {
             companyId,
             sourceType: "container",
           },
@@ -252,7 +252,7 @@ export const getInventoryReport = async (companyId: string) => {
         select: {
           itemName: true,
           quantity: true,
-          sale: {
+          Sale: {
             select: { sourceId: true },
           },
         },
@@ -260,7 +260,7 @@ export const getInventoryReport = async (companyId: string) => {
 
       prisma.saleItem.findMany({
         where: {
-          sale: {
+          Sale: {
             companyId,
             sourceType: "regular",
           },
@@ -268,7 +268,7 @@ export const getInventoryReport = async (companyId: string) => {
         select: {
           itemName: true,
           quantity: true,
-          sale: {
+          Sale: {
             select: { sourceId: true },
           },
         },
@@ -281,7 +281,7 @@ export const getInventoryReport = async (companyId: string) => {
         select: {
           itemName: true,
           adjustmentQty: true,
-          supplier: {
+          Supplier: {
             select: {
               suppliername: true,
             },
@@ -294,7 +294,7 @@ export const getInventoryReport = async (companyId: string) => {
   const supplierItemIds = [
     ...new Set(
       regularSaleItems
-        .map((item) => item.sale.sourceId)
+        .map((item) => item.Sale.sourceId)
         .filter((id): id is string => id !== null)
     ),
   ];
@@ -303,7 +303,7 @@ export const getInventoryReport = async (companyId: string) => {
     supplierItemIds.length > 0
       ? await prisma.supplierItem.findMany({
           where: { id: { in: supplierItemIds } },
-          include: { supplier: true },
+          include: { Supplier: true },
         })
       : [];
 
@@ -314,10 +314,10 @@ export const getInventoryReport = async (companyId: string) => {
   const regularSalesBySupplier = new Map<string, Map<string, number>>();
 
   for (const saleItem of regularSaleItems) {
-    if (saleItem.sale.sourceId) {
-      const supplierItem = supplierItemMap.get(saleItem.sale.sourceId);
+    if (saleItem.Sale.sourceId) {
+      const supplierItem = supplierItemMap.get(saleItem.Sale.sourceId);
       if (supplierItem) {
-        const supplierName = supplierItem.supplier.suppliername;
+        const supplierName = supplierItem.Supplier.suppliername;
 
         if (!regularSalesBySupplier.has(supplierName)) {
           regularSalesBySupplier.set(supplierName, new Map());
@@ -336,7 +336,7 @@ export const getInventoryReport = async (companyId: string) => {
   const containerSalesIndex = new Map<string, number>();
 
   for (const sale of containerSaleItems) {
-    const key = `${sale.itemName}-${sale.sale.sourceId}`;
+    const key = `${sale.itemName}-${sale.Sale.sourceId}`;
     containerSalesIndex.set(
       key,
       (containerSalesIndex.get(key) || 0) + (sale.quantity || 0)
@@ -347,7 +347,7 @@ export const getInventoryReport = async (companyId: string) => {
   const adjustmentsBySupplierItem = new Map<string, number>();
 
   for (const adj of stockAdjustments) {
-    const key = `${adj.itemName}-${adj.supplier.suppliername}`;
+    const key = `${adj.itemName}-${adj.Supplier.suppliername}`;
     adjustmentsBySupplierItem.set(
       key,
       (adjustmentsBySupplierItem.get(key) || 0) + adj.adjustmentQty
@@ -365,7 +365,7 @@ export const getInventoryReport = async (companyId: string) => {
   const inventoryMap = new Map<string, InventoryItem>();
 
   for (const item of allContainerItems) {
-    const key = `${item.itemName}-${item.container.supplier.suppliername}`;
+    const key = `${item.itemName}-${item.Container.Supplier.suppliername}`;
 
     const existing = inventoryMap.get(key);
     if (existing) {
@@ -374,7 +374,7 @@ export const getInventoryReport = async (companyId: string) => {
     } else {
       inventoryMap.set(key, {
         itemName: item.itemName,
-        supplierName: item.container.supplier.suppliername,
+        supplierName: item.Container.Supplier.suppliername,
         received: item.quantity,
         containerIds: new Set([item.containerId]),
       });
@@ -424,14 +424,14 @@ export const getInventoryReport_22 = async (companyId: string) => {
   // Fetch all container items with their containers and suppliers
   const allContainerItems = await prisma.containerItem.findMany({
     where: {
-      container: {
+      Container: {
         companyId,
       },
     },
     include: {
-      container: {
+      Container: {
         include: {
-          supplier: true,
+          Supplier: true,
         },
       },
     },
@@ -440,7 +440,7 @@ export const getInventoryReport_22 = async (companyId: string) => {
   // Get all container sale items for this company
   const containerSaleItems = await prisma.saleItem.findMany({
     where: {
-      sale: {
+      Sale: {
         companyId: companyId,
         sourceType: "container",
       },
@@ -448,7 +448,7 @@ export const getInventoryReport_22 = async (companyId: string) => {
     select: {
       itemName: true,
       quantity: true,
-      sale: {
+      Sale: {
         select: {
           sourceId: true,
         },
@@ -459,13 +459,13 @@ export const getInventoryReport_22 = async (companyId: string) => {
   // Get all regular sale items for this company
   const regularSaleItems = await prisma.saleItem.findMany({
     where: {
-      sale: {
+      Sale: {
         companyId: companyId,
         sourceType: "regular",
       },
     },
     include: {
-      sale: {
+      Sale: {
         select: {
           sourceId: true,
         },
@@ -480,14 +480,14 @@ export const getInventoryReport_22 = async (companyId: string) => {
   > = {};
 
   for (const saleItem of regularSaleItems) {
-    if (saleItem.sale.sourceId) {
+    if (saleItem.Sale.sourceId) {
       const supplierItem = await prisma.supplierItem.findUnique({
-        where: { id: saleItem.sale.sourceId },
-        include: { supplier: true },
+        where: { id: saleItem.Sale.sourceId },
+        include: { Supplier: true },
       });
 
       if (supplierItem) {
-        const supplierName = supplierItem.supplier.suppliername;
+        const supplierName = supplierItem.Supplier.suppliername;
         if (!regularSalesBySupplier[supplierName]) {
           regularSalesBySupplier[supplierName] = [];
         }
@@ -517,7 +517,7 @@ export const getInventoryReport_22 = async (companyId: string) => {
 
   allContainerItems.forEach((item: any) => {
     // Key: itemName-supplierName
-    const key = `${item.itemName}-${item.container.supplier.suppliername}`;
+    const key = `${item.itemName}-${item.Container.Supplier.suppliername}`;
 
     if (inventoryMap.has(key)) {
       const existing = inventoryMap.get(key)!;
@@ -528,7 +528,7 @@ export const getInventoryReport_22 = async (companyId: string) => {
     } else {
       inventoryMap.set(key, {
         itemName: item.itemName,
-        supplierName: item.container.supplier.suppliername,
+        supplierName: item.Container.Supplier.suppliername,
         received: item.quantity,
         sold: 0, // Will calculate next
         available: 0, // Will calculate after sold
@@ -545,7 +545,7 @@ export const getInventoryReport_22 = async (companyId: string) => {
     const containerSales = containerSaleItems.filter(
       (s) =>
         s.itemName === inventoryItem.itemName &&
-        inventoryItem.containerIds.includes(s.sale.sourceId)
+        inventoryItem.containerIds.includes(s.Sale.sourceId)
     );
 
     const containerSoldQty = containerSales.reduce(

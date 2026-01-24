@@ -21,7 +21,7 @@ export const recordSale = async (req: Request, res: Response) => {
       const supplierItems = await prisma.supplierItem.findMany({
         where: {
           itemName: { in: itemNames },
-          supplier: { companyId },
+          Supplier: { companyId },
         },
         select: {
           itemName: true,
@@ -79,7 +79,7 @@ export const recordSale = async (req: Request, res: Response) => {
         discountValue: discountValue || 0,
         totalAmount,
         createdAt: saleDate ? new Date(saleDate) : new Date(),
-        items: {
+        SaleItem: {
           createMany: {
             data: items.map(
               (i: {
@@ -107,7 +107,7 @@ export const getSales = async (req: Request, res: Response) => {
   const companyId = req.user?.companyId;
   const sales = await prisma.sale.findMany({
     where: { companyId },
-    include: { items: true, customer: true },
+    include: { SaleItem: true, Customer: true },
     orderBy: { createdAt: "desc" },
   });
   res.json(sales);
@@ -127,7 +127,7 @@ export const getContainerItemsBySupplier = async (
     const containers = await prisma.container.findMany({
       where: { supplierId },
       include: {
-        items: true,
+        ContainerItem: true,
       },
     });
 
@@ -135,7 +135,7 @@ export const getContainerItemsBySupplier = async (
       (c: {
         id: string;
         containerNo: string;
-        items: {
+        ContainerItem: {
           id: string;
           itemName: string;
           quantity: number;
@@ -143,7 +143,7 @@ export const getContainerItemsBySupplier = async (
           unitPrice: number;
         }[];
       }) =>
-        c.items.map(
+        c.ContainerItem.map(
           (i: {
             id: string;
             itemName: string;
@@ -164,7 +164,7 @@ export const getContainerItemsBySupplier = async (
     res.json(allItems);
     return;
   } catch (error) {
-    console.error("Error fetching container items:", error);
+    console.error("Error fetching container SaleItem:", error);
     res.status(500).json({ error: "Internal server error" });
     return;
   }
@@ -176,7 +176,7 @@ export const getSalesByCustomerId = async (req: Request, res: Response) => {
   try {
     const sales = await prisma.sale.findMany({
       where: { customerId: id },
-      include: { items: true },
+      include: { SaleItem: true },
       orderBy: { createdAt: "desc" },
     });
 
@@ -186,12 +186,12 @@ export const getSalesByCustomerId = async (req: Request, res: Response) => {
       saleDate: sale.createdAt,
       totalAmount: sale.totalAmount,
       saleType: sale.saleType,
-      items: sale.items,
+      SaleItem: sale.SaleItem,
     }));
 
     res.json(transformedSales);
   } catch (error) {
-    console.error("Error fetching sales by customer:", error);
+    console.error("Error fetching sales by Customer:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -204,8 +204,8 @@ export const getSaleById = async (req: Request, res: Response) => {
     const sale = await prisma.sale.findUnique({
       where: { id },
       include: {
-        items: true,
-        customer: true,
+        SaleItem: true,
+        Customer: true,
       },
     });
 
@@ -231,7 +231,7 @@ export const updateSale = async (req: Request, res: Response) => {
   try {
     const updateData: any = {
       saleType,
-      items: {
+      SaleItem: {
         deleteMany: {},
         createMany: {
           data: items.map(
@@ -323,8 +323,8 @@ export const listSales = async (req: Request, res: Response) => {
     const sales = await prisma.sale.findMany({
       where: whereClause,
       include: {
-        items: true,
-        customer: true,
+        SaleItem: true,
+        Customer: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -334,12 +334,12 @@ export const listSales = async (req: Request, res: Response) => {
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      customer: {
-        customerName: sale.customer.customerName,
+      Customer: {
+        customerName: sale.Customer.customerName,
       },
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
-      items: sale.items.map((i) => ({
+      SaleItem: sale.SaleItem.map((i) => ({
         itemName: i.itemName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
@@ -400,7 +400,7 @@ export const searchSalesByItem = async (req: Request, res: Response) => {
 
     const whereClause: any = {
       companyId,
-      items: {
+      SaleItem: {
         some: {
           itemName: {
             contains: itemName as string,
@@ -429,8 +429,8 @@ export const searchSalesByItem = async (req: Request, res: Response) => {
     const sales = await prisma.sale.findMany({
       where: whereClause,
       include: {
-        items: true,
-        customer: true,
+        SaleItem: true,
+        Customer: true,
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -440,12 +440,12 @@ export const searchSalesByItem = async (req: Request, res: Response) => {
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      customer: {
-        customerName: sale.customer.customerName,
+      Customer: {
+        customerName: sale.Customer.customerName,
       },
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
-      items: sale.items.map((i) => ({
+      SaleItem: sale.SaleItem.map((i) => ({
         itemName: i.itemName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,

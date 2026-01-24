@@ -32,16 +32,16 @@ export const register = async (req: Request, res: Response) => {
         companyId
       },
       include: {
-        role: {
+        Role: {
           include: {
-            permissions: {
+            RolePermission: {
               include: {
-                permission: true
+                Permission: true
               }
             }
           }
         },
-        company: {
+        Company: {
           select: {
             companyName: true
           }
@@ -50,8 +50,8 @@ export const register = async (req: Request, res: Response) => {
     });
 
     // Extract permission codes from role
-    const permissions = user.role?.permissions.map(rp => rp.permission.code) || [];
-    const roleName = user.role?.name || 'user';
+    const permissions = user.Role?.RolePermission.map(rp => rp.Permission.code) || [];
+    const roleName = user.Role?.name || 'user';
 
     const token = generateToken({
       userId: user.id,
@@ -67,7 +67,7 @@ export const register = async (req: Request, res: Response) => {
     await logCreate(user.id, EntityType.USER, user.id, user.userName);
 
     res.status(201).json({
-      user: {
+      User: {
         id: user.id,
         email: user.email,
         userName: user.userName,
@@ -75,7 +75,7 @@ export const register = async (req: Request, res: Response) => {
         roleId: user.roleId,
         permissions,
         companyId: user.companyId,
-        company: user.company,
+        company: user.Company,
       },
       token
     });
@@ -96,16 +96,16 @@ export const login = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        company: {
+        Company: {
           select: {
             companyName: true,
           },
         },
-        role: {
+        Role: {
           include: {
-            permissions: {
+            RolePermission: {
               include: {
-                permission: true
+                Permission: true
               }
             }
           }
@@ -119,8 +119,8 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Extract permission codes from role
-    const permissions = user.role?.permissions.map(rp => rp.permission.code) || [];
-    const roleName = user.role?.name || 'user';
+    const permissions = user.Role?.RolePermission.map(rp => rp.Permission.code) || [];
+    const roleName = user.Role?.name || 'user';
 
     const token = generateToken({
       userId: user.id,
@@ -136,7 +136,7 @@ export const login = async (req: Request, res: Response) => {
     await logLogin(user.id, user.email);
 
     res.json({
-      user: {
+      User: {
         id: user.id,
         email: user.email,
         userName: user.userName,
@@ -144,7 +144,7 @@ export const login = async (req: Request, res: Response) => {
         roleId: user.roleId,
         permissions,
         companyId: user.companyId,
-        company: user.company,
+        company: user.Company,
       },
       token,
     });
@@ -157,7 +157,7 @@ export const login = async (req: Request, res: Response) => {
 // 🔐 UPDATE PASSWORD
 export const updatePassword = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id; // Changed from req.user.userId
+    const userId = req.user?.id; // Changed from req.User.userId
     
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });

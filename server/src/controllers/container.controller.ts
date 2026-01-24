@@ -15,7 +15,7 @@ export const getContainers = async (req: Request, res: Response) => {
         companyId,
       },
       include: {
-        supplier: {
+        Supplier: {
           select: { id: true, suppliername: true, country: true }, // Avoid exposing all supplier data
         },
       },
@@ -45,7 +45,7 @@ export const createContainer = async (req: Request, res: Response) => {
         year,
         supplierId,
         companyId,
-        items: {
+        ContainerItem: {
           create: items.map((item: { itemName: string; quantity: number; unitPrice: number }) => ({
             itemName: item.itemName,
             quantity: item.quantity,
@@ -66,7 +66,7 @@ export const getContainerById = async (req: Request, res: Response) => {
   const { id } = req.params;
   const container = await prisma.container.findUnique({
     where: { id },
-    include: { items: true, supplier: true },
+    include: { ContainerItem: true, Supplier: true },
   });
 
   if (!container) {
@@ -255,7 +255,7 @@ export const listContainerItemsWithSales = async (
     // Step 1: Get container and its supplier
     const container = await prisma.container.findUnique({
       where: { id: containerId },
-      include: { supplier: true },
+      include: { Supplier: true },
     });
 
     if (!container) {
@@ -274,13 +274,13 @@ export const listContainerItemsWithSales = async (
         sourceId: containerId,
         sourceType: "container",
       },
-      include: { items: true },
+      include: { SaleItem: true },
     });
 
     // Step 4: Aggregate sold quantities
     const soldMap: Record<string, number> = {};
-    sales.forEach((sale: { items: { itemName: string; quantity: number }[] }) => {
-      sale.items.forEach((item: { itemName: string; quantity: number }) => {
+    sales.forEach((sale: { SaleItem: { itemName: string; quantity: number }[] }) => {
+      sale.SaleItem.forEach((item: { itemName: string; quantity: number }) => {
         soldMap[item.itemName] = (soldMap[item.itemName] || 0) + item.quantity;
       });
     });
@@ -302,7 +302,7 @@ export const listContainerItemsWithSales = async (
       const alias = supplierItemMap.get(item.itemName);
       const isMatched = supplierItemMap.has(item.itemName);
       const supplierName = isMatched
-        ? container.supplier.suppliername
+        ? container.Supplier.suppliername
         : "Unknown";
 
       return {
@@ -339,8 +339,8 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
     const container = await prisma.container.findUnique({
       where: { id: containerId },
       include: {
-        supplier: true,
-        items: true,
+        Supplier: true,
+        ContainerItem: true,
       },
     });
 
@@ -349,7 +349,7 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       return;
     }
 
-    const containerItems = container.items;
+    const containerItems = container.ContainerItem;
 
     // Get sales and sale items from this container
     const sales = await prisma.sale.findMany({
@@ -358,7 +358,7 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
         sourceType: "container",
       },
       include: {
-        items: true,
+        SaleItem: true,
       },
     });
 
@@ -369,7 +369,7 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
     > = {};
 
     for (const sale of sales) {
-      for (const item of sale.items) {
+      for (const item of sale.SaleItem) {
         if (!soldItemMap[item.itemName]) {
           soldItemMap[item.itemName] = { soldQty: 0, totalAmount: 0 };
         }
@@ -406,8 +406,8 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       id: container.id,
       containerNo: container.containerNo,
       arrivalDate: container.arrivalDate,
-      companyName: container.supplier.suppliername,
-      items: itemReport.filter((i: { soldQty: number }) => i.soldQty > 0), // optional: filter only sold
+      companyName: container.Supplier.suppliername,
+      ContainerItem: itemReport.filter((i: { soldQty: number }) => i.soldQty > 0), // optional: filter only sold
       totalSales,
     });
     return;
@@ -419,9 +419,9 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
 };
 const upsertSupplierItems = async (
   supplierId: string,
-  items: { itemName: string; unitPrice: number; alias?: string }[]
+  ContainerItem: { itemName: string; unitPrice: number; alias?: string }[]
 ) => {
-  for (const item of items) {
+  for (const item of ContainerItem) {
     const existing = await prisma.supplierItem.findFirst({
       where: {
         supplierId,

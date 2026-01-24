@@ -109,8 +109,8 @@ export const getSalesSummaryBySupplier = async (
         },
       },
       include: {
-        items: true,
-        customer: true,
+        SaleItem: true,
+        Customer: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -118,12 +118,12 @@ export const getSalesSummaryBySupplier = async (
     // Fetch supplier items with supplier names - filtered by companyId through supplier relation
     const supplierItems = await prisma.supplierItem.findMany({
       where: {
-        supplier: {
+        Supplier: {
           companyId: companyId,
         },
       },
       include: {
-        supplier: true,
+        Supplier: true,
       },
     });
 
@@ -132,23 +132,23 @@ export const getSalesSummaryBySupplier = async (
     for (const si of supplierItems) {
       itemToSupplierMap.set(
         si.itemName.trim().toLowerCase(),
-        si.supplier.suppliername
+        si.Supplier.suppliername
       );
     }
 
     // Attach supplier name to each sale item and enrich sale with customer name + sale type
     const enrichedSales = sales.map((sale: {
       id: string;
-      customer: { customerName: string } | null;
+      Customer: { customerName: string } | null;
       saleType: string;
       createdAt: Date;
-      items: { itemName: string; quantity: number; unitPrice: number }[];
+      SaleItem: { itemName: string; quantity: number; unitPrice: number }[];
     }) => ({
       saleId: sale.id,
-      customerName: sale.customer?.customerName || "Walk-in",
+      customerName: sale.Customer?.customerName || "Walk-in",
       saleType: sale.saleType,
       createdAt: sale.createdAt,
-      items: sale.items.map((item: { itemName: string; quantity: number; unitPrice: number }) => ({
+      items: sale.SaleItem.map((item: { itemName: string; quantity: number; unitPrice: number }) => ({
         itemName: item.itemName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,

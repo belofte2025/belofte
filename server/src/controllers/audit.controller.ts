@@ -21,7 +21,7 @@ export const getAuditLogs = async (
     } = req.query;
 
     const where: any = {
-      user: {
+      User: {
         companyId, // Only show logs for users in the same company
       },
     };
@@ -40,11 +40,11 @@ export const getAuditLogs = async (
       prisma.auditLog.findMany({
         where,
         include: {
-          user: {
+          User: {
             select: {
               userName: true,
               email: true,
-              company: {
+              Company: {
                 select: {
                   companyName: true
                 }
@@ -86,7 +86,7 @@ export const getAuditStats = async (
     const { from, to } = req.query;
 
     const where: any = {
-      user: {
+      User: {
         companyId,
       },
     };
@@ -183,12 +183,12 @@ export const getEntityAuditHistory = async (
       where: {
         entityType,
         entityId,
-        user: {
+        User: {
           companyId, // Only show logs for users in the same company
         },
       },
       include: {
-        user: {
+        User: {
           select: {
             userName: true,
             email: true,

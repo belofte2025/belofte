@@ -37,7 +37,7 @@ async function getCurrentAvailableQty(
   const containerItems = await prisma.containerItem.findMany({
     where: {
       itemName,
-      container: {
+      Container: {
         supplierId,
         companyId,
       },
@@ -60,7 +60,7 @@ async function getCurrentAvailableQty(
     prisma.saleItem.findMany({
       where: {
         itemName,
-        sale: {
+        Sale: {
           companyId,
           sourceType: "container",
           sourceId: { in: containerIds },
@@ -75,7 +75,7 @@ async function getCurrentAvailableQty(
     prisma.saleItem.findMany({
       where: {
         itemName,
-        sale: {
+        Sale: {
           companyId,
           sourceType: "regular",
           sourceId: {
@@ -259,7 +259,7 @@ export async function getAdjustmentHistory(
     prisma.stockAdjustment.findMany({
       where,
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             userName: true,
@@ -284,8 +284,8 @@ export async function getAdjustmentHistory(
       adjustmentType: adj.adjustmentType,
       reason: adj.reason,
       notes: adj.notes,
-      createdBy: adj.user.userName,
-      createdByEmail: adj.user.email,
+      createdBy: adj.User.userName,
+      createdByEmail: adj.User.email,
       createdAt: adj.createdAt,
     })),
   };

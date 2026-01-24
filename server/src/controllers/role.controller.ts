@@ -11,13 +11,13 @@ export const getRoles = async (req: Request, res: Response): Promise<void> => {
     const roles = await prisma.role.findMany({
       where: { companyId },
       include: {
-        permissions: {
+        RolePermission: {
           include: {
-            permission: true
+            Permission: true
           }
         },
         _count: {
-          select: { users: true }
+          select: { User: true }
         }
       },
       orderBy: { createdAt: 'asc' }
@@ -44,13 +44,13 @@ export const getRoleById = async (req: Request, res: Response): Promise<void> =>
         companyId
       },
       include: {
-        permissions: {
+        RolePermission: {
           include: {
-            permission: true
+            Permission: true
           }
         },
         _count: {
-          select: { users: true }
+          select: { User: true }
         }
       }
     });
@@ -94,7 +94,7 @@ export const getPermissions = async (req: Request, res: Response): Promise<void>
       groupedPermissions
     });
   } catch (error) {
-    console.error('Error fetching permissions:', error);
+    console.error('Error fetching RolePermission:', error);
     res.status(500).json({ error: 'Failed to fetch permissions' });
   }
 };
@@ -148,16 +148,16 @@ export const createRole = async (req: Request, res: Response): Promise<void> => 
         description,
         companyId,
         isDefault: isDefault || false,
-        permissions: {
+        RolePermission: {
           create: permissionIds.map((permissionId: string) => ({
             permissionId
           }))
         }
       },
       include: {
-        permissions: {
+        RolePermission: {
           include: {
-            permission: true
+            Permission: true
           }
         }
       }
@@ -247,9 +247,9 @@ export const updateRole = async (req: Request, res: Response): Promise<void> => 
         ...(isDefault !== undefined && { isDefault })
       },
       include: {
-        permissions: {
+        RolePermission: {
           include: {
-            permission: true
+            Permission: true
           }
         }
       }
@@ -278,7 +278,7 @@ export const deleteRole = async (req: Request, res: Response): Promise<void> => 
       },
       include: {
         _count: {
-          select: { users: true }
+          select: { User: true }
         }
       }
     });
@@ -289,10 +289,10 @@ export const deleteRole = async (req: Request, res: Response): Promise<void> => 
     }
 
     // Prevent deleting role if users are assigned to it
-    if (role._count.users > 0) {
+    if (role._count.User > 0) {
       res.status(400).json({
         error: 'Cannot delete role with assigned users',
-        usersCount: role._count.users
+        usersCount: role._count.User
       });
       return;
     }
@@ -352,11 +352,11 @@ export const assignRoleToUser = async (req: Request, res: Response): Promise<voi
       where: { id: userId },
       data: { roleId },
       include: {
-        role: {
+        Role: {
           include: {
-            permissions: {
+            RolePermission: {
               include: {
-                permission: true
+                Permission: true
               }
             }
           }

@@ -44,7 +44,7 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
         id: true,
         createdAt: true,
         totalAmount: true,
-        items: true,
+        SaleItem: true,
       },
     });
 
@@ -80,7 +80,7 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
         date: s.createdAt.toISOString().split("T")[0],
         timestamp: s.createdAt,
         type: "credit_sale" as const,
-        description: s.items
+        description: s.SaleItem
           .map(
             (i: { quantity: number; itemName: string }) =>
               `${i.quantity}x ${i.itemName}`
@@ -317,7 +317,7 @@ export const getAllCustomerPayments = async (req: Request, res: Response) => {
       prisma.customerPayment.findMany({
         where,
         include: {
-          customer: {
+          Customer: {
             select: {
               id: true,
               customerName: true,

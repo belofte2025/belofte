@@ -69,7 +69,7 @@ export const createCustomerDebt = async (req: Request, res: Response) => {
     const debt = await prisma.customerDebt.create({
       data: debtData,
       include: {
-        customer: true,
+        Customer: true,
       },
     });
 
@@ -136,7 +136,7 @@ export const bulkCreateCustomerDebts = async (req: Request, res: Response) => {
             status: "unpaid",
           },
           include: {
-            customer: true,
+            Customer: true,
           },
         });
 
@@ -191,7 +191,7 @@ export const getCustomerDebts = async (req: Request, res: Response) => {
         customerId,
       },
       include: {
-        customer: true,
+        Customer: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -232,7 +232,7 @@ export const getAllDebts = async (req: Request, res: Response) => {
     const debts = await prisma.customerDebt.findMany({
       where,
       include: {
-        customer: true,
+        Customer: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -289,7 +289,7 @@ export const updateCustomerDebt = async (req: Request, res: Response) => {
       where: { id },
       data: updateData,
       include: {
-        customer: true,
+        Customer: true,
       },
     });
 
@@ -458,7 +458,7 @@ export const markDebtAsPaid = async (req: Request, res: Response) => {
         status: "paid",
       },
       include: {
-        customer: true,
+        Customer: true,
       },
     });
 

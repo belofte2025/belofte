@@ -82,16 +82,16 @@ export const onboardCompany = async (req: Request, res: Response) => {
             description: 'Full system access with all permissions',
             companyId: company.id,
             isDefault: false,
-            permissions: {
+            RolePermission: {
               create: allPermissions.map(p => ({
                 permissionId: p.id
               }))
             }
           },
           include: {
-            permissions: {
+            RolePermission: {
               include: {
-                permission: true
+                Permission: true
               }
             }
           }
@@ -108,16 +108,16 @@ export const onboardCompany = async (req: Request, res: Response) => {
           companyId: company.id
         },
         include: {
-          role: {
+          Role: {
             include: {
-              permissions: {
+              RolePermission: {
                 include: {
-                  permission: true
+                  Permission: true
                 }
               }
             }
           },
-          company: {
+          Company: {
             select: {
               companyName: true
             }
@@ -129,8 +129,8 @@ export const onboardCompany = async (req: Request, res: Response) => {
     });
 
     // Extract permission codes
-    const permissions = result.adminUser.role?.permissions.map(rp => rp.permission.code) || [];
-    const roleName = result.adminUser.role?.name || 'Admin';
+    const permissions = result.adminUser.Role?.RolePermission.map(rp => rp.Permission.code) || [];
+    const roleName = result.adminUser.Role?.name || 'Admin';
 
     // Generate JWT token
     const token = generateToken({
@@ -158,7 +158,7 @@ export const onboardCompany = async (req: Request, res: Response) => {
         roleId: result.adminUser.roleId,
         permissions,
         companyId: result.adminUser.companyId,
-        company: result.adminUser.company
+        company: result.adminUser.Company
       },
       token
     });

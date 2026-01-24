@@ -16,12 +16,7 @@ export const listUsers = async (req: Request, res: Response): Promise<void> => {
       userName: true,
       email: true,
       roleId: true,
-      role: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
+      Role: true,
       createdAt: true,
     },
   });
@@ -42,7 +37,7 @@ export const createUser = async (
   const user = await prisma.user.create({
     data: { userName, email, password: hashed, roleId, companyId },
     include: {
-      role: {
+      Role: {
         select: {
           id: true,
           name: true,
@@ -71,7 +66,7 @@ export const updateUser = async (
     where: { id },
     data: { userName, email, roleId },
     include: {
-      role: {
+      Role: {
         select: {
           id: true,
           name: true,
