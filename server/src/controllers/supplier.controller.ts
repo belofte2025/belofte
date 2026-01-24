@@ -713,7 +713,7 @@ export const getSupplierItemsForPriceManagement = async (req: Request, res: Resp
     }
 
     res.json({
-      Supplier: {
+      supplier: {
         id: supplier.id,
         name: supplier.suppliername,
         country: supplier.country,
@@ -790,15 +790,15 @@ export const getSupplierItemsForQuantityManagement = async (req: Request, res: R
       receivedQty: item.receivedQty,
       soldQty: item.soldQty,
       unitPrice: item.unitPrice,
-      Container: {
+      container: {
         id: item.Container.id,
-        containerNo: item.Container.ContainerNo,
+        containerNo: item.Container.containerNo,
         arrivalDate: item.Container.arrivalDate,
       },
     }));
 
     res.json({
-      Supplier: {
+      supplier: {
         id: supplier.id,
         name: supplier.suppliername,
         country: supplier.country,
@@ -837,7 +837,7 @@ export const getSupplierItemsForAliasManagement = async (req: Request, res: Resp
     }
 
     res.json({
-      Supplier: {
+      supplier: {
         id: supplier.id,
         name: supplier.suppliername,
         country: supplier.country,
@@ -1058,7 +1058,7 @@ export const getSupplierStockWithAdjustments = async (req: Request, res: Respons
     }));
 
     res.json({
-      Supplier: {
+      supplier: {
         id: supplier.id,
         name: supplier.suppliername,
         country: supplier.country,

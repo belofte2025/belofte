@@ -407,7 +407,7 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       containerNo: container.containerNo,
       arrivalDate: container.arrivalDate,
       companyName: container.Supplier.suppliername,
-      ContainerItem: itemReport.filter((i: { soldQty: number }) => i.soldQty > 0), // optional: filter only sold
+      containerItems: itemReport.filter((i: { soldQty: number }) => i.soldQty > 0), // optional: filter only sold
       totalSales,
     });
     return;

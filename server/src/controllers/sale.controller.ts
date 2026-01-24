@@ -186,7 +186,7 @@ export const getSalesByCustomerId = async (req: Request, res: Response) => {
       saleDate: sale.createdAt,
       totalAmount: sale.totalAmount,
       saleType: sale.saleType,
-      SaleItem: sale.SaleItem,
+      saleItems: sale.SaleItem,
     }));
 
     res.json(transformedSales);
@@ -334,12 +334,12 @@ export const listSales = async (req: Request, res: Response) => {
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      Customer: {
+      customer: {
         customerName: sale.Customer.customerName,
       },
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
-      SaleItem: sale.SaleItem.map((i) => ({
+      saleItems: sale.SaleItem.map((i) => ({
         itemName: i.itemName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
@@ -440,12 +440,12 @@ export const searchSalesByItem = async (req: Request, res: Response) => {
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      Customer: {
+      customer: {
         customerName: sale.Customer.customerName,
       },
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
-      SaleItem: sale.SaleItem.map((i) => ({
+      saleItems: sale.SaleItem.map((i) => ({
         itemName: i.itemName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
