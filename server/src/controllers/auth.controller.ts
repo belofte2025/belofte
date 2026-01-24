@@ -67,7 +67,7 @@ export const register = async (req: Request, res: Response) => {
     await logCreate(user.id, EntityType.USER, user.id, user.userName);
 
     res.status(201).json({
-      User: {
+      user: {
         id: user.id,
         email: user.email,
         userName: user.userName,
@@ -136,7 +136,7 @@ export const login = async (req: Request, res: Response) => {
     await logLogin(user.id, user.email);
 
     res.json({
-      User: {
+      user: {
         id: user.id,
         email: user.email,
         userName: user.userName,
