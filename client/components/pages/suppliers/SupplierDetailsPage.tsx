@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSupplierById, updateSupplier } from "@/services/supplierService";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, Building, Phone, Globe, Package, Container, Edit, Save, X } from "lucide-react";
+import { ArrowLeft, Building, Phone, Globe, Package, Container, Edit, Save, X, DollarSign, Hash, Tag, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import Badge from "@/components/ui/Badge";
 
@@ -330,13 +330,51 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                   <Package className="w-4 h-4" />
                   Manage Items
                 </Link>
-                
+
                 <Link
                   href={`/containers/new?supplier=${supplier.id}`}
                   className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
                 >
                   <Container className="w-4 h-4" />
                   Add Container
+                </Link>
+              </div>
+            </div>
+
+            {/* Inventory Management */}
+            <div className="bg-white shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Inventory Management</h3>
+              <div className="grid grid-cols-1 gap-3">
+                <Link
+                  href={`/suppliers/${supplier.id}/stock-adjustments`}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  Stock Adjustments
+                </Link>
+
+                <Link
+                  href={`/suppliers/${supplier.id}/quantity-management`}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <Hash className="w-4 h-4" />
+                  Container Quantities
+                </Link>
+
+                <Link
+                  href={`/suppliers/${supplier.id}/price-management`}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Price Management
+                </Link>
+
+                <Link
+                  href={`/suppliers/${supplier.id}/alias-management`}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <Tag className="w-4 h-4" />
+                  Alias Management
                 </Link>
               </div>
             </div>
