@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { getSuppliers } from "@/services/supplierService";
+import { getSuppliers, getSupplierItems } from "@/services/supplierService";
 import { Package, Search, AlertCircle, TrendingDown } from "lucide-react";
 
 interface Supplier {
@@ -46,8 +46,7 @@ export default function ItemTransactionsPage() {
   const fetchSupplierItems = async (supplierId: string) => {
     try {
       setLoadingItems(true);
-      const response = await fetch(`/api/suppliers/${supplierId}`);
-      const data = await response.json();
+      const data = await getSupplierItems(supplierId);
       setItems(data.items || []);
     } catch (error) {
       console.error("Failed to fetch supplier items:", error);

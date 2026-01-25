@@ -9,16 +9,16 @@ import {
 import {
   ArrowLeft,
   Package,
-  Save,
-  CheckSquare,
-  Square,
-  Minus,
   Plus,
+  Minus,
   Search,
+  Save,
+  X,
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 interface StockAdjustmentPageProps {
   supplierId: string;
@@ -33,16 +33,12 @@ interface InventoryItem {
   totalAdjustments: number;
 }
 
-interface AdjustmentFormData extends StockAdjustment {
-  currentAvailable: number;
-  projectedAvailable: number;
+interface ItemAdjustment {
+  itemName: string;
+  adjustmentQty: number;
+  adjustmentType: "manual" | "damage" | "found";
+  reason: string;
 }
-
-const ADJUSTMENT_TYPES = [
-  { value: "manual", label: "Manual Correction" },
-  { value: "damage", label: "Damage/Loss" },
-  { value: "found", label: "Found/Recovered" },
-] as const;
 
 export default function StockAdjustmentPage({
   supplierId,
@@ -52,167 +48,111 @@ export default function StockAdjustmentPage({
     inventory: InventoryItem[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [adjustments, setAdjustments] = useState<
-    Record<string, AdjustmentFormData>
-  >({});
-  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [adjustments, setAdjustments] = useState<Record<string, ItemAdjustment>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await getSupplierStockWithAdjustments(supplierId);
-        setSupplierData(result);
-      } catch (error) {
-        console.error("Failed to fetch stock data:", error);
-        toast.error("Failed to load stock data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, [supplierId]);
 
-  const handleToggleItem = (itemName: string, available: number) => {
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(itemName)) {
-      newSelected.delete(itemName);
-      setAdjustments((prev) => {
-        const newAdjustments = { ...prev };
-        delete newAdjustments[itemName];
-        return newAdjustments;
-      });
-    } else {
-      newSelected.add(itemName);
-      setAdjustments((prev) => ({
-        ...prev,
-        [itemName]: {
-          itemName,
-          adjustmentQty: 0,
-          adjustmentType: "manual",
-          reason: "",
-          currentAvailable: available,
-          projectedAvailable: available,
-        },
-      }));
-    }
-    setSelectedItems(newSelected);
-  };
-
-  const handleSelectAll = () => {
-    if (!supplierData) return;
-    const itemNames = supplierData.inventory.map((item) => item.itemName);
-
-    if (selectedItems.size === itemNames.length) {
-      setSelectedItems(new Set());
-      setAdjustments({});
-    } else {
-      setSelectedItems(new Set(itemNames));
-      const newAdjustments: Record<string, AdjustmentFormData> = {};
-      supplierData.inventory.forEach((item) => {
-        newAdjustments[item.itemName] = {
-          itemName: item.itemName,
-          adjustmentQty: 0,
-          adjustmentType: "manual",
-          reason: "",
-          currentAvailable: item.available,
-          projectedAvailable: item.available,
-        };
-      });
-      setAdjustments(newAdjustments);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const result = await getSupplierStockWithAdjustments(supplierId);
+      setSupplierData(result);
+    } catch (error) {
+      console.error("Failed to fetch stock data:", error);
+      toast.error("Failed to load stock data");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAdjustmentChange = (
+  const updateAdjustment = (
     itemName: string,
-    field: keyof AdjustmentFormData,
+    field: keyof ItemAdjustment,
     value: string | number
   ) => {
     setAdjustments((prev) => {
-      const current = prev[itemName];
-      if (!current) return prev;
-
-      const updated = { ...current, [field]: value };
-
-      // Update projected available when quantity changes
-      if (field === "adjustmentQty") {
-        const qty = typeof value === "number" ? value : parseInt(value) || 0;
-        updated.projectedAvailable = current.currentAvailable + qty;
-      }
+      const existing = prev[itemName] || {
+        itemName,
+        adjustmentQty: 0,
+        adjustmentType: "manual" as const,
+        reason: "",
+      };
 
       return {
         ...prev,
-        [itemName]: updated,
+        [itemName]: {
+          ...existing,
+          [field]: value,
+        },
       };
     });
   };
 
-  const handleQuickAdjust = (itemName: string, change: number) => {
-    const currentAdjustment = adjustments[itemName];
-    if (!currentAdjustment) return;
-
-    const newQty = currentAdjustment.adjustmentQty + change;
-    handleAdjustmentChange(itemName, "adjustmentQty", newQty);
+  const incrementQty = (itemName: string) => {
+    const current = adjustments[itemName]?.adjustmentQty || 0;
+    updateAdjustment(itemName, "adjustmentQty", current + 1);
   };
 
-  const handleSaveAdjustments = async () => {
-    const selectedAdjustments = Object.values(adjustments).filter(
-      (adj) => selectedItems.has(adj.itemName) && adj.adjustmentQty !== 0
+  const decrementQty = (itemName: string) => {
+    const current = adjustments[itemName]?.adjustmentQty || 0;
+    updateAdjustment(itemName, "adjustmentQty", current - 1);
+  };
+
+  const clearAdjustment = (itemName: string) => {
+    const newAdjustments = { ...adjustments };
+    delete newAdjustments[itemName];
+    setAdjustments(newAdjustments);
+  };
+
+  const handleSave = async () => {
+    const adjustmentsToSave = Object.values(adjustments).filter(
+      (adj) => adj.adjustmentQty !== 0
     );
 
-    if (selectedAdjustments.length === 0) {
-      toast.error("No adjustments to save. Please select items and enter quantities.");
+    if (adjustmentsToSave.length === 0) {
+      toast.error("No adjustments to save");
       return;
     }
 
-    // Validate all adjustments
-    const invalidAdjustments = selectedAdjustments.filter(
-      (adj) => adj.projectedAvailable < 0
-    );
-
-    if (invalidAdjustments.length > 0) {
-      toast.error(
-        `Cannot save: ${invalidAdjustments.map((a) => a.itemName).join(", ")} would have negative quantities`
-      );
-      return;
-    }
-
-    // Validate reasons are provided
-    const missingReasons = selectedAdjustments.filter(
-      (adj) => !adj.reason || adj.reason.trim() === ""
-    );
-
+    // Validate reasons
+    const missingReasons = adjustmentsToSave.filter((adj) => !adj.reason?.trim());
     if (missingReasons.length > 0) {
       toast.error("Please provide a reason for all adjustments");
       return;
     }
 
+    // Validate no negative stock
+    const items = supplierData?.inventory || [];
+    for (const adj of adjustmentsToSave) {
+      const item = items.find((i) => i.itemName === adj.itemName);
+      if (item && item.available + adj.adjustmentQty < 0) {
+        toast.error(
+          `Cannot adjust ${adj.itemName}: would result in negative stock (${
+            item.available + adj.adjustmentQty
+          })`
+        );
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      const adjustmentsToSave: StockAdjustment[] = selectedAdjustments.map(
-        (adj) => ({
-          itemName: adj.itemName,
-          adjustmentQty: adj.adjustmentQty,
-          adjustmentType: adj.adjustmentType,
-          reason: adj.reason,
-          notes: adj.notes,
-        })
-      );
+      const payload: StockAdjustment[] = adjustmentsToSave.map((adj) => ({
+        itemName: adj.itemName,
+        adjustmentQty: adj.adjustmentQty,
+        adjustmentType: adj.adjustmentType,
+        reason: adj.reason,
+      }));
 
-      await createStockAdjustments(supplierId, adjustmentsToSave);
+      await createStockAdjustments(supplierId, payload);
+      toast.success(`Successfully adjusted ${payload.length} item(s)`);
 
-      toast.success(
-        `Successfully saved ${adjustmentsToSave.length} stock adjustment(s)`
-      );
-
-      // Refresh data
-      const result = await getSupplierStockWithAdjustments(supplierId);
-      setSupplierData(result);
-
-      // Clear selections
-      setSelectedItems(new Set());
+      // Refresh data and clear adjustments
+      await fetchData();
       setAdjustments({});
     } catch (error: any) {
       console.error("Failed to save adjustments:", error);
@@ -222,82 +162,77 @@ export default function StockAdjustmentPage({
     }
   };
 
-  const filteredInventory = supplierData?.inventory.filter((item) =>
-    item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredInventory =
+    supplierData?.inventory.filter((item) =>
+      item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+
+  const pendingCount = Object.keys(adjustments).filter(
+    (key) => adjustments[key].adjustmentQty !== 0
+  ).length;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading stock data...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (!supplierData) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-red-600">Failed to load stock data</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900">Failed to load stock data</h3>
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto">
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
           <Link
-            href={`/suppliers/${supplierId}`}
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4"
+            href="/inventory/adjustments"
+            className="inline-flex items-center text-orange-600 hover:text-orange-800 mb-3"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Supplier Details
+            Back to Suppliers
           </Link>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Package className="w-6 h-6" />
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <Package className="w-8 h-8 text-orange-600" />
                 Stock Adjustments
               </h1>
               <p className="text-gray-600 mt-1">
-                {supplierData.supplier.name} - {supplierData.supplier.country}
+                {supplierData.supplier.name} • {supplierData.supplier.country}
               </p>
             </div>
 
-            <div className="flex gap-2">
+            {pendingCount > 0 && (
               <button
-                onClick={handleSelectAll}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2"
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               >
-                {selectedItems.size === supplierData.inventory.length ? (
-                  <>
-                    <CheckSquare className="w-4 h-4" />
-                    Deselect All
-                  </>
-                ) : (
-                  <>
-                    <Square className="w-4 h-4" />
-                    Select All
-                  </>
-                )}
+                <Save className="w-5 h-5" />
+                {saving ? "Saving..." : `Save ${pendingCount} Adjustment${pendingCount > 1 ? "s" : ""}`}
               </button>
-
-              <button
-                onClick={handleSaveAdjustments}
-                disabled={selectedItems.size === 0 || saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                {saving ? "Saving..." : `Save Adjustments (${selectedItems.size})`}
-              </button>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Search */}
-        <div className="mb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -305,229 +240,189 @@ export default function StockAdjustmentPage({
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
         </div>
 
-        {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-blue-900">
-            <p className="font-medium mb-1">Stock Adjustment Guidelines</p>
-            <ul className="list-disc list-inside space-y-1 text-blue-800">
-              <li>Use positive numbers to increase stock (e.g., found items during count)</li>
-              <li>Use negative numbers to decrease stock (e.g., damaged items)</li>
-              <li>All adjustments require a reason for audit purposes</li>
-              <li>Adjustments cannot result in negative stock quantities</li>
-            </ul>
-          </div>
-        </div>
-
         {/* Items List */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {filteredInventory && filteredInventory.length > 0 ? (
-            <div className="divide-y divide-gray-200">
-              {filteredInventory.map((item) => {
-                const isSelected = selectedItems.has(item.itemName);
-                const adjustment = adjustments[item.itemName];
-                const hasNegativeProjection =
-                  adjustment && adjustment.projectedAvailable < 0;
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Item Name
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Current Stock
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Adjustment
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    New Stock
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type & Reason
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredInventory.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                      {searchQuery ? "No items found" : "No items available"}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredInventory.map((item) => {
+                    const adjustment = adjustments[item.itemName];
+                    const hasAdjustment = adjustment && adjustment.adjustmentQty !== 0;
+                    const newStock = item.available + (adjustment?.adjustmentQty || 0);
+                    const isNegative = newStock < 0;
 
-                return (
-                  <div
-                    key={item.itemName}
-                    className={`p-4 hover:bg-gray-50 transition-colors ${
-                      isSelected ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Checkbox */}
-                      <button
-                        onClick={() =>
-                          handleToggleItem(item.itemName, item.available)
-                        }
-                        className="mt-1"
+                    return (
+                      <tr
+                        key={item.itemName}
+                        className={`hover:bg-gray-50 ${
+                          hasAdjustment ? "bg-orange-50" : ""
+                        }`}
                       >
-                        {isSelected ? (
-                          <CheckSquare className="w-5 h-5 text-blue-600" />
-                        ) : (
-                          <Square className="w-5 h-5 text-gray-400" />
-                        )}
-                      </button>
+                        {/* Item Name */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="font-medium text-gray-900">{item.itemName}</div>
+                        </td>
 
-                      <div className="flex-1">
-                        {/* Item Info */}
-                        <div className="mb-3">
-                          <h3 className="font-medium text-gray-900">
-                            {item.itemName}
-                          </h3>
-                          <div className="text-sm text-gray-600 mt-1 flex gap-4">
-                            <span>Available: <strong>{item.available}</strong></span>
-                            {item.totalAdjustments !== 0 && (
-                              <span className={item.totalAdjustments > 0 ? "text-green-600" : "text-red-600"}>
-                                Adjustments: {item.totalAdjustments > 0 ? "+" : ""}{item.totalAdjustments}
-                              </span>
-                            )}
+                        {/* Current Stock */}
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className="text-lg font-semibold text-gray-900">
+                            {item.available}
+                          </span>
+                        </td>
+
+                        {/* Adjustment Controls */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => decrementQty(item.itemName)}
+                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <input
+                              type="number"
+                              value={adjustment?.adjustmentQty || 0}
+                              onChange={(e) =>
+                                updateAdjustment(
+                                  item.itemName,
+                                  "adjustmentQty",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="w-20 text-center px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            />
+                            <button
+                              onClick={() => incrementQty(item.itemName)}
+                              className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
                           </div>
-                        </div>
+                        </td>
 
-                        {/* Adjustment Form */}
-                        {isSelected && adjustment && (
-                          <div className="space-y-3 border-t pt-3">
-                            {/* Quantity Adjustment */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Quantity Adjustment
-                              </label>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() =>
-                                    handleQuickAdjust(item.itemName, -10)
-                                  }
-                                  className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
-                                >
-                                  -10
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleQuickAdjust(item.itemName, -1)
-                                  }
-                                  className="p-1 border border-gray-300 rounded hover:bg-gray-100"
-                                >
-                                  <Minus className="w-4 h-4" />
-                                </button>
-                                <input
-                                  type="number"
-                                  value={adjustment.adjustmentQty}
-                                  onChange={(e) =>
-                                    handleAdjustmentChange(
-                                      item.itemName,
-                                      "adjustmentQty",
-                                      parseInt(e.target.value) || 0
-                                    )
-                                  }
-                                  className={`w-24 px-3 py-2 text-center border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                    hasNegativeProjection
-                                      ? "border-red-500"
-                                      : "border-gray-300"
-                                  }`}
-                                />
-                                <button
-                                  onClick={() =>
-                                    handleQuickAdjust(item.itemName, 1)
-                                  }
-                                  className="p-1 border border-gray-300 rounded hover:bg-gray-100"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleQuickAdjust(item.itemName, 10)
-                                  }
-                                  className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
-                                >
-                                  +10
-                                </button>
-                                <span
-                                  className={`ml-2 text-sm ${
-                                    hasNegativeProjection
-                                      ? "text-red-600 font-medium"
-                                      : adjustment.projectedAvailable >
-                                        adjustment.currentAvailable
-                                      ? "text-green-600"
-                                      : adjustment.projectedAvailable <
-                                        adjustment.currentAvailable
-                                      ? "text-orange-600"
-                                      : "text-gray-600"
-                                  }`}
-                                >
-                                  New: {adjustment.projectedAvailable}
-                                  {hasNegativeProjection && " (Invalid)"}
-                                </span>
-                              </div>
-                            </div>
+                        {/* New Stock */}
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span
+                            className={`text-lg font-bold ${
+                              isNegative
+                                ? "text-red-600"
+                                : hasAdjustment
+                                ? "text-orange-600"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            {newStock}
+                          </span>
+                          {isNegative && (
+                            <div className="text-xs text-red-600 mt-1">Invalid!</div>
+                          )}
+                        </td>
 
-                            {/* Adjustment Type */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Adjustment Type
-                              </label>
+                        {/* Type & Reason */}
+                        <td className="px-6 py-4">
+                          {hasAdjustment && (
+                            <div className="space-y-2">
                               <select
                                 value={adjustment.adjustmentType}
                                 onChange={(e) =>
-                                  handleAdjustmentChange(
+                                  updateAdjustment(
                                     item.itemName,
                                     "adjustmentType",
                                     e.target.value as "manual" | "damage" | "found"
                                   )
                                 }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                               >
-                                {ADJUSTMENT_TYPES.map((type) => (
-                                  <option key={type.value} value={type.value}>
-                                    {type.label}
-                                  </option>
-                                ))}
+                                <option value="manual">Manual Correction</option>
+                                <option value="damage">Damage/Loss</option>
+                                <option value="found">Found/Recovered</option>
                               </select>
-                            </div>
-
-                            {/* Reason */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Reason <span className="text-red-500">*</span>
-                              </label>
                               <input
                                 type="text"
+                                placeholder="Reason (required)"
                                 value={adjustment.reason || ""}
                                 onChange={(e) =>
-                                  handleAdjustmentChange(
-                                    item.itemName,
-                                    "reason",
-                                    e.target.value
-                                  )
+                                  updateAdjustment(item.itemName, "reason", e.target.value)
                                 }
-                                placeholder="e.g., Physical count discrepancy"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                               />
                             </div>
+                          )}
+                        </td>
 
-                            {/* Notes (Optional) */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Additional Notes (Optional)
-                              </label>
-                              <textarea
-                                value={adjustment.notes || ""}
-                                onChange={(e) =>
-                                  handleAdjustmentChange(
-                                    item.itemName,
-                                    "notes",
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Any additional details..."
-                                rows={2}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                        {/* Actions */}
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          {hasAdjustment && (
+                            <button
+                              onClick={() => clearAdjustment(item.itemName)}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Clear adjustment"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex gap-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-medium text-blue-900 mb-1">
+                How to Use Stock Adjustments
+              </h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Use <strong>+/-</strong> buttons or type a number to adjust quantities</li>
+                <li>• Select adjustment type and provide a reason for each change</li>
+                <li>• Click <strong>Save</strong> button when you're ready to apply all changes</li>
+                <li>• Positive numbers add stock, negative numbers reduce stock</li>
+              </ul>
             </div>
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              {searchQuery
-                ? "No items found matching your search"
-                : "No items available for this supplier"}
-            </div>
-          )}
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
