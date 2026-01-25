@@ -5,6 +5,7 @@ import {
   detailedSalesReport,
   getSalesSummaryBySupplier,
   getCashSalesAndPaymentsReport,
+  getItemTransactionHistoryReport,
 } from "../controllers/report.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { requirePermission } from "../middlewares/authorizePermission";
@@ -80,5 +81,30 @@ router.get("/salessummary/supplier", getSalesSummaryBySupplier);
 
 // New route for cash sales and payments
 router.get("/cashtransactions", getCashSalesAndPaymentsReport);
+
+/**
+ * @openapi
+ * /report/item-transactions/{supplierId}/{itemName}:
+ *   get:
+ *     tags:
+ *       - Reports
+ *     summary: Get detailed transaction history for an item from a supplier
+ *     description: Shows all inwards (containers), sales, and adjustments with running balance to identify negative stock issues
+ *     parameters:
+ *       - name: supplierId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: itemName
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Item transaction history with running balance
+ */
+router.get("/item-transactions/:supplierId/:itemName", getItemTransactionHistoryReport);
 
 export default router;

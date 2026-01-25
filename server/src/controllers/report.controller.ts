@@ -4,6 +4,7 @@ import {
   getSupplierReport,
   getDetailedSalesReport,
   getCashSalesAndPayments,
+  getItemTransactionHistory,
 } from "../services/report.service";
 import prisma from "../utils/prisma";
 
@@ -177,15 +178,15 @@ export const getCashSalesAndPaymentsReport = async (
     const companyId = req.user?.companyId;
 
     if (!startDate || !endDate) {
-      res.status(400).json({ 
-        message: "Start date and end date are required" 
+      res.status(400).json({
+        message: "Start date and end date are required"
       });
       return;
     }
 
     if (!companyId) {
-      res.status(401).json({ 
-        message: "Unauthorized: Company ID not found" 
+      res.status(401).json({
+        message: "Unauthorized: Company ID not found"
       });
       return;
     }
@@ -200,8 +201,47 @@ export const getCashSalesAndPaymentsReport = async (
     return;
   } catch (error) {
     console.error("Error fetching cash sales and payments:", error);
-    res.status(500).json({ 
-      message: "Failed to generate cash sales and payments report" 
+    res.status(500).json({
+      message: "Failed to generate cash sales and payments report"
+    });
+    return;
+  }
+};
+
+export const getItemTransactionHistoryReport = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { supplierId, itemName } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!supplierId || !itemName) {
+      res.status(400).json({
+        message: "Supplier ID and item name are required"
+      });
+      return;
+    }
+
+    if (!companyId) {
+      res.status(401).json({
+        message: "Unauthorized: Company ID not found"
+      });
+      return;
+    }
+
+    const report = await getItemTransactionHistory(
+      supplierId,
+      decodeURIComponent(itemName),
+      companyId
+    );
+
+    res.json(report);
+    return;
+  } catch (error) {
+    console.error("Error fetching item transaction history:", error);
+    res.status(500).json({
+      message: error instanceof Error ? error.message : "Failed to generate transaction history report"
     });
     return;
   }
