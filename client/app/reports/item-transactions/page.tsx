@@ -15,7 +15,7 @@ interface Supplier {
 interface SupplierItem {
   id: string;
   itemName: string;
-  unitPrice: number;
+  price: number;
 }
 
 export default function ItemTransactionsPage() {
@@ -47,7 +47,7 @@ export default function ItemTransactionsPage() {
     try {
       setLoadingItems(true);
       const data = await getSupplierItems(supplierId);
-      setItems(data.items || []);
+      setItems(data || []);
     } catch (error) {
       console.error("Failed to fetch supplier items:", error);
       setItems([]);
@@ -181,7 +181,7 @@ export default function ItemTransactionsPage() {
                                 {item.itemName}
                               </div>
                               <div className="text-sm text-gray-500">
-                                ${item.unitPrice.toFixed(2)}
+                                ${item.price.toFixed(2)}
                               </div>
                             </div>
                           </div>

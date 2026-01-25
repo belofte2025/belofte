@@ -163,9 +163,11 @@ export default function StockAdjustmentPage({
   };
 
   const filteredInventory =
-    supplierData?.inventory.filter((item) =>
-      item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    supplierData?.inventory
+      .filter((item) =>
+        item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => a.itemName.localeCompare(b.itemName)) || [];
 
   const pendingCount = Object.keys(adjustments).filter(
     (key) => adjustments[key].adjustmentQty !== 0
