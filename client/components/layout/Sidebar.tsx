@@ -17,6 +17,7 @@ import {
   Container,
   Package,
   TrendingUp,
+  TrendingDown,
   Building2,
   Factory,
   Settings,
@@ -29,6 +30,7 @@ import {
   Shield,
   UserCog,
   Edit,
+  ClipboardList,
 } from "lucide-react";
 
 const navItems = [
@@ -72,6 +74,7 @@ const reportItems = [
   { name: "Suppliers", href: "/reports/suppliers", icon: Factory, permission: "reports.view" },
   { name: "Containers", href: "/reports/containers", icon: Container, permission: "reports.view" },
   { name: "Inventory", href: "/reports/inventory", icon: Package, permission: "reports.view" },
+  { name: "Item Transactions", href: "/reports/item-transactions", icon: TrendingDown, permission: "reports.view" },
   { name: "Cash Received", href: "/reports/dailycash", icon: PiggyBankIcon, permission: "reports.view" },
 ];
 
@@ -79,6 +82,10 @@ const settingsItems = [
   { name: "Role Management", href: "/settings/roles", icon: Shield, permission: "roles.manage" },
   { name: "User Management", href: "/settings/users", icon: UserCog, permission: "users.view" },
   { name: "Item Deduplication", href: "/settings/item-deduplication", icon: Package, permission: "items.deduplicate" },
+];
+
+const inventoryItems = [
+  { name: "Stock Adjustments", href: "/inventory/adjustments", icon: ClipboardList, permission: "inventory.adjust" },
 ];
 
 type SidebarProps = {
@@ -102,12 +109,16 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith("/settings")
   );
+  const [inventoryOpen, setInventoryOpen] = useState(
+    pathname.startsWith("/inventory")
+  );
 
   // Filter navigation items based on permissions
   const visibleNavItems = navItems.filter(item => hasPermission(item.permission));
   const visibleUtilityItems = utilityItems.filter(item => hasPermission(item.permission));
   const visibleReportItems = reportItems.filter(item => hasPermission(item.permission));
   const visibleSettingsItems = settingsItems.filter(item => hasPermission(item.permission));
+  const visibleInventoryItems = inventoryItems.filter(item => hasPermission(item.permission));
 
   return (
     <>
@@ -388,6 +399,78 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                 })}
               </div>
             </div>
+
+            {/* Inventory dropdown */}
+            {visibleInventoryItems.length > 0 && (
+              <div className="pt-2">
+                <button
+                  onClick={() => setInventoryOpen(!inventoryOpen)}
+                  className={clsx(
+                    "group relative flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
+                    pathname.startsWith("/inventory")
+                      ? "bg-orange-50 text-orange-700 shadow-sm"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  )}
+                  aria-expanded={inventoryOpen}
+                  aria-controls="inventory-submenu"
+                >
+                  {pathname.startsWith("/inventory") && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-orange-600 rounded-r-full" />
+                  )}
+                  <span className="flex items-center">
+                    <Package
+                      className={clsx(
+                        "mr-3 h-5 w-5 transition-colors",
+                        pathname.startsWith("/inventory")
+                          ? "text-orange-600"
+                          : "text-gray-400 group-hover:text-gray-600"
+                      )}
+                    />
+                    <span className="truncate">Inventory</span>
+                  </span>
+                  <ChevronRight
+                    className={clsx(
+                      "h-4 w-4 transition-transform duration-200",
+                      inventoryOpen && "rotate-90"
+                    )}
+                  />
+                </button>
+
+                {/* Inventory submenu */}
+                <div
+                  id="inventory-submenu"
+                  className={clsx(
+                    "mt-1 ml-6 space-y-0.5 overflow-hidden transition-all duration-200",
+                    inventoryOpen ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
+                  )}
+                >
+                  {visibleInventoryItems.map(({ name, href, icon: Icon }) => {
+                    const isActive = pathname === href;
+                    return (
+                      <Link
+                        key={name}
+                        href={href}
+                        className={clsx(
+                          "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                          isActive
+                            ? "bg-orange-100 text-orange-800"
+                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                        )}
+                        onClick={() => setOpen(false)}
+                      >
+                        <Icon
+                          className={clsx(
+                            "mr-2.5 h-4 w-4",
+                            isActive ? "text-orange-700" : "text-gray-400"
+                          )}
+                        />
+                        <span className="truncate">{name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Settings dropdown */}
             {visibleSettingsItems.length > 0 && (

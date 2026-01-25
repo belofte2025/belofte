@@ -1,12 +1,13 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { 
+import {
   Users,
   Package,
   Container,
   FileText,
-  ArrowUpRight
+  ArrowUpRight,
+  TrendingDown
 } from "lucide-react";
 import Link from "next/link";
 
@@ -101,6 +102,13 @@ export default function ReportsPage() {
                 description="Current stock levels and movement tracking"
                 color="from-orange-500 to-orange-700"
                 href="/reports/inventory"
+              />
+              <QuickReportCard
+                icon={<TrendingDown className="w-6 h-6 text-white" />}
+                title="Item Transactions"
+                description="Detailed transaction history to track negative stock"
+                color="from-indigo-500 to-indigo-700"
+                href="/reports/item-transactions"
               />
             </div>
           </div>

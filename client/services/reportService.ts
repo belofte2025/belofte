@@ -39,3 +39,13 @@ export const getCashSalesAndPayments = async (
   });
   return res.data;
 };
+
+export const getItemTransactionHistory = async (
+  supplierId: string,
+  itemName: string
+) => {
+  const res = await api.get(
+    `/reports/item-transactions/${supplierId}/${encodeURIComponent(itemName)}`
+  );
+  return res.data;
+};
