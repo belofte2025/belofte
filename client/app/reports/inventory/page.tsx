@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, Fragment } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft, Download, Package, Search } from "lucide-react";
+import { ArrowLeft, Download, Package, Search, TrendingDown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getInventoryReport } from "@/services/inventoryService";
 import toast from "react-hot-toast";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
@@ -204,7 +205,14 @@ export default function InventoryReportPage() {
                   Current stock levels and movement tracking
                 </p>
               </div>
-              <div className="ml-auto">
+              <div className="ml-auto flex items-center gap-3">
+                <Link
+                  href="/inventory/adjustments"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors duration-200"
+                >
+                  <TrendingDown className="w-4 h-4" />
+                  Stock Adjustments
+                </Link>
                 <button
                   onClick={exportToPDF}
                   disabled={loading || inventory.length === 0}
@@ -388,6 +396,50 @@ export default function InventoryReportPage() {
                 </table>
               </div>
             )}
+          </div>
+
+          {/* Quick Actions Info */}
+          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-blue-600 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-blue-900 mb-1">
+                  Need to Adjust Stock?
+                </h4>
+                <p className="text-sm text-blue-700 mb-3">
+                  Use Stock Adjustments to modify inventory quantities for damage, loss, found items, or manual corrections.
+                  View detailed transaction history to track why items show negative stock.
+                </p>
+                <div className="flex gap-3">
+                  <Link
+                    href="/inventory/adjustments"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <TrendingDown className="w-4 h-4" />
+                    Adjust Stock Levels
+                  </Link>
+                  <Link
+                    href="/reports/item-transactions"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-700 text-sm font-medium rounded-lg border border-blue-300 hover:bg-blue-50 transition-colors"
+                  >
+                    <Package className="w-4 h-4" />
+                    View Transaction History
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
