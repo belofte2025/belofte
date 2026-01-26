@@ -168,7 +168,7 @@ export async function createStockAdjustments(
     // Validate quantity won't go negative
     const validation = await validateAdjustment(
       supplierId,
-      adj.itemName,
+      adj.itemName.trim(),
       adj.adjustmentQty,
       companyId
     );
@@ -201,7 +201,7 @@ export async function createStockAdjustments(
     adjustments.map(async (adj) => {
       const validation = await validateAdjustment(
         supplierId,
-        adj.itemName,
+        adj.itemName.trim(),
         adj.adjustmentQty,
         companyId
       );
@@ -209,7 +209,7 @@ export async function createStockAdjustments(
       const created = await prisma.stockAdjustment.create({
         data: {
           supplierId,
-          itemName: adj.itemName,
+          itemName: adj.itemName.trim(),
           companyId,
           adjustmentQty: adj.adjustmentQty,
           adjustmentType: adj.adjustmentType,

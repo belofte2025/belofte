@@ -223,8 +223,13 @@ export const recordSale = async (req: Request, res: Response) => {
     });
     res.status(201).json(sale);
   } catch (err) {
-    res.status(400).json({ error: "Failed to record sale", detail: err });
-    console.log(err);
+    console.error("Sale recording error:", err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    res.status(400).json({
+      error: "Failed to record sale",
+      detail: errorMessage,
+      stack: err instanceof Error ? err.stack : undefined
+    });
   }
 };
 
