@@ -141,6 +141,27 @@ export const mergeDuplicateItems = async (req: Request, res: Response): Promise<
           },
         });
 
+        // Update regular sale items with duplicate names
+        // First get supplierItem IDs for this supplier
+        const supplierItems = await tx.supplierItem.findMany({
+          where: { supplierId },
+          select: { id: true },
+        });
+        const supplierItemIds = supplierItems.map((si: any) => si.id);
+
+        await tx.saleItem.updateMany({
+          where: {
+            itemName: { in: duplicateNames },
+            Sale: {
+              sourceType: "regular",
+              sourceId: { in: supplierItemIds },
+            },
+          },
+          data: {
+            itemName: masterName,
+          },
+        });
+
         // Update stock adjustments with duplicate names to use master name
         await tx.stockAdjustment.updateMany({
           where: {
@@ -152,13 +173,48 @@ export const mergeDuplicateItems = async (req: Request, res: Response): Promise<
           },
         });
 
-        // Delete duplicate supplier items, keeping only the master
-        await tx.supplierItem.deleteMany({
+        // Check if masterName already exists as a supplier item
+        const existingMasterItem = await tx.supplierItem.findFirst({
           where: {
             supplierId: supplierId,
-            itemName: { in: duplicateNames },
+            itemName: masterName,
           },
         });
+
+        if (existingMasterItem) {
+          // Actual merge: delete the duplicate supplier items since master exists
+          await tx.supplierItem.deleteMany({
+            where: {
+              supplierId: supplierId,
+              itemName: { in: duplicateNames },
+            },
+          });
+        } else {
+          // Just a rename: update the first duplicate to the new name, delete others
+          const firstDuplicate = duplicateNames[0];
+
+          // Update the first item to the new name
+          await tx.supplierItem.updateMany({
+            where: {
+              supplierId: supplierId,
+              itemName: firstDuplicate,
+            },
+            data: {
+              itemName: masterName,
+            },
+          });
+
+          // Delete any remaining duplicates (if multiple items being merged into new name)
+          if (duplicateNames.length > 1) {
+            const remainingDuplicates = duplicateNames.slice(1);
+            await tx.supplierItem.deleteMany({
+              where: {
+                supplierId: supplierId,
+                itemName: { in: remainingDuplicates },
+              },
+            });
+          }
+        }
 
         totalMerged += duplicateNames.length;
       });

@@ -467,6 +467,23 @@ export const listSupplierItemsWithSales = async (
       supplierItemIdsBySupplierId[item.supplierId].push(item.id);
     });
 
+    // Step 4d: Get all stock adjustments for this company
+    const allStockAdjustments = await prisma.stockAdjustment.findMany({
+      where: { companyId },
+      select: {
+        itemName: true,
+        supplierId: true,
+        adjustmentQty: true,
+      },
+    });
+
+    // Group adjustments by supplier + itemName
+    const adjustmentsBySupplierItem: Record<string, number> = {};
+    allStockAdjustments.forEach((adj) => {
+      const key = `${adj.supplierId}-${adj.itemName}`;
+      adjustmentsBySupplierItem[key] = (adjustmentsBySupplierItem[key] || 0) + adj.adjustmentQty;
+    });
+
     // Step 5: Compute result per supplier item
     const result = supplierItemMap.map((sItem: {
       id: string;
@@ -522,6 +539,10 @@ export const listSupplierItemsWithSales = async (
         0
       );
 
+      // Get stock adjustments for this supplier + item
+      const adjustmentKey = `${sItem.supplierId}-${sItem.itemName}`;
+      const totalAdjustments = adjustmentsBySupplierItem[adjustmentKey] || 0;
+
       return {
         id: sItem.id,
         itemName: sItem.itemName,
@@ -529,7 +550,7 @@ export const listSupplierItemsWithSales = async (
         supplierName: sItem.supplierName,
         quantity: totalQty,
         soldQty,
-        remainingQty: totalQty - soldQty,
+        remainingQty: totalQty - soldQty + totalAdjustments,
         price: sItem.price,
       };
     });
