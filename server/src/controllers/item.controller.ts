@@ -141,6 +141,17 @@ export const mergeDuplicateItems = async (req: Request, res: Response): Promise<
           },
         });
 
+        // Update stock adjustments with duplicate names to use master name
+        await tx.stockAdjustment.updateMany({
+          where: {
+            supplierId: supplierId,
+            itemName: { in: duplicateNames },
+          },
+          data: {
+            itemName: masterName,
+          },
+        });
+
         // Delete duplicate supplier items, keeping only the master
         await tx.supplierItem.deleteMany({
           where: {
