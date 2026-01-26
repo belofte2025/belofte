@@ -1,10 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Package, AlertTriangle, Check, X, Trash2, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  Check,
+  X,
+  AlertTriangle,
+  Edit2,
+  ArrowRight,
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
-import { Dialog } from "@headlessui/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ProtectedPage } from "@/components/auth/ProtectedPage";
 import { getSuppliers } from "@/services/supplierService";
@@ -21,10 +28,10 @@ interface Item {
   itemName: string;
 }
 
-interface DuplicateGroup {
-  masterName: string | null;
-  items: Item[];
-  selected: boolean;
+interface PendingChange {
+  originalName: string;
+  newName: string;
+  itemId: string;
 }
 
 export default function ItemDeduplicationPage() {
@@ -32,13 +39,13 @@ export default function ItemDeduplicationPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<string>("");
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
-  const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[]>([]);
-  const [processing, setProcessing] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmData, setConfirmData] = useState<{
-    validGroups: DuplicateGroup[];
-    mergeRequests: { masterName: string; duplicateNames: string[] }[];
-  } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pendingChanges, setPendingChanges] = useState<
+    Record<string, PendingChange>
+  >({});
+  const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadSuppliers();
@@ -59,7 +66,8 @@ export default function ItemDeduplicationPage() {
     try {
       const response = await api.get(`/suppliers/${supplierId}/items`);
       setItems(response.data);
-      setDuplicateGroups([]);
+      setPendingChanges({});
+      setEditingItem(null);
     } catch (error) {
       console.error("Failed to load items:", error);
       toast.error("Failed to load items");
@@ -70,578 +78,398 @@ export default function ItemDeduplicationPage() {
 
   const handleSupplierChange = (supplierId: string) => {
     setSelectedSupplier(supplierId);
+    setSearchQuery("");
     if (supplierId) {
       loadSupplierItems(supplierId);
     } else {
       setItems([]);
-      setDuplicateGroups([]);
+      setPendingChanges({});
     }
   };
 
-  const createDuplicateGroup = () => {
-    setDuplicateGroups([
-      ...duplicateGroups,
-      {
-        masterName: null,
-        items: [],
-        selected: false,
-      },
-    ]);
+  const startEditing = (item: Item) => {
+    setEditingItem(item.id);
+    setEditValue(pendingChanges[item.id]?.newName || item.itemName);
   };
 
-  const addItemToGroup = (groupIndex: number, item: Item) => {
-    const newGroups = [...duplicateGroups];
-    const group = newGroups[groupIndex];
+  const cancelEditing = () => {
+    setEditingItem(null);
+    setEditValue("");
+  };
 
-    // Check if item already in group
-    if (group.items.find(i => i.id === item.id)) {
-      toast.error("Item already in this group");
+  const saveEdit = (item: Item) => {
+    const trimmedValue = editValue.trim();
+
+    if (!trimmedValue) {
+      toast.error("Item name cannot be empty");
       return;
     }
 
-    // Check if item is in another group
-    const inOtherGroup = newGroups.some((g, i) =>
-      i !== groupIndex && g.items.find(existingItem => existingItem.id === item.id)
-    );
-
-    if (inOtherGroup) {
-      toast.error("Item is already in another group");
-      return;
+    if (trimmedValue === item.itemName) {
+      // No change, remove from pending if exists
+      const newChanges = { ...pendingChanges };
+      delete newChanges[item.id];
+      setPendingChanges(newChanges);
+    } else {
+      // Add to pending changes
+      setPendingChanges((prev) => ({
+        ...prev,
+        [item.id]: {
+          originalName: item.itemName,
+          newName: trimmedValue,
+          itemId: item.id,
+        },
+      }));
     }
 
-    group.items.push(item);
-
-    // Auto-select first item as master if none selected
-    if (!group.masterName && group.items.length === 1) {
-      group.masterName = item.itemName;
-    }
-
-    setDuplicateGroups(newGroups);
+    setEditingItem(null);
+    setEditValue("");
   };
 
-  const removeItemFromGroup = (groupIndex: number, itemId: string) => {
-    const newGroups = [...duplicateGroups];
-    const group = newGroups[groupIndex];
-
-    const removedItem = group.items.find(i => i.id === itemId);
-    group.items = group.items.filter(i => i.id !== itemId);
-
-    // If master was removed, select first item as new master
-    if (removedItem && group.masterName === removedItem.itemName) {
-      group.masterName = group.items.length > 0 ? group.items[0].itemName : null;
-    }
-
-    setDuplicateGroups(newGroups);
-  };
-
-  const setMasterItem = (groupIndex: number, itemName: string) => {
-    const newGroups = [...duplicateGroups];
-    newGroups[groupIndex].masterName = itemName;
-    setDuplicateGroups(newGroups);
-  };
-
-  const removeGroup = (groupIndex: number) => {
-    setDuplicateGroups(duplicateGroups.filter((_, i) => i !== groupIndex));
-  };
-
-  const handleMergeDuplicates = () => {
-    // Validate groups - allow single items for spacing cleanup
-    const validGroups = duplicateGroups.filter(g => g.items.length >= 1 && g.masterName);
-
-    if (validGroups.length === 0) {
-      toast.error("Please create at least one group with items");
-      return;
-    }
-
-    const invalidGroups = validGroups.filter(g => !g.masterName);
-    if (invalidGroups.length > 0) {
-      toast.error("Please set a final name for all groups");
-      return;
-    }
-
-    const mergeRequests = validGroups
-      .map(group => ({
-        masterName: group.masterName!,
-        duplicateNames: group.items.filter(i => i.itemName !== group.masterName).map(i => i.itemName),
-      }))
-      .filter(req => req.duplicateNames.length > 0); // Only include requests that actually change something
-
-    if (mergeRequests.length === 0) {
-      toast.error("No changes to apply. Please edit the final name to be different from the original.");
-      return;
-    }
-
-    setConfirmData({ validGroups: validGroups.filter(g =>
-      g.items.some(i => i.itemName !== g.masterName)
-    ), mergeRequests });
-    setShowConfirmDialog(true);
-  };
-
-  const confirmMerge = async () => {
-    if (!confirmData) return;
-
-    setShowConfirmDialog(false);
-    setProcessing(true);
-    try {
-      const response = await api.post(`/items/merge-duplicates`, {
-        supplierId: selectedSupplier,
-        mergeGroups: confirmData.mergeRequests,
-      });
-
-      toast.success(`Successfully merged ${response.data.mergedCount} duplicate items`);
-
-      // Reload items
-      await loadSupplierItems(selectedSupplier);
-      setDuplicateGroups([]);
-      setConfirmData(null);
-    } catch (error: any) {
-      console.error("Failed to merge duplicates:", error);
-      toast.error(error.response?.data?.message || "Failed to merge duplicate items");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const cancelMerge = () => {
-    setShowConfirmDialog(false);
-    setConfirmData(null);
-  };
-
-  const getAvailableItems = () => {
-    const usedItemIds = new Set(
-      duplicateGroups.flatMap(g => g.items.map(i => i.id))
-    );
-    return items.filter(item => !usedItemIds.has(item.id));
+  const clearChange = (itemId: string) => {
+    const newChanges = { ...pendingChanges };
+    delete newChanges[itemId];
+    setPendingChanges(newChanges);
   };
 
   const hasSpacingIssues = (itemName: string) => {
     return (
-      itemName.includes('  ') || // Double space or more
-      itemName.startsWith(' ') || // Leading space
-      itemName.endsWith(' ')      // Trailing space
+      itemName.includes("  ") ||
+      itemName.startsWith(" ") ||
+      itemName.endsWith(" ")
     );
   };
 
-  const getSpacingIssueText = (itemName: string) => {
-    const issues = [];
-    if (itemName.startsWith(' ')) issues.push('leading space');
-    if (itemName.endsWith(' ')) issues.push('trailing space');
-    if (itemName.includes('  ')) issues.push('double spacing');
-    return issues.join(', ');
+  const isMergeOperation = (newName: string, currentItemId: string) => {
+    // Check if another item has the same name (case insensitive)
+    return items.some(
+      (item) =>
+        item.id !== currentItemId &&
+        item.itemName.toLowerCase() === newName.toLowerCase()
+    );
   };
+
+  const handleApplyChanges = async () => {
+    const changes = Object.values(pendingChanges);
+    if (changes.length === 0) {
+      toast.error("No changes to apply");
+      return;
+    }
+
+    // Group changes: merges go together, renames can be separate
+    const mergeGroups: { masterName: string; duplicateNames: string[] }[] = [];
+
+    changes.forEach((change) => {
+      // Find if there's already a group with this target name
+      const existingGroup = mergeGroups.find(
+        (g) => g.masterName.toLowerCase() === change.newName.toLowerCase()
+      );
+
+      if (existingGroup) {
+        existingGroup.duplicateNames.push(change.originalName);
+      } else {
+        mergeGroups.push({
+          masterName: change.newName,
+          duplicateNames: [change.originalName],
+        });
+      }
+    });
+
+    setSaving(true);
+    try {
+      const response = await api.post(`/items/merge-duplicates`, {
+        supplierId: selectedSupplier,
+        mergeGroups: mergeGroups,
+      });
+
+      toast.success(
+        `Successfully updated ${response.data.mergedCount} item(s)`
+      );
+
+      // Reload items
+      await loadSupplierItems(selectedSupplier);
+    } catch (error: any) {
+      console.error("Failed to apply changes:", error);
+      toast.error(error.response?.data?.message || "Failed to apply changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filteredItems = items
+    .filter((item) =>
+      item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => a.itemName.localeCompare(b.itemName));
+
+  const pendingCount = Object.keys(pendingChanges).length;
+  const mergeCount = Object.values(pendingChanges).filter((c) =>
+    isMergeOperation(c.newName, c.itemId)
+  ).length;
+  const renameCount = pendingCount - mergeCount;
 
   return (
     <ProtectedPage permission="items.deduplicate">
       <DashboardLayout>
         <div className="min-h-screen bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <Link
-              href="/settings"
-              className="inline-flex items-center p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Item Deduplication</h1>
-              <p className="text-gray-600 mt-1">
-                Merge duplicate items caused by typos or spacing issues
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Supplier Selection */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Supplier
-          </label>
-          <select
-            value={selectedSupplier}
-            onChange={(e) => handleSupplierChange(e.target.value)}
-            className="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">-- Select a supplier --</option>
-            {suppliers.map((supplier) => (
-              <option key={supplier.id} value={supplier.id}>
-                {supplier.suppliername} ({supplier.country})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {selectedSupplier && (
-          <>
-            {/* Available Items */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Available Items</h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {loading ? "Loading..." : `${getAvailableItems().length} items available`}
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {/* Header */}
+            <div className="mb-6">
+              <div className="flex items-center gap-4 mb-2">
+                <Link
+                  href="/settings"
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    Item Deduplication
+                  </h1>
+                  <p className="text-gray-600 text-sm">
+                    Fix typos, spacing issues, or merge duplicate items
                   </p>
                 </div>
-                <button
-                  onClick={createDuplicateGroup}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Package className="w-4 h-4" />
-                  Create Duplicate Group
-                </button>
+                {pendingCount > 0 && (
+                  <button
+                    onClick={handleApplyChanges}
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                    Apply {pendingCount} Change{pendingCount !== 1 ? "s" : ""}
+                  </button>
+                )}
               </div>
-
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                  {getAvailableItems().map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer group"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{item.itemName}</p>
-                          {hasSpacingIssues(item.itemName) && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <AlertTriangle className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                              <span className="text-xs text-amber-600 font-medium">
-                                {getSpacingIssueText(item.itemName)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {/* Duplicate Groups */}
-            {duplicateGroups.length > 0 && (
-              <div className="space-y-4 mb-6">
-                {duplicateGroups.map((group, groupIndex) => (
-                  <div
-                    key={groupIndex}
-                    className="bg-white rounded-lg shadow-sm border-2 border-orange-200 p-6"
+            {/* Supplier Selection */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Supplier
+                  </label>
+                  <select
+                    value={selectedSupplier}
+                    onChange={(e) => handleSupplierChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-orange-600" />
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Duplicate Group {groupIndex + 1}
-                        </h3>
-                        <span className="text-sm text-gray-500">
-                          ({group.items.length} items)
+                    <option value="">Select a supplier</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.suppliername} ({supplier.country})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedSupplier && (
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Search Items
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input
+                        type="text"
+                        placeholder="Search by name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pending Changes Summary */}
+            {pendingCount > 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-orange-600" />
+                  <div className="flex-1">
+                    <p className="font-medium text-orange-900">
+                      {pendingCount} pending change
+                      {pendingCount !== 1 ? "s" : ""}
+                    </p>
+                    <p className="text-sm text-orange-700">
+                      {renameCount > 0 && (
+                        <span>
+                          {renameCount} rename{renameCount !== 1 ? "s" : ""}
                         </span>
-                      </div>
-                      <button
-                        onClick={() => removeGroup(groupIndex)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                      )}
+                      {renameCount > 0 && mergeCount > 0 && <span>, </span>}
+                      {mergeCount > 0 && (
+                        <span>
+                          {mergeCount} merge{mergeCount !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Add items to this group (click to add):
-                      </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {getAvailableItems().map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => addItemToGroup(groupIndex, item)}
-                            className="p-2 text-left border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all"
-                          >
-                            <p className="font-medium text-sm text-gray-900 truncate">
-                              {item.itemName}
-                            </p>
-                            {hasSpacingIssues(item.itemName) && (
-                              <div className="flex items-center gap-1 mt-1">
-                                <AlertTriangle className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                                <span className="text-xs text-amber-600 font-medium">
-                                  {getSpacingIssueText(item.itemName)}
-                                </span>
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+            {/* Items List */}
+            {selectedSupplier && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+                  </div>
+                ) : filteredItems.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    {searchQuery
+                      ? "No items match your search"
+                      : "No items found for this supplier"}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {filteredItems.map((item) => {
+                      const change = pendingChanges[item.id];
+                      const isEditing = editingItem === item.id;
+                      const willMerge =
+                        change && isMergeOperation(change.newName, item.id);
 
-                    {group.items.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-3">
-                          Select the correct name to keep or edit to fix spacing:
-                        </p>
-                        <div className="space-y-2">
-                          {group.items.map((item) => (
-                            <div
-                              key={item.id}
-                              className={`p-3 border-2 rounded-lg transition-all ${
-                                group.masterName === item.itemName
-                                  ? "border-green-500 bg-green-50"
-                                  : "border-gray-200 hover:border-gray-300"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="radio"
-                                      name={`master-${groupIndex}`}
-                                      checked={group.masterName === item.itemName}
-                                      onChange={() => setMasterItem(groupIndex, item.itemName)}
-                                      className="w-4 h-4 text-green-600 focus:ring-green-500"
-                                    />
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="font-medium text-gray-900">
-                                          {item.itemName}
-                                        </p>
-                                        {group.masterName === item.itemName && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <Check className="w-3 h-3 mr-1" />
-                                            Keep This
-                                          </span>
-                                        )}
-                                        {hasSpacingIssues(item.itemName) && (
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                            <AlertTriangle className="w-3 h-3" />
-                                            {getSpacingIssueText(item.itemName)}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
+                      return (
+                        <div
+                          key={item.id}
+                          className={`p-4 transition-colors ${
+                            change
+                              ? willMerge
+                                ? "bg-blue-50"
+                                : "bg-orange-50"
+                              : "hover:bg-gray-50"
+                          }`}
+                        >
+                          {isEditing ? (
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="text"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveEdit(item);
+                                  if (e.key === "Escape") cancelEditing();
+                                }}
+                                autoFocus
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              />
+                              <button
+                                onClick={() => saveEdit(item)}
+                                className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                                title="Save"
+                              >
+                                <Check className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Cancel"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 min-w-0">
+                                {change ? (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-gray-500 line-through">
+                                      {item.itemName}
+                                    </span>
+                                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                                    <span className="font-medium text-gray-900">
+                                      {change.newName}
+                                    </span>
+                                    {willMerge && (
+                                      <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                                        Merge
+                                      </span>
+                                    )}
+                                    {!willMerge && (
+                                      <span className="px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-700 rounded-full">
+                                        Rename
+                                      </span>
+                                    )}
                                   </div>
-                                </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-900">
+                                      {item.itemName}
+                                    </span>
+                                    {hasSpacingIssues(item.itemName) && (
+                                      <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full flex items-center gap-1">
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Spacing issue
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {change && (
+                                  <button
+                                    onClick={() => clearChange(item.id)}
+                                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                    title="Clear change"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => removeItemFromGroup(groupIndex, item.id)}
-                                  className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  onClick={() => startEditing(item)}
+                                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                  title="Edit name"
                                 >
-                                  <X className="w-4 h-4" />
+                                  <Edit2 className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>
-                          ))}
-                        </div>
-
-                        {/* Editable Master Name */}
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Final name to keep (edit to fix spacing or typos):
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={group.masterName || ""}
-                              onChange={(e) => setMasterItem(groupIndex, e.target.value)}
-                              placeholder="Enter the final item name"
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                            {group.masterName && hasSpacingIssues(group.masterName) && (
-                              <div className="flex items-center gap-1 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                                <span className="text-sm text-amber-800 font-medium">
-                                  {getSpacingIssueText(group.masterName)}
-                                </span>
-                              </div>
-                            )}
-                            {group.masterName && !hasSpacingIssues(group.masterName) && (
-                              <div className="flex items-center gap-1 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                                <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                <span className="text-sm text-green-800 font-medium">
-                                  No spacing issues
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            You can manually edit this field to fix spacing issues or correct typos
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            {duplicateGroups.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">
-                      {duplicateGroups.filter(g => g.items.length >= 1).length} group(s) ready to process
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Includes {duplicateGroups.filter(g => g.items.length > 1).length} duplicate merge(s) and {duplicateGroups.filter(g => g.items.length === 1).length} cleanup(s)
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleMergeDuplicates}
-                    disabled={processing || duplicateGroups.every(g => g.items.length < 1)}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {processing ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Process Changes
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-          </div>
-        </div>
-
-        {/* Confirmation Dialog */}
-        <Dialog open={showConfirmDialog} onClose={() => {}} className="relative z-50">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
-          <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-gray-200">
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="w-6 h-6 text-orange-600" />
-                  </div>
-                  <div>
-                    <Dialog.Title className="text-xl font-bold text-gray-900">
-                      Confirm Item Changes
-                    </Dialog.Title>
-                    <p className="text-sm text-gray-600 mt-1">
-                      This action cannot be undone
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <p className="text-gray-700 mb-4">
-                    You are about to process <span className="font-semibold">{confirmData?.validGroups.length}</span> item change(s):
-                  </p>
-                  <div className="space-y-3 max-h-96 overflow-y-auto bg-gray-50 rounded-lg p-4">
-                    {confirmData?.validGroups.map((group, i) => {
-                      const duplicates = group.items.filter(item => item.itemName !== group.masterName);
-                      const isCleanup = group.items.length === 1;
-                      return (
-                        <div key={i} className="bg-white rounded-lg p-4 border border-gray-200">
-                          <div className="flex items-start gap-3">
-                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-semibold text-blue-600">{i + 1}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              {isCleanup ? (
-                                // Single item cleanup/rename
-                                <>
-                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    <RefreshCw className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                    <span className="font-semibold text-blue-700">Rename:</span>
-                                    <span className="font-medium text-gray-600 line-through">{group.items[0].itemName}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                    <span className="font-semibold text-green-700">To:</span>
-                                    <span className="font-medium text-gray-900">{group.masterName}</span>
-                                    {hasSpacingIssues(group.masterName || '') && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                        <AlertTriangle className="w-3 h-3" />
-                                        {getSpacingIssueText(group.masterName || '')}
-                                      </span>
-                                    )}
-                                  </div>
-                                </>
-                              ) : (
-                                // Multiple items merge
-                                <>
-                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                    <span className="font-semibold text-green-700">Keep:</span>
-                                    <span className="font-medium text-gray-900">{group.masterName}</span>
-                                    {hasSpacingIssues(group.masterName || '') && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                        <AlertTriangle className="w-3 h-3" />
-                                        {getSpacingIssueText(group.masterName || '')}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-start gap-2">
-                                    <X className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                    <span className="font-semibold text-red-700">Merge:</span>
-                                    <div className="flex-1">
-                                      {duplicates.map((item, idx) => (
-                                        <div key={idx} className="inline-flex items-center gap-1 mr-2 mb-1">
-                                          <span className="text-sm text-gray-600">
-                                            {item.itemName}{idx < duplicates.length - 1 ? ',' : ''}
-                                          </span>
-                                          {hasSpacingIssues(item.itemName) && (
-                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                                              <AlertTriangle className="w-2.5 h-2.5" />
-                                            </span>
-                                          )}
-                                        </div>
-                                      ))}
-                                      <span className="text-xs text-gray-500">
-                                        ({duplicates.length} item{duplicates.length !== 1 ? 's' : ''})
-                                      </span>
-                                    </div>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
+                          )}
                         </div>
                       );
                     })}
                   </div>
-                </div>
+                )}
 
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-                  <div className="flex gap-3">
-                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-orange-900 mb-1">Warning</p>
-                      <p className="text-sm text-orange-800">
-                        This will update all container items and sales records. Duplicate supplier items will be deleted.
-                      </p>
-                    </div>
+                {/* Footer */}
+                {filteredItems.length > 0 && (
+                  <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+                    {filteredItems.length} item
+                    {filteredItems.length !== 1 ? "s" : ""} shown
+                    {searchQuery && ` (filtered)`}
                   </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={cancelMerge}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={confirmMerge}
-                    className="px-6 py-2 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors"
-                  >
-                    Confirm Changes
-                  </button>
-                </div>
+                )}
               </div>
-            </Dialog.Panel>
+            )}
+
+            {/* Help Text */}
+            {selectedSupplier && !loading && filteredItems.length > 0 && (
+              <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                <h3 className="font-medium text-gray-900 mb-2">How to use:</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>
+                    • Click the edit icon to rename an item or fix spacing
+                    issues
+                  </li>
+                  <li>
+                    • If you type an existing item name, they will be merged
+                  </li>
+                  <li>
+                    • Review your changes and click &quot;Apply Changes&quot; to
+                    save
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
-        </Dialog>
+        </div>
       </DashboardLayout>
     </ProtectedPage>
   );
