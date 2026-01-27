@@ -40,7 +40,7 @@ interface Sale {
   sourceType?: string;
   customer: {
     customerName: string;
-  };
+  } | null;
   totalAmount: number;
   createdAt: string;
   items: SaleItem[];
@@ -114,7 +114,7 @@ export default function EditSalesPage() {
       // Client-side filter by customer name
       if (filters.customerName.trim()) {
         result = result.filter((sale) =>
-          sale.customer.customerName
+          (sale.customer?.customerName || "")
             .toLowerCase()
             .includes(filters.customerName.toLowerCase())
         );
@@ -581,7 +581,7 @@ export default function EditSalesPage() {
                         {/* Customer */}
                         <div className="mb-3">
                           <span className="text-sm font-medium text-gray-900">
-                            {sale.customer.customerName}
+                            {sale.customer?.customerName || "Unknown Customer"}
                           </span>
                         </div>
 
@@ -672,7 +672,7 @@ export default function EditSalesPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200">
-                  <span className="text-gray-600">{editingSale?.customer.customerName}</span>
+                  <span className="text-gray-600">{editingSale?.customer?.customerName || "Unknown Customer"}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Customer cannot be changed</p>
               </div>

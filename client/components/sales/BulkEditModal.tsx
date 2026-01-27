@@ -7,7 +7,7 @@ interface Sale {
   saleType: string;
   customer: {
     customerName: string;
-  };
+  } | null;
   totalAmount: number;
   createdAt: string;
 }

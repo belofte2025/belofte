@@ -33,7 +33,7 @@ interface Sale {
   sourceType?: string;
   customer: {
     customerName: string;
-  };
+  } | null;
   totalAmount: number;
   createdAt: string;
   items: SaleItem[];
@@ -111,7 +111,7 @@ export default function SalesListPage() {
 
     const filtered = sales.filter(
       (sale) =>
-        sale.customer.customerName
+        (sale.customer?.customerName || "")
           .toLowerCase()
           .includes(query.toLowerCase()) ||
         sale.saleType.toLowerCase().includes(query.toLowerCase()) ||
@@ -378,7 +378,7 @@ export default function SalesListPage() {
 
                   {/* Customer */}
                   <div className="mb-3">
-                    <span className="text-sm font-medium text-gray-900">{sale.customer.customerName}</span>
+                    <span className="text-sm font-medium text-gray-900">{sale.customer?.customerName || "Unknown Customer"}</span>
                   </div>
 
                   {/* Items Table */}
@@ -439,7 +439,7 @@ export default function SalesListPage() {
                 </label>
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200">
                   <User className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">{editingSale?.customer.customerName}</span>
+                  <span className="text-gray-600">{editingSale?.customer?.customerName || "Unknown Customer"}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Customer cannot be changed</p>
               </div>
