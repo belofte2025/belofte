@@ -14,24 +14,15 @@ export const recordSale = async (req: Request, res: Response) => {
   }
 
   try {
-    // Enforce container status for container sales
+    // Verify container exists for container sales
     if (sourceType === "container" && sourceId) {
       const container = await prisma.container.findUnique({
         where: { id: sourceId },
-        select: { status: true, containerNo: true },
+        select: { id: true },
       });
 
       if (!container) {
         res.status(404).json({ error: "Container not found" });
-        return;
-      }
-
-      // Only allow sales from containers with status "Received" or "Done"
-      if (container.status !== "Received" && container.status !== "Done") {
-        res.status(400).json({
-          error: "Invalid container status",
-          detail: `Cannot sell from container ${container.containerNo} with status "${container.status}". Container must be "Received" or "Done" to make sales.`,
-        });
         return;
       }
     }
