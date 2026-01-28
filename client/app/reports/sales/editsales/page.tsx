@@ -43,7 +43,7 @@ interface Sale {
   } | null;
   totalAmount: number;
   createdAt: string;
-  items: SaleItem[];
+  items?: SaleItem[];
 }
 
 interface ValidationWarning {
@@ -263,7 +263,7 @@ export default function EditSalesPage() {
     setEditForm({
       saleType: sale.saleType,
       saleDate: new Date(sale.createdAt).toISOString().split("T")[0],
-      items: sale.items.map((item) => ({ ...item })),
+      items: (sale.items || []).map((item) => ({ ...item })),
     });
     setShowEditModal(true);
   };
@@ -599,7 +599,7 @@ export default function EditSalesPage() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                              {sale.items.map((item, idx) => (
+                              {(sale.items || []).map((item, idx) => (
                                 <tr key={idx}>
                                   <td className="px-3 py-2 text-gray-900">{item.itemName}</td>
                                   <td className="px-3 py-2 text-gray-600 text-right">{item.quantity}</td>
@@ -617,7 +617,7 @@ export default function EditSalesPage() {
 
                         {/* Total */}
                         <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-sm text-gray-500">{sale.items.length} item(s)</span>
+                          <span className="text-sm text-gray-500">{(sale.items || []).length} item(s)</span>
                           <div className="text-right">
                             <span className="text-sm text-gray-500 mr-2">Total:</span>
                             <span className="text-lg font-bold text-gray-900">

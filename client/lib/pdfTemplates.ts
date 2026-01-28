@@ -35,9 +35,6 @@ export interface TableColumn {
  */
 const DEFAULT_COMPANY_INFO: CompanyInfo = {
   name: "PETROS",
-  address: "Business Management Solutions",
-  email: "info@petros.com",
-  website: "www.petros.com",
 };
 
 /**
@@ -49,9 +46,6 @@ export function getCompanyInfo(): CompanyInfo {
   if (user?.company?.companyName) {
     return {
       name: user.company.companyName,
-      address: "Business Management Solutions",
-      email: "info@petros.com",
-      website: "www.petros.com",
     };
   }
   return DEFAULT_COMPANY_INFO;
@@ -81,60 +75,38 @@ export function addPDFHeader(doc: jsPDF, options: PDFReportOptions): number {
   let yPosition = 15;
 
   // Company Name (Large, Bold)
-  doc.setFontSize(20);
+  doc.setFontSize(18);
   doc.setTextColor(...COLORS.primary);
   doc.setFont("helvetica", "bold");
   doc.text(companyInfo.name, pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 12; // Increased from 8 to 12 for better spacing
-
-  // Company Details (Small, if provided)
-  if (companyInfo.address || companyInfo.phone || companyInfo.email) {
-    doc.setFontSize(8);
-    doc.setTextColor(...COLORS.gray);
-    doc.setFont("helvetica", "normal");
-
-    const details: string[] = [];
-    if (companyInfo.address) details.push(companyInfo.address);
-    if (companyInfo.phone) details.push(`Tel: ${companyInfo.phone}`);
-    if (companyInfo.email) details.push(`Email: ${companyInfo.email}`);
-
-    doc.text(details.join(" | "), pageWidth / 2, yPosition, {
-      align: "center",
-    });
-    yPosition += 8; // Increased from 5 to 8 for better spacing
-  }
+  yPosition += 8;
 
   // Horizontal line separator
   doc.setDrawColor(...COLORS.primary);
   doc.setLineWidth(0.5);
   doc.line(14, yPosition, pageWidth - 14, yPosition);
-  yPosition += 20; // Increased from 8 to 12 for better spacing
+  yPosition += 10;
 
   // Report Title
-  doc.setFontSize(16);
+  doc.setFontSize(14);
   doc.setTextColor(...COLORS.text);
   doc.setFont("helvetica", "bold");
   doc.text(options.title, pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 10; // Increased from 6 to 10 for better spacing
+  yPosition += 6;
 
-  // Subtitle (if provided)
-  if (options.subtitle) {
-    doc.setFontSize(10);
-    doc.setTextColor(...COLORS.gray);
-    doc.setFont("helvetica", "normal");
-    doc.text(options.subtitle, pageWidth / 2, yPosition, { align: "center" });
-    yPosition += 8; // Increased from 5 to 8 for better spacing
-  }
-
-  // Generation date
+  // Subtitle and Generation date on same line
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.gray);
-  doc.text(
-    `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
-    pageWidth / 2,
-    yPosition,
-    { align: "center" }
-  );
+  doc.setFont("helvetica", "normal");
+
+  const generatedText = `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+
+  if (options.subtitle) {
+    const combinedText = `${options.subtitle} | ${generatedText}`;
+    doc.text(combinedText, pageWidth / 2, yPosition, { align: "center" });
+  } else {
+    doc.text(generatedText, pageWidth / 2, yPosition, { align: "center" });
+  }
   yPosition += 8;
 
   return yPosition; // Return next available Y position
@@ -276,7 +248,13 @@ export function addPDFSummarySection(
 ): number {
   let yPosition = startY;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const boxWidth = (pageWidth - 42) / 2; // Two columns with margins
+
+  // Calculate box width to fit 5 items per row with proper spacing
+  const itemsPerRow = Math.min(5, summaryData.length);
+  const totalMargin = 14 * 2; // Left and right margins
+  const gapBetweenBoxes = 8;
+  const totalGaps = (itemsPerRow - 1) * gapBetweenBoxes;
+  const boxWidth = (pageWidth - totalMargin - totalGaps) / itemsPerRow;
 
   if (title) {
     doc.setFontSize(12);
@@ -286,15 +264,15 @@ export function addPDFSummarySection(
     yPosition += 8;
   }
 
-  // Draw summary boxes in a grid
+  // Draw summary boxes in a grid (5 per row)
   let xPosition = 14;
-  const rowHeight = 28; // Increased from 20 to 28 for better text fit
+  const rowHeight = 22; // Reduced for more compact display
 
   summaryData.forEach((item, index) => {
-    // Start new row every 2 items
-    if (index > 0 && index % 2 === 0) {
+    // Start new row every 5 items
+    if (index > 0 && index % itemsPerRow === 0) {
       xPosition = 14;
-      yPosition += rowHeight + 6; // Increased spacing between rows
+      yPosition += rowHeight + 5;
     }
 
     // Draw box
@@ -308,23 +286,23 @@ export function addPDFSummarySection(
     doc.rect(xPosition, yPosition, boxWidth, rowHeight, "S");
 
     // Add label
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     const labelColor = item.highlight ? COLORS.white : COLORS.gray;
     doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
     doc.setFont("helvetica", "normal");
-    doc.text(item.label, xPosition + 6, yPosition + 10); // Adjusted positioning
+    doc.text(item.label, xPosition + 4, yPosition + 8);
 
     // Add value
-    doc.setFontSize(13); // Slightly reduced from 14 to fit better
+    doc.setFontSize(11);
     const valueColor = item.highlight ? COLORS.white : COLORS.text;
     doc.setTextColor(valueColor[0], valueColor[1], valueColor[2]);
     doc.setFont("helvetica", "bold");
-    doc.text(String(item.value), xPosition + 6, yPosition + 21); // Adjusted positioning
+    doc.text(String(item.value), xPosition + 4, yPosition + 17);
 
-    xPosition += boxWidth + 14;
+    xPosition += boxWidth + gapBetweenBoxes;
   });
 
-  return yPosition + rowHeight + 10;
+  return yPosition + rowHeight + 8;
 }
 
 /**
@@ -474,70 +452,58 @@ export function createHTMLReportTemplate(
 
           .report-header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 15px;
+            padding-bottom: 10px;
           }
 
           .company-name {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             color: #1e3a8a;
-            margin-bottom: 5px;
-          }
-
-          .company-details {
-            font-size: 10px;
-            color: #6b7280;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
           }
 
           .report-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #111827;
-            margin: 10px 0 5px 0;
+            margin: 8px 0 6px 0;
           }
 
-          .report-subtitle {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 5px;
-          }
-
-          .report-date {
+          .report-meta {
             font-size: 10px;
             color: #6b7280;
           }
 
           .summary-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin: 20px 0;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin: 15px 0;
             page-break-inside: avoid;
           }
 
           .stat-box {
             background: #f9fafb;
             border: 1px solid #e5e7eb;
-            padding: 12px;
-            border-radius: 4px;
+            padding: 8px 10px;
+            border-radius: 3px;
             text-align: center;
           }
 
           .stat-label {
-            font-size: 10px;
+            font-size: 8px;
             color: #6b7280;
             text-transform: uppercase;
             font-weight: 600;
+            margin-bottom: 3px;
           }
 
           .stat-value {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
             color: #111827;
-            margin-top: 4px;
           }
 
           table {
@@ -591,22 +557,14 @@ export function createHTMLReportTemplate(
         <div class="report-container">
           <div class="report-header no-page-break">
             <div class="company-name">${company.name}</div>
-            ${
-              company.address || company.email
-                ? `
-              <div class="company-details">
-                ${[company.address, company.email].filter(Boolean).join(" | ")}
-              </div>
-            `
-                : ""
-            }
             <div class="report-title">${title}</div>
-            ${
-              options?.subtitle
-                ? `<div class="report-subtitle">${options.subtitle}</div>`
-                : ""
-            }
-            <div class="report-date">Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+            <div class="report-meta">
+              ${
+                options?.subtitle
+                  ? `${options.subtitle} | `
+                  : ""
+              }Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
+            </div>
           </div>
 
           ${
