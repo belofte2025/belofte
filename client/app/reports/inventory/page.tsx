@@ -86,22 +86,23 @@ export default function InventoryReportPage() {
     filterInventory();
   }, [filterInventory]);
 
-  // Calculate inventory statistics for PDF export
-  const totalItems = Array.isArray(inventory) ? inventory.length : 0;
-  const inStockItems = Array.isArray(inventory)
-    ? inventory.filter((item) => item.available > 0).length
+  // Calculate inventory statistics based on filtered results
+  const totalItems = Array.isArray(filteredInventory) ? filteredInventory.length : 0;
+  const inStockItems = Array.isArray(filteredInventory)
+    ? filteredInventory.filter((item) => item.available > 0).length
     : 0;
-  const outOfStockItems = Array.isArray(inventory)
-    ? inventory.filter((item) => item.available === 0).length
+  const outOfStockItems = Array.isArray(filteredInventory)
+    ? filteredInventory.filter((item) => item.available === 0).length
     : 0;
-  const lowStockItems = Array.isArray(inventory)
-    ? inventory.filter((item) => item.available > 0 && item.available < 10)
+  const lowStockItems = Array.isArray(filteredInventory)
+    ? filteredInventory.filter((item) => item.available > 0 && item.available < 10)
         .length
     : 0;
-  const totalAvailable = Array.isArray(inventory)
-    ? inventory.reduce((sum, item) => sum + item.available, 0)
+  const totalAvailable = Array.isArray(filteredInventory)
+    ? filteredInventory.reduce((sum, item) => sum + item.available, 0)
     : 0;
 
+  // Suppliers list from full inventory for filter dropdown
   const suppliers = Array.isArray(inventory)
     ? [...new Set(inventory.map((item) => item.supplierName))]
     : [];
@@ -222,6 +223,30 @@ export default function InventoryReportPage() {
                   Export PDF
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Analytics Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div className="bg-white p-4 shadow-sm border border-gray-200 rounded-lg">
+              <div className="text-sm text-gray-500 mb-1">Total Items</div>
+              <div className="text-2xl font-bold text-gray-900">{totalItems}</div>
+            </div>
+            <div className="bg-white p-4 shadow-sm border border-gray-200 rounded-lg">
+              <div className="text-sm text-gray-500 mb-1">Total Available</div>
+              <div className="text-2xl font-bold text-blue-600">{totalAvailable.toLocaleString()}</div>
+            </div>
+            <div className="bg-white p-4 shadow-sm border border-gray-200 rounded-lg">
+              <div className="text-sm text-gray-500 mb-1">In Stock</div>
+              <div className="text-2xl font-bold text-green-600">{inStockItems}</div>
+            </div>
+            <div className="bg-white p-4 shadow-sm border border-gray-200 rounded-lg">
+              <div className="text-sm text-gray-500 mb-1">Low Stock</div>
+              <div className="text-2xl font-bold text-yellow-600">{lowStockItems}</div>
+            </div>
+            <div className="bg-white p-4 shadow-sm border border-gray-200 rounded-lg">
+              <div className="text-sm text-gray-500 mb-1">Out of Stock</div>
+              <div className="text-2xl font-bold text-red-600">{outOfStockItems}</div>
             </div>
           </div>
 
