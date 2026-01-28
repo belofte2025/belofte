@@ -79,20 +79,20 @@ export function addPDFHeader(doc: jsPDF, options: PDFReportOptions): number {
   doc.setTextColor(...COLORS.primary);
   doc.setFont("helvetica", "bold");
   doc.text(companyInfo.name, pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 8;
+  yPosition += 7;
 
   // Horizontal line separator
   doc.setDrawColor(...COLORS.primary);
   doc.setLineWidth(0.5);
   doc.line(14, yPosition, pageWidth - 14, yPosition);
-  yPosition += 10;
+  yPosition += 8;
 
   // Report Title
   doc.setFontSize(14);
   doc.setTextColor(...COLORS.text);
   doc.setFont("helvetica", "bold");
   doc.text(options.title, pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 6;
+  yPosition += 5;
 
   // Subtitle and Generation date on same line
   doc.setFontSize(9);
@@ -107,7 +107,7 @@ export function addPDFHeader(doc: jsPDF, options: PDFReportOptions): number {
   } else {
     doc.text(generatedText, pageWidth / 2, yPosition, { align: "center" });
   }
-  yPosition += 8;
+  yPosition += 6;
 
   return yPosition; // Return next available Y position
 }
@@ -327,7 +327,7 @@ export function savePDF(doc: jsPDF, filename: string): void {
  */
 export function getHTML2PDFOptions() {
   return {
-    margin: [10, 10, 10, 10], // Margins in mm
+    margin: [8, 8, 8, 8], // Margins in mm
     filename: "report.pdf",
     image: {
       type: "jpeg",
@@ -360,7 +360,7 @@ export const PAGE_BREAK_CSS = `
   @media print {
     @page {
       size: A4;
-      margin: 20mm;
+      margin: 15mm;
     }
 
     body {
@@ -447,28 +447,28 @@ export function createHTMLReportTemplate(
           .report-container {
             max-width: 210mm;
             margin: 0 auto;
-            padding: 10mm;
+            padding: 5mm 10mm;
           }
 
           .report-header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 10px;
+            padding-bottom: 6px;
           }
 
           .company-name {
             font-size: 20px;
             font-weight: bold;
             color: #1e3a8a;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
           }
 
           .report-title {
             font-size: 16px;
             font-weight: bold;
             color: #111827;
-            margin: 8px 0 6px 0;
+            margin: 5px 0 4px 0;
           }
 
           .report-meta {
@@ -480,7 +480,7 @@ export function createHTMLReportTemplate(
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 8px;
-            margin: 15px 0;
+            margin: 8px 0;
             page-break-inside: avoid;
           }
 
@@ -509,7 +509,7 @@ export function createHTMLReportTemplate(
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 8px 0 15px 0;
             font-size: 10px;
           }
 
