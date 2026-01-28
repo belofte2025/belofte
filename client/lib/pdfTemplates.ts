@@ -75,27 +75,27 @@ export function addPDFHeader(doc: jsPDF, options: PDFReportOptions): number {
   let yPosition = 15;
 
   // Company Name (Large, Bold)
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.setTextColor(...COLORS.primary);
   doc.setFont("helvetica", "bold");
   doc.text(companyInfo.name, pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 7;
+  yPosition += 6;
 
   // Horizontal line separator
   doc.setDrawColor(...COLORS.primary);
   doc.setLineWidth(0.5);
   doc.line(14, yPosition, pageWidth - 14, yPosition);
-  yPosition += 8;
+  yPosition += 7;
 
   // Report Title
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(...COLORS.text);
   doc.setFont("helvetica", "bold");
   doc.text(options.title, pageWidth / 2, yPosition, { align: "center" });
   yPosition += 5;
 
   // Subtitle and Generation date on same line
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(...COLORS.gray);
   doc.setFont("helvetica", "normal");
 
@@ -107,7 +107,7 @@ export function addPDFHeader(doc: jsPDF, options: PDFReportOptions): number {
   } else {
     doc.text(generatedText, pageWidth / 2, yPosition, { align: "center" });
   }
-  yPosition += 6;
+  yPosition += 5;
 
   return yPosition; // Return next available Y position
 }
@@ -266,13 +266,13 @@ export function addPDFSummarySection(
 
   // Draw summary boxes in a grid (5 per row)
   let xPosition = 14;
-  const rowHeight = 22; // Reduced for more compact display
+  const rowHeight = 20; // Further reduced for more compact display
 
   summaryData.forEach((item, index) => {
     // Start new row every 5 items
     if (index > 0 && index % itemsPerRow === 0) {
       xPosition = 14;
-      yPosition += rowHeight + 5;
+      yPosition += rowHeight + 4;
     }
 
     // Draw box
@@ -286,23 +286,23 @@ export function addPDFSummarySection(
     doc.rect(xPosition, yPosition, boxWidth, rowHeight, "S");
 
     // Add label
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     const labelColor = item.highlight ? COLORS.white : COLORS.gray;
     doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
     doc.setFont("helvetica", "normal");
-    doc.text(item.label, xPosition + 4, yPosition + 8);
+    doc.text(item.label, xPosition + 3, yPosition + 7);
 
     // Add value
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     const valueColor = item.highlight ? COLORS.white : COLORS.text;
     doc.setTextColor(valueColor[0], valueColor[1], valueColor[2]);
     doc.setFont("helvetica", "bold");
-    doc.text(String(item.value), xPosition + 4, yPosition + 17);
+    doc.text(String(item.value), xPosition + 3, yPosition + 15);
 
     xPosition += boxWidth + gapBetweenBoxes;
   });
 
-  return yPosition + rowHeight + 8;
+  return yPosition + rowHeight + 6;
 }
 
 /**
@@ -327,7 +327,7 @@ export function savePDF(doc: jsPDF, filename: string): void {
  */
 export function getHTML2PDFOptions() {
   return {
-    margin: [8, 8, 8, 8], // Margins in mm
+    margin: [6, 8, 6, 8], // Margins in mm [top, right, bottom, left]
     filename: "report.pdf",
     image: {
       type: "jpeg",
@@ -452,23 +452,23 @@ export function createHTMLReportTemplate(
 
           .report-header {
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 6px;
+            padding-bottom: 4px;
           }
 
           .company-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #1e3a8a;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
           }
 
           .report-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #111827;
-            margin: 5px 0 4px 0;
+            margin: 4px 0 3px 0;
           }
 
           .report-meta {
@@ -479,29 +479,29 @@ export function createHTMLReportTemplate(
           .summary-stats {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin: 8px 0;
+            gap: 6px;
+            margin: 6px 0;
             page-break-inside: avoid;
           }
 
           .stat-box {
             background: #f9fafb;
             border: 1px solid #e5e7eb;
-            padding: 8px 10px;
+            padding: 6px 8px;
             border-radius: 3px;
             text-align: center;
           }
 
           .stat-label {
-            font-size: 8px;
+            font-size: 7px;
             color: #6b7280;
             text-transform: uppercase;
             font-weight: 600;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
           }
 
           .stat-value {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             color: #111827;
           }
@@ -509,21 +509,21 @@ export function createHTMLReportTemplate(
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 8px 0 15px 0;
-            font-size: 10px;
+            margin: 5px 0 15px 0;
+            font-size: 9px;
           }
 
           th {
             background-color: #1e3a8a;
             color: white;
-            padding: 8px;
+            padding: 6px;
             text-align: left;
             font-weight: 600;
-            font-size: 10px;
+            font-size: 9px;
           }
 
           td {
-            padding: 6px 8px;
+            padding: 5px 6px;
             border-bottom: 1px solid #e5e7eb;
           }
 
