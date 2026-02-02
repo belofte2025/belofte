@@ -455,12 +455,12 @@ export const listSales = async (req: Request, res: Response) => {
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      customer: {
+      customer: sale.Customer ? {
         customerName: sale.Customer.customerName,
-      },
+      } : null,
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
-      saleItems: sale.SaleItem.map((i) => ({
+      items: sale.SaleItem.map((i) => ({
         itemName: i.itemName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
@@ -561,12 +561,12 @@ export const searchSalesByItem = async (req: Request, res: Response) => {
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      customer: {
+      customer: sale.Customer ? {
         customerName: sale.Customer.customerName,
-      },
+      } : null,
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
-      saleItems: sale.SaleItem.map((i) => ({
+      items: sale.SaleItem.map((i) => ({
         itemName: i.itemName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
