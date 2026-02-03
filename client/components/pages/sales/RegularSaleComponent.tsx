@@ -228,6 +228,7 @@ export default function RegularSaleComponent() {
         discountType: discountType,
         discountValue: discountValue,
         items: cart.map((item) => ({
+          supplierItemId: item.id,
           itemName: item.itemName,
           quantity: item.qty,
           unitPrice: item.unitPrice,
