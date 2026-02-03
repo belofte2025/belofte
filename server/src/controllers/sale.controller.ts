@@ -61,24 +61,31 @@ export const recordSale = async (req: Request, res: Response) => {
     }
 
     // Validate stock availability for regular sales
-    if (sourceType === "regular" && sourceId) {
-      // Get the supplier from the sourceId (which is a SupplierItem id)
-      const supplierItem = await prisma.supplierItem.findUnique({
-        where: { id: sourceId },
-        select: { supplierId: true },
-      });
-
-      if (!supplierItem) {
-        res.status(400).json({ error: "Invalid source item" });
-        return;
-      }
-
-      const supplierId = supplierItem.supplierId;
-
-      // For each item, check if there's enough stock
+    if (sourceType === "regular") {
+      // For each item, check if there's enough stock using its own supplier
       for (const item of items) {
         const itemName = item.itemName;
         const requestedQty = item.quantity;
+
+        // Get the supplier for this specific item
+        let supplierId: string | null = null;
+        if (item.supplierItemId) {
+          const supplierItem = await prisma.supplierItem.findUnique({
+            where: { id: item.supplierItemId },
+            select: { supplierId: true },
+          });
+          if (supplierItem) {
+            supplierId = supplierItem.supplierId;
+          }
+        }
+
+        if (!supplierId) {
+          res.status(400).json({
+            error: "Failed to record sale",
+            detail: `No supplier found for item "${itemName}"`,
+          });
+          return;
+        }
 
         // Get total received from containers
         const containerItems = await prisma.containerItem.findMany({
