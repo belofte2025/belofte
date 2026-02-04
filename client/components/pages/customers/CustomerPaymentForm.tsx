@@ -750,6 +750,7 @@ export default function CustomerPaymentForm({ customerId }: Props) {
                       <option value="">Select description</option>
                       <option value="Returned Damaged Goods">Returned Damaged Goods</option>
                       <option value="Discount on Payment">Discount on Payment</option>
+                      <option value="Credit Adjustment">Credit Adjustment</option>
                     </select>
                   </div>
 
