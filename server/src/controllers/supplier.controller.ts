@@ -1123,7 +1123,7 @@ export const getSupplierStockWithAdjustments = async (req: Request, res: Respons
 
     // Get inventory by supplier (now includes adjustments)
     const { getInventoryBySupplier } = await import("../services/inventory.service");
-    const inventory = await getInventoryBySupplier(supplierId);
+    const inventory = await getInventoryBySupplier(supplierId, companyId);
 
     // Get adjustment totals by item
     const adjustmentTotals = await stockAdjustmentService.getTotalAdjustmentsBySupplierId(
