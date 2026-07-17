@@ -64,12 +64,14 @@ export const createContainer = async (req: Request, res: Response) => {
 
 export const getContainerById = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const companyId = req.user?.companyId;
+
   const container = await prisma.container.findUnique({
     where: { id },
     include: { ContainerItem: true, Supplier: true },
   });
 
-  if (!container) {
+  if (!container || container.companyId !== companyId) {
     res.status(404).json({ error: "Container not found" });
     return;
   }
@@ -77,39 +79,39 @@ export const getContainerById = async (req: Request, res: Response) => {
   res.json(container);
 };
 
+async function verifyContainerOwnership(id: string, companyId: string | undefined): Promise<boolean> {
+  if (!companyId) return false;
+  const container = await prisma.container.findUnique({ where: { id }, select: { companyId: true } });
+  return container?.companyId === companyId;
+}
+
 export const markContainerAsReceived = async (req: Request, res: Response) => {
   const { id } = req.params;
-
-  await prisma.container.update({
-    where: { id },
-    data: { status: "Received" },
-  });
-
+  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+    res.status(404).json({ error: "Container not found" });
+    return;
+  }
+  await prisma.container.update({ where: { id }, data: { status: "Received" } });
   res.json({ message: "Container marked as received" });
 };
 
-export const markContainerAsIncomplete = async (
-  req: Request,
-  res: Response
-) => {
+export const markContainerAsIncomplete = async (req: Request, res: Response) => {
   const { id } = req.params;
-
-  await prisma.container.update({
-    where: { id },
-    data: { status: "Incomplete" },
-  });
-
+  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+    res.status(404).json({ error: "Container not found" });
+    return;
+  }
+  await prisma.container.update({ where: { id }, data: { status: "Incomplete" } });
   res.json({ message: "Container marked as offload Incomplete" });
 };
 
 export const markContainerAsDone = async (req: Request, res: Response) => {
   const { id } = req.params;
-
-  await prisma.container.update({
-    where: { id },
-    data: { status: "Done" },
-  });
-
+  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+    res.status(404).json({ error: "Container not found" });
+    return;
+  }
+  await prisma.container.update({ where: { id }, data: { status: "Done" } });
   res.json({ message: "Container marked as offload done" });
 };
 // DELETE a container
@@ -117,27 +119,32 @@ export const deleteContainer = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    // Delete container items first due to foreign key constraint
-    await prisma.containerItem.deleteMany({ where: { containerId: id } });
+    if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+      res.status(404).json({ error: "Container not found" });
+      return;
+    }
 
-    // Delete the container itself
+    await prisma.containerItem.deleteMany({ where: { containerId: id } });
     await prisma.container.delete({ where: { id } });
 
     res.json({ message: "Container deleted successfully" });
   } catch (error) {
     console.error(error);
-    res
-      .status(400)
-      .json({ error: "Failed to delete container", detail: error });
+    res.status(400).json({ error: "Failed to delete container", detail: error });
   }
 };
 
 // UPDATE received quantities for container items
 export const updateReceivedQuantities = async (req: Request, res: Response) => {
-  const { id } = req.params; // container ID
-  const { items } = req.body; // expected: [{ itemId, receivedQty }, ...]
+  const { id } = req.params;
+  const { items } = req.body;
 
   try {
+    if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+      res.status(404).json({ error: "Container not found" });
+      return;
+    }
+
     const updates = await Promise.all(
       items.map((item: { itemId: string; receivedQty: number }) =>
         prisma.containerItem.update({
@@ -153,46 +160,57 @@ export const updateReceivedQuantities = async (req: Request, res: Response) => {
     res.status(400).json({ error: "Failed to update quantities", detail: err });
   }
 };
+
 export const completeOffload = async (req: Request, res: Response) => {
   const containerId = req.params.id;
   const { items } = req.body;
 
-  const updates = items.map((item: { id: string; receivedQty: number }) =>
-    prisma.containerItem.update({
-      where: { id: item.id },
-      data: {
-        receivedQty: item.receivedQty,
-      },
-    })
-  );
+  try {
+    if (!await verifyContainerOwnership(containerId, req.user?.companyId)) {
+      res.status(404).json({ error: "Container not found" });
+      return;
+    }
 
-  await Promise.all(updates);
+    await Promise.all(
+      items.map((item: { id: string; receivedQty: number }) =>
+        prisma.containerItem.update({
+          where: { id: item.id },
+          data: { receivedQty: item.receivedQty },
+        })
+      )
+    );
 
-  await prisma.container.update({
-    where: { id: containerId },
-    data: { status: "Done" },
-  });
+    await prisma.container.update({
+      where: { id: containerId },
+      data: { status: "Done" },
+    });
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Offload error:", error);
+    res.status(500).json({ error: "Failed to complete offload" });
+  }
 };
+
 export const saveOffloadData = async (req: Request, res: Response) => {
   try {
     const { containerId, items, isComplete } = req.body;
 
+    if (!await verifyContainerOwnership(containerId, req.user?.companyId)) {
+      res.status(404).json({ error: "Container not found" });
+      return;
+    }
+
     for (const item of items) {
       await prisma.containerItem.updateMany({
         where: { containerId, itemName: item.itemName },
-        data: {
-          receivedQty: item.receivedQty,
-        },
+        data: { receivedQty: item.receivedQty },
       });
     }
 
     await prisma.container.update({
       where: { id: containerId },
-      data: {
-        status: isComplete ? "Done" : "Received",
-      },
+      data: { status: isComplete ? "Done" : "Received" },
     });
 
     res.json({ success: true });

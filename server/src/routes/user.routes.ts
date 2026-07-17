@@ -39,12 +39,16 @@ router.put("/:id", requirePermission("users.edit"), updateUser);
 router.delete("/:id", requirePermission("users.delete"), async (req, res) => {
   try {
     const { id } = req.params;
+    const companyId = req.user?.companyId;
     const prisma = (await import("../utils/prisma")).default;
 
-    await prisma.user.delete({
-      where: { id },
-    });
+    const user = await prisma.user.findUnique({ where: { id }, select: { companyId: true } });
+    if (!user || user.companyId !== companyId) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
 
+    await prisma.user.delete({ where: { id } });
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("Delete user error:", error);

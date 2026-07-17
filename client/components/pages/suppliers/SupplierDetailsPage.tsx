@@ -77,86 +77,56 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">Loading supplier details...</span>
-          </div>
-        </div>
+      <div className="flex items-center justify-center py-16">
+        <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+        <span className="ml-3 text-sm text-gray-500">Loading...</span>
       </div>
     );
   }
 
   if (!supplier) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="text-center py-16">
-            <h3 className="text-lg font-medium text-gray-900">Supplier not found</h3>
-            <p className="mt-2 text-gray-500">The supplier you&apos;re looking for doesn&apos;t exist.</p>
-            <Link
-              href="/suppliers"
-              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Back to Suppliers
-            </Link>
-          </div>
-        </div>
+      <div className="text-center py-16">
+        <h3 className="text-sm font-medium text-gray-900">Supplier not found</h3>
+        <Link href="/suppliers" className="mt-4 btn btn-primary inline-flex">
+          Back to Suppliers
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="space-y-4">
         {/* Header */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/suppliers"
-                className="inline-flex items-center p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">{supplier.suppliername}</h1>
-                <p className="mt-1 text-gray-600">Supplier Details & Management</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {editing ? (
-                <>
-                  <button
-                    onClick={handleCancel}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setEditing(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit
+        <div className="page-header">
+          <div className="flex items-center gap-2">
+            <Link href="/suppliers" className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <h1 className="page-title">{supplier.suppliername}</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {editing ? (
+              <>
+                <button onClick={handleCancel} className="btn btn-secondary">
+                  <X className="w-4 h-4" />
+                  Cancel
                 </button>
-              )}
-            </div>
+                <button onClick={handleSave} className="btn btn-primary">
+                  <Save className="w-4 h-4" />
+                  Save
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setEditing(true)} className="btn btn-primary">
+                <Edit className="w-4 h-4" />
+                Edit
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
@@ -175,7 +145,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                         type="text"
                         value={formData.suppliername}
                         onChange={(e) => setFormData(prev => ({ ...prev, suppliername: e.target.value }))}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="input pl-10"
                       />
                     </div>
                   </div>
@@ -190,7 +160,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                         type="text"
                         value={formData.contact}
                         onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="input pl-10"
                       />
                     </div>
                   </div>
@@ -204,7 +174,7 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
                       <select
                         value={formData.country}
                         onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="input pl-10"
                       >
                         {/* North America */}
                         <option value="United States">United States</option>
@@ -423,7 +393,6 @@ export default function SupplierDetailsPage({ supplierId }: SupplierDetailsPageP
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

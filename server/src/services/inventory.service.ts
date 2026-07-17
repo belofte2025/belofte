@@ -1,9 +1,8 @@
 import prisma from "../utils/prisma";
 
-export const getInventoryByContainer = async (containerId: string) => {
-  // Get container items
+export const getInventoryByContainer = async (containerId: string, companyId: string) => {
   const items = await prisma.containerItem.findMany({
-    where: { containerId },
+    where: { containerId, Container: { companyId } },
     include: {
       Container: {
         select: {
@@ -17,8 +16,6 @@ export const getInventoryByContainer = async (containerId: string) => {
   if (items.length === 0) {
     return [];
   }
-
-  const companyId = items[0].Container.companyId;
 
   // Get all sale items for this specific container
   const allSaleItems = await prisma.saleItem.findMany({
@@ -54,10 +51,9 @@ export const getInventoryByContainer = async (containerId: string) => {
   });
 };
 
-export const getInventoryBySupplier = async (supplierId: string) => {
-  // Get all containers for this supplier
+export const getInventoryBySupplier = async (supplierId: string, companyId: string) => {
   const containers = await prisma.container.findMany({
-    where: { supplierId },
+    where: { supplierId, companyId },
     include: {
       ContainerItem: true,
       Supplier: {
@@ -70,18 +66,11 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     return [];
   }
 
-  // Get all company IDs from these containers
-  const companyIds: string[] = [...new Set(containers.map((c) => c.companyId))];
-
-  // Get all container IDs for this supplier
   const containerIds: string[] = containers.map((c) => c.id);
 
-  // Get all container items for this supplier
   const allContainerItems = await prisma.containerItem.findMany({
     where: {
-      Container: {
-        supplierId: supplierId,
-      },
+      Container: { supplierId, companyId },
     },
     include: {
       Container: {
@@ -92,26 +81,17 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     },
   });
 
-  // Get all stock adjustments for this supplier
   const stockAdjustments = await prisma.stockAdjustment.findMany({
-    where: {
-      supplierId: supplierId,
-      companyId: { in: companyIds },
-    },
+    where: { supplierId, companyId },
     select: {
       itemName: true,
       adjustmentQty: true,
     },
   });
 
-  // Get all sale items for these companies WHERE sourceId is one of this supplier's containers
   const containerSaleItems = await prisma.saleItem.findMany({
     where: {
-      Sale: {
-        companyId: { in: companyIds },
-        sourceType: "container",
-        sourceId: { in: containerIds },
-      },
+      Sale: { companyId, sourceType: "container", sourceId: { in: containerIds } },
     },
     select: {
       itemName: true,
@@ -133,14 +113,9 @@ export const getInventoryBySupplier = async (supplierId: string) => {
 
   const supplierItemIdList: string[] = supplierItemIds.map((si) => si.id);
 
-  // Get all regular sale items where sourceId points to this supplier's supplierItems
   const regularSaleItems = await prisma.saleItem.findMany({
     where: {
-      Sale: {
-        companyId: { in: companyIds },
-        sourceType: "regular",
-        sourceId: { in: supplierItemIdList },
-      },
+      Sale: { companyId, sourceType: "regular", sourceId: { in: supplierItemIdList } },
     },
     select: {
       itemName: true,
@@ -168,7 +143,6 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     }
   > = {};
 
-  // Aggregate received quantities
   allContainerItems.forEach((item) => {
     if (!summaryMap[item.itemName]) {
       summaryMap[item.itemName] = {
@@ -179,11 +153,6 @@ export const getInventoryBySupplier = async (supplierId: string) => {
       };
     }
     summaryMap[item.itemName].received += item.quantity;
-    if (
-      !summaryMap[item.itemName].companyIds.includes(item.Container.companyId)
-    ) {
-      summaryMap[item.itemName].companyIds.push(item.Container.companyId);
-    }
   });
 
   // Aggregate stock adjustments
@@ -199,22 +168,13 @@ export const getInventoryBySupplier = async (supplierId: string) => {
     summaryMap[adj.itemName].adjustments += adj.adjustmentQty;
   });
 
-  // Calculate sold quantities - separate handling for container and regular sales
   Object.keys(summaryMap).forEach((itemName) => {
-    // Filter container sales (sourceId must be in containerIds)
     const relatedContainerSales = containerSaleItems.filter(
-      (s) =>
-        s.itemName === itemName &&
-        summaryMap[itemName].companyIds.includes(s.Sale.companyId) &&
-        containerIds.includes(s.Sale.sourceId)
+      (s) => s.itemName === itemName && containerIds.includes(s.Sale.sourceId)
     );
 
-    // Filter regular sales (sourceId must be in supplierItemIdList)
     const relatedRegularSales = regularSaleItems.filter(
-      (s) =>
-        s.itemName === itemName &&
-        summaryMap[itemName].companyIds.includes(s.Sale.companyId) &&
-        supplierItemIdList.includes(s.Sale.sourceId)
+      (s) => s.itemName === itemName && supplierItemIdList.includes(s.Sale.sourceId)
     );
 
     const containerSoldQty = relatedContainerSales.reduce(

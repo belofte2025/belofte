@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { getSuppliers, deleteSupplier } from "@/services/supplierService";
-import { PlusCircle, Eye, Trash2, Building, Package } from "lucide-react";
+import { PlusCircle, Eye, Trash2, Building, Package, Factory } from "lucide-react";
 import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
 import { toast } from "react-hot-toast";
+import clsx from "clsx";
 
 type Supplier = {
   id: string;
@@ -27,18 +28,10 @@ export default function SupplierListPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const fetchSuppliers = async () => {
-      try {
-        const data = await getSuppliers();
-        setSuppliers(data);
-      } catch (err) {
-        console.error("Failed to load suppliers", err);
-        toast.error("Failed to load suppliers");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSuppliers();
+    getSuppliers()
+      .then(setSuppliers)
+      .catch(() => toast.error("Failed to load suppliers"))
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = suppliers.filter(
@@ -50,246 +43,206 @@ export default function SupplierListPage() {
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedSuppliers = filtered.slice(
-    startIdx,
-    startIdx + ITEMS_PER_PAGE
-  );
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+  const paginated = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
   const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete supplier "${name}"?`)) {
-      try {
-        await deleteSupplier(id);
-        setSuppliers(prev => prev.filter(s => s.id !== id));
-        toast.success("Supplier deleted successfully");
-      } catch {
-        toast.error("Failed to delete supplier");
-      }
+    if (!window.confirm(`Delete supplier "${name}"?`)) return;
+    try {
+      await deleteSupplier(id);
+      setSuppliers((prev) => prev.filter((s) => s.id !== id));
+      toast.success("Supplier deleted");
+    } catch {
+      toast.error("Failed to delete supplier");
     }
   };
 
-  const totalSuppliers = suppliers.length;
   const totalContainers = suppliers.reduce((sum, s) => sum + (s.containers?.length || 0), 0);
   const totalItems = suppliers.reduce((sum, s) => sum + (s.items?.length || 0), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Header */}
-        <div className="mb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Suppliers</h1>
-              <p className="mt-1 text-gray-600">Manage your supplier network and relationships</p>
-            </div>
-            <Link
-              href="/suppliers/new"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium shadow-sm hover:bg-blue-700 transition-colors"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Add Supplier
-            </Link>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="page-header">
+        <h1 className="page-title">Suppliers</h1>
+        <Link href="/suppliers/new" className="btn btn-primary">
+          <PlusCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Add Supplier</span>
+          <span className="sm:hidden">Add</span>
+        </Link>
+      </div>
+
+      {/* Stats */}
+      <div className="stats-grid">
+        <div className="stat-card flex items-center gap-3">
+          <div className="bg-green-50 rounded-xl p-2.5 flex-shrink-0">
+            <Factory className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <p className="stat-label">Suppliers</p>
+            <p className="stat-value">{suppliers.length}</p>
           </div>
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Suppliers</p>
-              <p className="text-3xl font-bold text-gray-900">{totalSuppliers}</p>
-            </div>
+        <div className="stat-card flex items-center gap-3">
+          <div className="bg-blue-50 rounded-xl p-2.5 flex-shrink-0">
+            <Building className="w-5 h-5 text-blue-600" />
           </div>
-
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Containers</p>
-              <p className="text-3xl font-bold text-blue-600">{totalContainers}</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Items</p>
-              <p className="text-3xl font-bold text-green-600">{totalItems}</p>
-            </div>
+          <div>
+            <p className="stat-label">Containers</p>
+            <p className="stat-value text-blue-600">{totalContainers}</p>
           </div>
         </div>
-
-        {/* Search and Filter */}
-        <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search suppliers by name, country, or contact..."
-            className="max-w-md"
-          />
+        <div className="stat-card flex items-center gap-3 col-span-2 lg:col-span-1">
+          <div className="bg-purple-50 rounded-xl p-2.5 flex-shrink-0">
+            <Package className="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <p className="stat-label">Items</p>
+            <p className="stat-value text-purple-600">{totalItems}</p>
+          </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">Loading suppliers...</span>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Supplier
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                        Contact
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                        Country
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Stats
-                      </th>
-                      <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {paginatedSuppliers.map((supplier) => (
-                      <tr
-                        key={supplier.id}
-                        className="hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center text-white font-semibold text-sm">
-                                {supplier.suppliername.charAt(0).toUpperCase()}
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {supplier.suppliername}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Added {new Date(supplier.createdAt).toLocaleDateString()}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                          <div className="text-sm text-gray-900">{supplier.contact}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                          <Badge variant="default">{supplier.country}</Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            <div className="flex items-center">
-                              <Building className="w-3 h-3 mr-1" />
-                              {supplier.containers?.length || 0} containers
-                            </div>
-                            <div className="flex items-center">
-                              <Package className="w-3 h-3 mr-1" />
-                              {supplier.items?.length || 0} items
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Link
-                              href={`/suppliers/${supplier.id}`}
-                              className="inline-flex items-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
-                              title="View Details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Link>
-                            <Link
-                              href={`/suppliers/${supplier.id}/items`}
-                              className="inline-flex items-center p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-full transition-all duration-200"
-                              title="Manage Items"
-                            >
-                              <Package className="w-4 h-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleDelete(supplier.id, supplier.suppliername)}
-                              className="inline-flex items-center p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-                              title="Delete Supplier"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+      {/* Search */}
+      <div className="bg-white rounded-xl border border-gray-200 p-3">
+        <SearchInput
+          value={search}
+          onChange={(v) => { setSearch(v); setCurrentPage(1); }}
+          placeholder="Search by name, country, or contact..."
+        />
+      </div>
 
-              {/* Enhanced Pagination */}
-              {totalPages > 1 && (
-                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-700">
-                      Showing <span className="font-medium">{startIdx + 1}</span> to{" "}
-                      <span className="font-medium">
-                        {Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)}
-                      </span>{" "}
-                      of <span className="font-medium">{filtered.length}</span> suppliers
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+          <span className="ml-3 text-sm text-gray-500">Loading...</span>
+        </div>
+      ) : (
+        <>
+          {/* Mobile cards */}
+          <div className="mobile-list lg:hidden">
+            {paginated.length === 0 ? (
+              <p className="text-center text-sm text-gray-500 py-10">No suppliers found</p>
+            ) : (
+              paginated.map((s) => (
+                <div key={s.id} className="mobile-list-item">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                      {s.suppliername.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                      >
-                        Previous
-                      </button>
-                      
-                      <div className="flex space-x-1">
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                          const page = i + 1;
-                          return (
-                            <button
-                              key={page}
-                              onClick={() => handlePageChange(page)}
-                              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                                currentPage === page
-                                  ? "bg-blue-600 text-white"
-                                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                      >
-                        Next
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{s.suppliername}</p>
+                      <p className="text-xs text-gray-500">{s.contact} · {s.country}</p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Link href={`/suppliers/${s.id}`} className="icon-btn text-gray-400 hover:text-blue-600 hover:bg-blue-50">
+                        <Eye className="w-4 h-4" />
+                      </Link>
+                      <Link href={`/suppliers/${s.id}/items`} className="icon-btn text-gray-400 hover:text-green-600 hover:bg-green-50">
+                        <Package className="w-4 h-4" />
+                      </Link>
+                      <button onClick={() => handleDelete(s.id, s.suppliername)} className="icon-btn text-gray-400 hover:text-red-600 hover:bg-red-50">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 mt-2 pl-13 text-xs text-gray-500">
+                    <span className="flex items-center gap-1"><Building className="w-3 h-3" />{s.containers?.length || 0} containers</span>
+                    <span className="flex items-center gap-1"><Package className="w-3 h-3" />{s.items?.length || 0} items</span>
+                  </div>
                 </div>
-              )}
-            </>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="table-wrapper hidden lg:block">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Contact</th>
+                  <th>Country</th>
+                  <th>Stats</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginated.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                          {s.suppliername.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{s.suppliername}</p>
+                          <p className="text-xs text-gray-500">Added {new Date(s.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="text-gray-600">{s.contact}</td>
+                    <td><Badge variant="default">{s.country}</Badge></td>
+                    <td>
+                      <div className="flex gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1"><Building className="w-3 h-3" />{s.containers?.length || 0}</span>
+                        <span className="flex items-center gap-1"><Package className="w-3 h-3" />{s.items?.length || 0}</span>
+                      </div>
+                    </td>
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/suppliers/${s.id}`} className="icon-btn text-gray-400 hover:text-blue-600 hover:bg-blue-50">
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link href={`/suppliers/${s.id}/items`} className="icon-btn text-gray-400 hover:text-green-600 hover:bg-green-50">
+                          <Package className="w-4 h-4" />
+                        </Link>
+                        <button onClick={() => handleDelete(s.id, s.suppliername)} className="icon-btn text-gray-400 hover:text-red-600 hover:bg-red-50">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3">
+              <span className="text-xs text-gray-500">
+                {startIdx + 1}–{Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors", currentPage === 1 ? "opacity-40 cursor-not-allowed border-gray-200 text-gray-400" : "border-gray-300 text-gray-700 hover:bg-gray-50")}
+                >
+                  Prev
+                </button>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg transition-colors", currentPage === p ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50")}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors", currentPage === totalPages ? "opacity-40 cursor-not-allowed border-gray-200 text-gray-400" : "border-gray-300 text-gray-700 hover:bg-gray-50")}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

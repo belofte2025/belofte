@@ -135,6 +135,7 @@ export const getDetailedSalesReport = async (
 startDate: string, endDate: string, companyId: string) => {
   const sales = await prisma.sale.findMany({
     where: {
+      companyId,
       createdAt: {
         gte: new Date(startDate),
         lte: new Date(endDate),

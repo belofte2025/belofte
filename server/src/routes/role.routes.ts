@@ -200,6 +200,6 @@ router.delete('/:id', requirePermission('roles.manage'), deleteRole);
  *       404:
  *         description: User or role not found
  */
-router.post('/assign', requirePermission('users.edit'), assignRoleToUser);
+router.post('/assign', requirePermission('roles.manage'), assignRoleToUser);
 
 export default router;

@@ -138,188 +138,116 @@ export default function SalesReportPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Sales Report</h1>
-                <p className="mt-1 text-gray-600">Comprehensive sales analytics and insights</p>
-              </div>
-            </div>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="page-header">
+          <div className="flex items-center gap-2">
+            <button onClick={() => router.back()} className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <h1 className="page-title">Sales Report</h1>
+          </div>
+          <button
+            onClick={exportToPDF}
+            disabled={loading || !Array.isArray(sales) || sales.length === 0}
+            className="btn btn-success"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Export PDF</span>
+          </button>
+        </div>
 
-            {/* Date Range Filters */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Start Date
-                    </div>
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      End Date
-                    </div>
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={fetchSalesReport}
-                    disabled={loading}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    Generate Report
-                  </button>
-                  <button
-                    onClick={exportToPDF}
-                    disabled={loading || !Array.isArray(sales) || sales.length === 0}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-lg hover:bg-green-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  >
-                    <Download className="w-4 h-4" />
-                    Export PDF
-                  </button>
-                </div>
-              </div>
+        {/* Date filters */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <div className="form-group">
+              <label className="form-label flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />Start Date</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input" />
+            </div>
+            <div className="form-group">
+              <label className="form-label flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />End Date</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input" />
+            </div>
+            <button onClick={fetchSalesReport} disabled={loading} className="btn btn-primary">
+              <BarChart3 className="w-4 h-4" />
+              Generate
+            </button>
+          </div>
+        </div>
+
+        {/* Summary stats */}
+        {!loading && Array.isArray(sales) && sales.length > 0 && (
+          <div className="stats-grid">
+            <div className="stat-card">
+              <p className="stat-label">Revenue</p>
+              <p className="stat-value text-blue-600">{formatCurrency(totalRevenue)}</p>
+            </div>
+            <div className="stat-card">
+              <p className="stat-label">Transactions</p>
+              <p className="stat-value">{totalTransactions}</p>
+            </div>
+            <div className="stat-card">
+              <p className="stat-label">Avg. Transaction</p>
+              <p className="stat-value">{formatCurrency(avgTransaction)}</p>
+            </div>
+            <div className="stat-card">
+              <p className="stat-label">Cash / Credit</p>
+              <p className="text-base font-bold mt-1">
+                <span className="text-green-600">{cashSales}</span>
+                <span className="text-gray-300 mx-1">/</span>
+                <span className="text-red-600">{creditSales}</span>
+              </p>
             </div>
           </div>
+        )}
 
-          {/* Summary Stats */}
-          {!loading && Array.isArray(sales) && sales.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-2">{formatCurrency(totalRevenue)}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Transactions</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-2">{totalTransactions}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Average Transaction</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-2">{formatCurrency(avgTransaction)}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Sales Type</p>
-                    <p className="text-lg font-bold text-gray-900 mt-2">
-                      <span className="text-green-600">{cashSales} Cash</span>
-                      <span className="text-gray-400 mx-2">|</span>
-                      <span className="text-red-600">{creditSales} Credit</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
+        {/* Sales table */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-900">Sales Transactions</h2>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+              <span className="ml-3 text-sm text-gray-500">Loading...</span>
+            </div>
+          ) : !Array.isArray(sales) || sales.length === 0 ? (
+            <div className="text-center py-12">
+              <BarChart3 className="mx-auto h-10 w-10 text-gray-300 mb-3" />
+              <p className="text-sm font-medium text-gray-900">No Sales Found</p>
+              <p className="text-xs text-gray-500 mt-1">No sales found for the selected date range</p>
+            </div>
+          ) : (
+            <div className="table-wrapper border-0">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Items</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sales.map((sale) => (
+                    <tr key={sale.id}>
+                      <td className="text-gray-500">{new Date(sale.createdAt).toLocaleDateString()}</td>
+                      <td className="font-medium">{sale.customerName}</td>
+                      <td>
+                        <span className={`badge ${sale.saleType.toLowerCase() === "cash" ? "badge-green" : "badge-red"}`}>
+                          {sale.saleType}
+                        </span>
+                      </td>
+                      <td className="font-semibold">{formatCurrency(sale.totalAmount)}</td>
+                      <td className="text-gray-500">{Array.isArray(sale.items) ? sale.items.length : 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
-
-          {/* Sales Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Sales Transactions</h2>
-            </div>
-            
-            {loading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-gray-600">Loading sales data...</span>
-              </div>
-            ) : !Array.isArray(sales) || sales.length === 0 ? (
-              <div className="text-center py-16">
-                <BarChart3 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Sales Found</h3>
-                <p className="text-gray-600">No sales transactions were found for the selected date range.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Items
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {Array.isArray(sales) && sales.map((sale) => (
-                      <tr key={sale.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(sale.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {sale.customerName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            sale.saleType.toLowerCase() === 'cash' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {sale.saleType}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {formatCurrency(sale.totalAmount)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {Array.isArray(sale.items) ? sale.items.length : 0} items
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </DashboardLayout>

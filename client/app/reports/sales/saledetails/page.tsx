@@ -186,26 +186,17 @@ export default function SupplierSummaryPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="space-y-4">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Sales Details
-                </h1>
-                <p className="mt-1 text-gray-600">
-                  Detailed item supplier-wise sales breakdown
-                </p>
-              </div>
-            </div>
+          <div className="page-header">
+            <button
+              onClick={() => router.back()}
+              className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <h1 className="page-title">Sales Details</h1>
+          </div>
 
             {/* Filters */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -270,12 +261,11 @@ export default function SupplierSummaryPage() {
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Content */}
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
               <span className="ml-3 text-gray-600">Loading sales data...</span>
             </div>
           ) : !filtered.length ? (
@@ -398,7 +388,6 @@ export default function SupplierSummaryPage() {
               </div>
             </>
           )}
-        </div>
       </div>
     </DashboardLayout>
   );

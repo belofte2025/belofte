@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { getCustomers } from "@/services/customerService";
 import { formatCurrency } from "@/utils/format";
 import ActionModal from "@/components/shared/ActionModal";
-import { PlusCircle, Eye } from "lucide-react";
+import { PlusCircle, Eye, Users, TrendingDown, Wallet } from "lucide-react";
 import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
+import clsx from "clsx";
 
 type Customer = {
   id: string;
@@ -22,23 +23,14 @@ export default function CustomerList() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const data = await getCustomers();
-        setCustomers(data);
-      } catch (err) {
-        console.error("Failed to load customers", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCustomers();
+    getCustomers()
+      .then(setCustomers)
+      .catch((err) => console.error("Failed to load customers", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = customers.filter(
@@ -49,223 +41,191 @@ export default function CustomerList() {
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedCustomers = filtered.slice(
-    startIdx,
-    startIdx + ITEMS_PER_PAGE
-  );
+  const paginatedCustomers = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
-  const totalCustomers = customers.length;
   const totalBalance = customers.reduce((sum, c) => sum + c.balance, 0);
-  const positiveBalance = customers.filter(c => c.balance > 0).length;
+  const positiveBalance = customers.filter((c) => c.balance > 0).length;
+
+  const balanceColor = (b: number) =>
+    b > 0 ? "text-red-600" : b < 0 ? "text-green-600" : "text-gray-900";
+
+  const balanceVariant = (b: number): "danger" | "success" | "default" =>
+    b > 0 ? "danger" : b < 0 ? "success" : "default";
+
+  const balanceLabel = (b: number) =>
+    b > 0 ? "Owes Money" : b < 0 ? "Credit" : "Clear";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Header */}
-        <div className="mb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
-              <p className="mt-1 text-gray-600">Manage your customer database and relationships</p>
-            </div>
-            <Link
-              href="/customers/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded hover:from-blue-700 hover:to-blue-800 transition-colors duration-200"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Add Customer
-            </Link>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="page-header">
+        <h1 className="page-title">Customers</h1>
+        <Link href="/customers/new" className="btn btn-primary">
+          <PlusCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Add Customer</span>
+          <span className="sm:hidden">Add</span>
+        </Link>
+      </div>
+
+      {/* Stats */}
+      <div className="stats-grid">
+        <div className="stat-card flex items-center gap-3">
+          <div className="bg-blue-50 rounded-xl p-2.5 flex-shrink-0">
+            <Users className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="stat-label">Customers</p>
+            <p className="stat-value">{customers.length}</p>
           </div>
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Customers</p>
-              <p className="text-3xl font-bold text-gray-900">{totalCustomers}</p>
-            </div>
+        <div className="stat-card flex items-center gap-3">
+          <div className="bg-red-50 rounded-xl p-2.5 flex-shrink-0">
+            <TrendingDown className="w-5 h-5 text-red-600" />
           </div>
-
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Outstanding Debts</p>
-              <p className="text-3xl font-bold text-red-600">{positiveBalance}</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Balance</p>
-              <p className={`text-3xl font-bold ${
-                totalBalance > 0 ? 'text-red-600' : totalBalance < 0 ? 'text-green-600' : 'text-gray-900'
-              }`}>
-                {formatCurrency(totalBalance)}
-              </p>
-            </div>
+          <div>
+            <p className="stat-label">With Debt</p>
+            <p className="stat-value text-red-600">{positiveBalance}</p>
           </div>
         </div>
-
-        {/* Search and Filter */}
-        <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search customers by name or phone number..."
-            className="max-w-md"
-          />
-        </div>
-
-        {/* Main Content */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">Loading customers...</span>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                        Contact
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Balance
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {paginatedCustomers.map((customer) => (
-                      <tr
-                        key={customer.id}
-                        className="hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                                {customer.name.charAt(0).toUpperCase()}
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {customer.name}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                          <div className="text-sm text-gray-900">{customer.phone}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm font-semibold ${
-                            customer.balance > 0
-                              ? "text-red-600"
-                              : customer.balance < 0
-                              ? "text-green-600"
-                              : "text-gray-900"
-                          }`}>
-                            {formatCurrency(customer.balance)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge 
-                            variant={customer.balance > 0 ? "danger" : customer.balance < 0 ? "success" : "default"}
-                          >
-                            {customer.balance > 0 ? "Owes Money" : customer.balance < 0 ? "Credit" : "Clear"}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => setSelectedCustomer(customer)}
-                            className="inline-flex items-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Enhanced Pagination */}
-              {totalPages > 1 && (
-                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-700">
-                      Showing <span className="font-medium">{startIdx + 1}</span> to{" "}
-                      <span className="font-medium">
-                        {Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)}
-                      </span>{" "}
-                      of <span className="font-medium">{filtered.length}</span> customers
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                      >
-                        Previous
-                      </button>
-                      
-                      <div className="flex space-x-1">
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                          const page = i + 1;
-                          return (
-                            <button
-                              key={page}
-                              onClick={() => handlePageChange(page)}
-                              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                                currentPage === page
-                                  ? "bg-blue-600 text-white"
-                                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+        <div className="stat-card flex items-center gap-3 col-span-2 lg:col-span-1">
+          <div className="bg-orange-50 rounded-xl p-2.5 flex-shrink-0">
+            <Wallet className="w-5 h-5 text-orange-600" />
+          </div>
+          <div>
+            <p className="stat-label">Total Balance</p>
+            <p className={`stat-value ${balanceColor(totalBalance)}`}>{formatCurrency(totalBalance)}</p>
+          </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Search */}
+      <div className="bg-white rounded-xl border border-gray-200 p-3">
+        <SearchInput
+          value={search}
+          onChange={(v) => { setSearch(v); setCurrentPage(1); }}
+          placeholder="Search by name or phone..."
+        />
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+          <span className="ml-3 text-sm text-gray-500">Loading...</span>
+        </div>
+      ) : (
+        <>
+          {/* Mobile cards */}
+          <div className="mobile-list lg:hidden">
+            {paginatedCustomers.length === 0 ? (
+              <p className="text-center text-sm text-gray-500 py-10">No customers found</p>
+            ) : (
+              paginatedCustomers.map((c) => (
+                <div key={c.id} className="mobile-list-item flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                    {c.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{c.name}</p>
+                    <p className="text-xs text-gray-500">{c.phone}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className={`text-sm font-semibold ${balanceColor(c.balance)}`}>
+                      {formatCurrency(c.balance)}
+                    </p>
+                    <Badge variant={balanceVariant(c.balance)} className="text-[10px] mt-0.5">
+                      {balanceLabel(c.balance)}
+                    </Badge>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCustomer(c)}
+                    className="icon-btn text-gray-400 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="table-wrapper hidden lg:block">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Contact</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedCustomers.map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium">{c.name}</span>
+                      </div>
+                    </td>
+                    <td className="text-gray-600">{c.phone}</td>
+                    <td className={`font-semibold ${balanceColor(c.balance)}`}>{formatCurrency(c.balance)}</td>
+                    <td>
+                      <Badge variant={balanceVariant(c.balance)}>{balanceLabel(c.balance)}</Badge>
+                    </td>
+                    <td className="text-right">
+                      <button
+                        onClick={() => setSelectedCustomer(c)}
+                        className="icon-btn text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3">
+              <span className="text-xs text-gray-500">
+                {startIdx + 1}–{Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors", currentPage === 1 ? "opacity-40 cursor-not-allowed border-gray-200 text-gray-400" : "border-gray-300 text-gray-700 hover:bg-gray-50")}
+                >
+                  Prev
+                </button>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg transition-colors", currentPage === p ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50")}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors", currentPage === totalPages ? "opacity-40 cursor-not-allowed border-gray-200 text-gray-400" : "border-gray-300 text-gray-700 hover:bg-gray-50")}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
       <ActionModal
         open={!!selectedCustomer}
         onClose={() => setSelectedCustomer(null)}

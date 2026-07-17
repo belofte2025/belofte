@@ -2,26 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  getContainers,
-  markAsReceived,
-  deleteContainer,
-} from "@/services/containerService";
+import { getContainers, markAsReceived, deleteContainer } from "@/services/containerService";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
 import { Dialog } from "@headlessui/react";
 import {
-  Container,
-  Plus,
-  MoreVertical,
-  Truck,
-  CheckCircle,
-  Clock,
-  Building,
-  Calendar,
+  Container, Plus, MoreVertical, Truck, CheckCircle, Clock,
+  Building, Calendar, X, FileText, List,
 } from "lucide-react";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
+import clsx from "clsx";
 
 type ContainerData = {
   id: string;
@@ -31,13 +22,14 @@ type ContainerData = {
   status: "Pending" | "Received" | "Done";
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function ContainerListPage() {
   const [containers, setContainers] = useState<ContainerData[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
 
   const loadData = async () => {
     setLoading(true);
@@ -51,25 +43,20 @@ export default function ContainerListPage() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const filtered = containers.filter((c) =>
     c.number.toLowerCase().includes(search.toLowerCase())
   );
 
-  const paginated = filtered.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const startIdx = (page - 1) * ITEMS_PER_PAGE;
+  const paginated = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
   const handleMarkReceived = async (id: string) => {
     try {
       await markAsReceived(id);
-      setContainers((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, status: "Received" } : c))
-      );
+      setContainers((prev) => prev.map((c) => (c.id === id ? { ...c, status: "Received" } : c)));
       toast.success("Marked as received");
       window.location.href = `/offload/container/${id}`;
     } catch {
@@ -89,379 +76,234 @@ export default function ContainerListPage() {
     }
   };
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "Pending":
-        return "warning";
-      case "Received":
-        return "success";
-      case "Done":
-        return "info";
-      default:
-        return "default";
-    }
-  };
+  const statusVariant = (s: string) =>
+    s === "Pending" ? "warning" : s === "Received" ? "success" : "info";
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Pending":
-        return <Clock className="w-4 h-4" />;
-      case "Received":
-        return <CheckCircle className="w-4 h-4" />;
-      case "Done":
-        return <Truck className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
-    }
-  };
+  const statusIcon = (s: string) =>
+    s === "Pending" ? <Clock className="w-3.5 h-3.5" /> :
+    s === "Received" ? <CheckCircle className="w-3.5 h-3.5" /> :
+    <Truck className="w-3.5 h-3.5" />;
 
-  const totalContainers = containers.length;
-  const pendingContainers = containers.filter(
-    (c) => c.status === "Pending"
-  ).length;
-  const receivedContainers = containers.filter(
-    (c) => c.status === "Received"
-  ).length;
-  const doneContainers = containers.filter((c) => c.status === "Done").length;
+  const pending   = containers.filter((c) => c.status === "Pending").length;
+  const received  = containers.filter((c) => c.status === "Received").length;
+  const done      = containers.filter((c) => c.status === "Done").length;
+
+  const selectedContainer = containers.find((c) => c.id === selectedId);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Header */}
-        <div className="mb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Containers</h1>
-              <p className="mt-1 text-gray-600">
-                Track and manage your container shipments
-              </p>
-            </div>
-            <Link
-              href="/containers/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded shadow-sm hover:bg-blue-700 transition-colors duration-200"
-            >
-              <Plus className="w-5 h-5" />
-              Add Container
-            </Link>
-          </div>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="page-header">
+        <h1 className="page-title">Containers</h1>
+        <Link href="/containers/new" className="btn btn-primary">
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Add Container</span>
+          <span className="sm:hidden">Add</span>
+        </Link>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        <div className="stat-card">
+          <p className="stat-label">Total</p>
+          <p className="stat-value">{containers.length}</p>
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Total Containers
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {totalContainers}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-3xl font-bold text-yellow-600">
-                {pendingContainers}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Received</p>
-              <p className="text-3xl font-bold text-green-600">
-                {receivedContainers}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 shadow-sm border border-gray-200">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-3xl font-bold text-blue-600">
-                {doneContainers}
-              </p>
-            </div>
-          </div>
+        <div className="stat-card">
+          <p className="stat-label">Pending</p>
+          <p className="stat-value text-yellow-600">{pending}</p>
         </div>
-
-        {/* Search and Filter */}
-        <div className="bg-white p-6 shadow-sm border border-gray-200 mb-6">
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search containers by number..."
-            className="max-w-md"
-          />
+        <div className="stat-card">
+          <p className="stat-label">Received</p>
+          <p className="stat-value text-green-600">{received}</p>
         </div>
-
-        {/* Main Content */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">Loading containers...</span>
-            </div>
-          ) : (
-            <>
-              {paginated.length === 0 ? (
-                <div className="text-center py-16">
-                  <Container className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">
-                    No containers found
-                  </h3>
-                  <p className="mt-2 text-gray-500">
-                    Get started by adding your first container.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Container
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Company
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                          Delivery Date
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {paginated.map((item, i) => (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-gray-50 transition-colors duration-200"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10">
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                                  {item.number.charAt(0).toUpperCase()}
-                                </div>
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  #{item.number}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  Container{" "}
-                                  {(page - 1) * ITEMS_PER_PAGE + i + 1}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <Building className="w-4 h-4 text-gray-400 mr-2" />
-                              <div className="text-sm text-gray-900">
-                                {item.company}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                            <div className="flex items-center text-sm text-gray-900">
-                              <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                              {format(
-                                new Date(item.deliveryDate),
-                                "MMM dd, yyyy"
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge
-                              variant={
-                                getStatusVariant(item.status) as
-                                  | "default"
-                                  | "success"
-                                  | "warning"
-                                  | "danger"
-                                  | "info"
-                              }
-                            >
-                              <div className="flex items-center gap-1">
-                                {getStatusIcon(item.status)}
-                                {item.status}
-                              </div>
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                              onClick={() => setSelectedId(item.id)}
-                              className="inline-flex items-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Enhanced Pagination */}
-              {filtered.length > ITEMS_PER_PAGE && (
-                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-700">
-                      Showing{" "}
-                      <span className="font-medium">
-                        {(page - 1) * ITEMS_PER_PAGE + 1}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-medium">
-                        {Math.min(page * ITEMS_PER_PAGE, filtered.length)}
-                      </span>{" "}
-                      of <span className="font-medium">{filtered.length}</span>{" "}
-                      containers
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                        disabled={page === 1}
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                      >
-                        Previous
-                      </button>
-
-                      <div className="flex space-x-1">
-                        {Array.from(
-                          {
-                            length: Math.min(
-                              Math.ceil(filtered.length / ITEMS_PER_PAGE),
-                              5
-                            ),
-                          },
-                          (_, i) => {
-                            const pageNum = i + 1;
-                            return (
-                              <button
-                                key={pageNum}
-                                onClick={() => setPage(pageNum)}
-                                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                                  page === pageNum
-                                    ? "bg-blue-600 text-white"
-                                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
-                                }`}
-                              >
-                                {pageNum}
-                              </button>
-                            );
-                          }
-                        )}
-                      </div>
-
-                      <button
-                        onClick={() =>
-                          setPage((p) =>
-                            Math.min(
-                              p + 1,
-                              Math.ceil(filtered.length / ITEMS_PER_PAGE)
-                            )
-                          )
-                        }
-                        disabled={
-                          page === Math.ceil(filtered.length / ITEMS_PER_PAGE)
-                        }
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+        <div className="stat-card">
+          <p className="stat-label">Completed</p>
+          <p className="stat-value text-blue-600">{done}</p>
         </div>
       </div>
 
-      <Dialog
-        open={!!selectedId}
-        onClose={() => setSelectedId(null)}
-        className="relative z-50"
-      >
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-          aria-hidden="true"
+      {/* Search */}
+      <div className="bg-white rounded-xl border border-gray-200 p-3">
+        <SearchInput
+          value={search}
+          onChange={(v) => { setSearch(v); setPage(1); }}
+          placeholder="Search by container number..."
         />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md bg-white p-8 shadow-2xl border border-gray-200">
-            <Dialog.Title className="text-xl font-bold text-gray-900 mb-6 text-center">
-              Container Actions
-            </Dialog.Title>
-            <div className="space-y-3">
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+          <span className="ml-3 text-sm text-gray-500">Loading...</span>
+        </div>
+      ) : paginated.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+          <Container className="mx-auto h-10 w-10 text-gray-300" />
+          <p className="mt-3 text-sm font-medium text-gray-900">No containers found</p>
+          <p className="text-xs text-gray-500 mt-1">Add your first container to get started</p>
+        </div>
+      ) : (
+        <>
+          {/* Mobile cards */}
+          <div className="mobile-list lg:hidden">
+            {paginated.map((item) => (
+              <div key={item.id} className="mobile-list-item flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                  {item.number.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">#{item.number}</p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                    <Building className="w-3 h-3" />{item.company}
+                  </p>
+                  <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                    <Calendar className="w-3 h-3" />{format(new Date(item.deliveryDate), "MMM dd, yyyy")}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <Badge variant={statusVariant(item.status) as "default" | "success" | "warning" | "danger" | "info"}>
+                    <span className="flex items-center gap-1">{statusIcon(item.status)}{item.status}</span>
+                  </Badge>
+                  <button onClick={() => setSelectedId(item.id)} className="icon-btn text-gray-400 hover:text-blue-600 hover:bg-blue-50">
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="table-wrapper hidden lg:block">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Container</th>
+                  <th>Company</th>
+                  <th>Delivery Date</th>
+                  <th>Status</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginated.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                          {item.number.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium">#{item.number}</span>
+                      </div>
+                    </td>
+                    <td className="text-gray-600">
+                      <span className="flex items-center gap-1.5"><Building className="w-3.5 h-3.5 text-gray-400" />{item.company}</span>
+                    </td>
+                    <td className="text-gray-600">
+                      <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gray-400" />{format(new Date(item.deliveryDate), "MMM dd, yyyy")}</span>
+                    </td>
+                    <td>
+                      <Badge variant={statusVariant(item.status) as "default" | "success" | "warning" | "danger" | "info"}>
+                        <span className="flex items-center gap-1">{statusIcon(item.status)}{item.status}</span>
+                      </Badge>
+                    </td>
+                    <td className="text-right">
+                      <button onClick={() => setSelectedId(item.id)} className="icon-btn text-gray-400 hover:text-blue-600 hover:bg-blue-50">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3">
+              <span className="text-xs text-gray-500">
+                {startIdx + 1}–{Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                  disabled={page === 1}
+                  className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg border", page === 1 ? "opacity-40 cursor-not-allowed border-gray-200 text-gray-400" : "border-gray-300 text-gray-700 hover:bg-gray-50")}
+                >Prev</button>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+                  <button key={p} onClick={() => setPage(p)} className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg", page === p ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50")}>
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={page === totalPages}
+                  className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg border", page === totalPages ? "opacity-40 cursor-not-allowed border-gray-200 text-gray-400" : "border-gray-300 text-gray-700 hover:bg-gray-50")}
+                >Next</button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Actions dialog */}
+      <Dialog open={!!selectedId} onClose={() => setSelectedId(null)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <Dialog.Panel className="w-full bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl sm:max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <Dialog.Title className="text-base font-semibold text-gray-900">
+                {selectedContainer ? `Container #${selectedContainer.number}` : "Container Actions"}
+              </Dialog.Title>
+              <button onClick={() => setSelectedId(null)} className="icon-btn text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-2">
               <button
-                onClick={() => {
-                  setSelectedId(null);
-                  window.location.href = `/sales/container/${selectedId}`;
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-sm font-medium transition-colors duration-200"
+                onClick={() => { setSelectedId(null); window.location.href = `/sales/container/${selectedId}`; }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-sm font-medium transition-colors"
               >
                 <Container className="w-4 h-4" />
                 Make Sale in Container
               </button>
               <button
-                onClick={() => {
-                  setSelectedId(null);
-                  handleMarkReceived(selectedId!);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded text-sm font-medium transition-colors duration-200"
+                onClick={() => { setSelectedId(null); handleMarkReceived(selectedId!); }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors"
               >
                 <CheckCircle className="w-4 h-4" />
                 Perform Offload
               </button>
               <button
-                onClick={() => {
-                  setSelectedId(null);
-                  window.location.href = `/reports/sales/container/${selectedId}`;
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-purple-700 hover:bg-green-100 rounded text-sm font-medium transition-colors duration-200"
+                onClick={() => { setSelectedId(null); window.location.href = `/reports/sales/container/${selectedId}`; }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-xl text-sm font-medium transition-colors"
               >
-                <CheckCircle className="w-4 h-4" />
+                <FileText className="w-4 h-4" />
                 Container Sales Report
               </button>
               <button
-                onClick={() => {
-                  setSelectedId(null);
-                  window.location.href = `/offload/parkinglist/${selectedId}`;
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-yellow-700 hover:bg-green-100 rounded text-sm font-medium transition-colors duration-200"
+                onClick={() => { setSelectedId(null); window.location.href = `/offload/parkinglist/${selectedId}`; }}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-xl text-sm font-medium transition-colors"
               >
-                <CheckCircle className="w-4 h-4" />
-                Container Parking list
+                <List className="w-4 h-4" />
+                Container Parking List
               </button>
               <button
-                onClick={() => {
-                  handleDelete(selectedId!);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 hover:bg-red-100 rounded text-sm font-medium transition-colors duration-200"
+                onClick={() => handleDelete(selectedId!)}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl text-sm font-medium transition-colors"
               >
-                <Clock className="w-4 h-4" />
+                <Truck className="w-4 h-4" />
                 Delete Container
               </button>
             </div>
-            <button
-              onClick={() => setSelectedId(null)}
-              className="w-full mt-6 px-4 py-3 border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50 transition-colors duration-200"
-            >
-              Cancel
-            </button>
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => setSelectedId(null)}
+                className="btn btn-secondary w-full"
+              >
+                Cancel
+              </button>
+            </div>
           </Dialog.Panel>
         </div>
       </Dialog>

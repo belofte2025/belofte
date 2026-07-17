@@ -1,101 +1,53 @@
 "use client";
 
+import Link from "next/link";
+import { ShoppingCart, UserPlus, TrendingUp, Users, CreditCard } from "lucide-react";
+
 const stats = [
-  {
-    title: "Today's Sales",
-    value: "GHC 0.00",
-    color: "blue",
-    bgGradient: "from-blue-500 to-blue-600",
-  },
-  {
-    title: "Total Customers",
-    value: "0",
-    color: "green",
-    bgGradient: "from-green-500 to-green-600",
-  },
-  {
-    title: "Outstanding Credit",
-    value: "GHC 0.00",
-    color: "orange",
-    bgGradient: "from-orange-500 to-orange-600",
-  },
+  { title: "Today's Sales",      value: "GHC 0.00", icon: TrendingUp,  color: "text-blue-600",   bg: "bg-blue-50"   },
+  { title: "Total Customers",    value: "0",         icon: Users,       color: "text-green-600",  bg: "bg-green-50"  },
+  { title: "Outstanding Credit", value: "GHC 0.00",  icon: CreditCard,  color: "text-orange-600", bg: "bg-orange-50" },
 ];
 
 const quickActions = [
-  {
-    title: "New Sale",
-    description: "Record a new transaction",
-    href: "/sales",
-    color: "blue",
-  },
-  {
-    title: "Add Customer",
-    description: "Register new customer",
-    href: "/customers/new",
-    color: "green",
-  },
+  { title: "New Sale",      description: "Record a transaction", href: "/sales",        icon: ShoppingCart, color: "btn-primary"   },
+  { title: "Add Customer",  description: "Register a customer",  href: "/customers/new", icon: UserPlus,     color: "btn-secondary" },
 ];
 
 export default function DashboardHome() {
   return (
     <div className="space-y-4">
-      {/* Header Section */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Dashboard
-        </h1>
-        <p className="text-gray-600">
-          Overview of your business metrics
-        </p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Business overview</p>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat) => {
-          return (
-            <div
-              key={stat.title}
-              className="card group relative overflow-hidden"
-            >
-              {/* Background Gradient */}
-              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${stat.bgGradient} opacity-10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300`}></div>
-              
-              <div className="relative">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                </div>
-              </div>
+      <div className="stats-grid">
+        {stats.map(({ title, value, icon: Icon, color, bg }) => (
+          <div key={title} className="stat-card flex items-center gap-3">
+            <div className={`${bg} rounded-xl p-2.5 flex-shrink-0`}>
+              <Icon className={`w-5 h-5 ${color}`} />
             </div>
-          );
-        })}
+            <div className="min-w-0">
+              <p className="stat-label">{title}</p>
+              <p className={`text-xl font-bold ${color} mt-0.5`}>{value}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Quick Actions</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {quickActions.map((action) => {
-            return (
-              <a
-                key={action.title}
-                href={action.href}
-                className="card card-hover group cursor-pointer"
-              >
-                <div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {action.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {action.description}
-                    </p>
-                  </div>
-                </div>
-              </a>
-            );
-          })}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {quickActions.map(({ title, description, href, icon: Icon, color }) => (
+            <Link key={title} href={href} className={`btn ${color} flex-col h-auto py-4 gap-2 rounded-xl`}>
+              <Icon className="w-5 h-5" />
+              <span className="text-sm font-semibold">{title}</span>
+              <span className="text-xs opacity-75 hidden sm:block">{description}</span>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

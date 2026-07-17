@@ -10,7 +10,12 @@ export const inventoryByContainer = async (
   res: Response
 ): Promise<void> => {
   try {
-    const report = await getInventoryByContainer(req.params.id);
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const report = await getInventoryByContainer(req.params.id, companyId);
     res.json(report);
   } catch {
     res.status(500).json({ error: "Failed to fetch container inventory" });
@@ -22,7 +27,12 @@ export const inventoryBySupplier = async (
   res: Response
 ): Promise<void> => {
   try {
-    const report = await getInventoryBySupplier(req.params.id);
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const report = await getInventoryBySupplier(req.params.id, companyId);
     res.json(report);
   } catch {
     res.status(500).json({ error: "Failed to fetch supplier inventory" });

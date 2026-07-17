@@ -291,6 +291,7 @@ export const updateSupplierItem = async (req: Request, res: Response) => {
           companyId,
         },
       },
+      include: { Supplier: true },
     });
 
     if (!existingItem) {
@@ -298,12 +299,70 @@ export const updateSupplierItem = async (req: Request, res: Response) => {
       return;
     }
 
-    const item = await prisma.supplierItem.update({
-      where: { id },
-      data: { itemName, price, alias },
-    });
+    const supplierId = existingItem.supplierId;
+    const oldName = existingItem.itemName;
+    const newName = itemName ?? oldName;
+    const nameChanged = newName !== oldName;
 
-    res.json(item);
+    let item;
+
+    if (nameChanged) {
+      // Get all containers for this supplier to find affected sales
+      const containers = await prisma.container.findMany({
+        where: { supplierId, companyId },
+        select: { id: true },
+      });
+      const containerIds = containers.map((c) => c.id);
+
+      // Get all supplierItem IDs with the old name for this supplier (for regular sales)
+      const siblingItems = await prisma.supplierItem.findMany({
+        where: { supplierId, itemName: oldName },
+        select: { id: true },
+      });
+      const siblingItemIds = siblingItems.map((s) => s.id);
+
+      // Find sale IDs sourced from this supplier's containers
+      const containerSales = await prisma.sale.findMany({
+        where: { sourceType: "container", sourceId: { in: containerIds } },
+        select: { id: true },
+      });
+      // Find sale IDs sourced from this supplier's regular items
+      const regularSales = await prisma.sale.findMany({
+        where: { sourceType: "regular", sourceId: { in: siblingItemIds } },
+        select: { id: true },
+      });
+      const affectedSaleIds = [
+        ...containerSales.map((s) => s.id),
+        ...regularSales.map((s) => s.id),
+      ];
+
+      item = await prisma.$transaction([
+        prisma.supplierItem.update({
+          where: { id },
+          data: { itemName: newName, price, alias },
+        }),
+        prisma.containerItem.updateMany({
+          where: { itemName: oldName, Container: { supplierId, companyId } },
+          data: { itemName: newName },
+        }),
+        prisma.saleItem.updateMany({
+          where: { itemName: oldName, saleId: { in: affectedSaleIds } },
+          data: { itemName: newName },
+        }),
+        prisma.stockAdjustment.updateMany({
+          where: { itemName: oldName, supplierId, companyId },
+          data: { itemName: newName },
+        }),
+      ]);
+
+      res.json(item[0]);
+    } else {
+      item = await prisma.supplierItem.update({
+        where: { id },
+        data: { itemName: newName, price, alias },
+      });
+      res.json(item);
+    }
   } catch (err) {
     console.error("Failed to update supplier item:", err);
     res.status(400).json({ error: "Failed to update item", detail: err });
@@ -684,7 +743,7 @@ export const bulkAdjustQuantities = async (req: Request, res: Response) => {
       const latestItem = containerItems[0];
       const newQuantity = Math.max(0, latestItem.quantity + quantityChange);
 
-      const updatedItem = await prisma.containerItem.update({
+      await prisma.containerItem.update({
         where: { id: latestItem.id },
         data: { quantity: newQuantity },
       });

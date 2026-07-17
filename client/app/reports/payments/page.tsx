@@ -123,28 +123,18 @@ export default function AllPaymentsReport() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="space-y-4">
           {/* Header */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  All Payments Report
-                </h1>
-                <p className="mt-1 text-gray-600">
-                  Comprehensive payment records across all customers
-                </p>
-              </div>
+          <div className="page-header">
+            <h1 className="page-title">All Payments Report</h1>
               <button
                 onClick={exportToPDF}
                 disabled={!data || data.payments.length === 0}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200"
+                className="btn btn-success"
               >
                 <Download className="w-4 h-4" />
                 Export CSV
               </button>
-            </div>
           </div>
 
           {/* Filters */}
@@ -233,72 +223,64 @@ export default function AllPaymentsReport() {
 
           {/* Stats Cards */}
           {data && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
-              <div className="bg-white p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Total Payments
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {data.summary.totalPayments}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <Receipt className="w-6 h-6 text-blue-600" />
-                  </div>
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Payments
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {data.summary.totalPayments}
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <Receipt className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
 
-              <div className="bg-white p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Total Amount
-                    </p>
-                    <p className="text-3xl font-bold text-green-600">
-                      {formatCurrency(data.summary.totalAmount)}
-                    </p>
-                  </div>
+              <div className="stat-card">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Amount
+                  </p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {formatCurrency(data.summary.totalAmount)}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-white p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Average Payment
-                    </p>
-                    <p className="text-3xl font-bold text-purple-600">
-                      {formatCurrency(
-                        data.summary.totalPayments > 0
-                          ? data.summary.totalAmount /
-                              data.summary.totalPayments
-                          : 0
-                      )}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-purple-100 rounded-full">
-                    <TrendingUp className="w-6 h-6 text-purple-600" />
-                  </div>
+              <div className="stat-card">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Average Payment
+                  </p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {formatCurrency(
+                      data.summary.totalPayments > 0
+                        ? data.summary.totalAmount /
+                            data.summary.totalPayments
+                        : 0
+                    )}
+                  </p>
+                </div>
+                <div className="p-3 bg-purple-100 rounded-full">
+                  <TrendingUp className="w-6 h-6 text-purple-600" />
                 </div>
               </div>
 
-              <div className="bg-white p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Payment Methods
-                    </p>
-                    <p className="text-lg font-bold text-gray-900">
-                      <span className="text-blue-600">{cashPayments}</span> Cash
-                      / <span className="text-green-600">{bankPayments}</span>{" "}
-                      Bank
-                    </p>
-                  </div>
-                  <div className="p-3 bg-orange-100 rounded-full">
-                    <CreditCard className="w-6 h-6 text-orange-600" />
-                  </div>
+              <div className="stat-card">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Payment Methods
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    <span className="text-blue-600">{cashPayments}</span> Cash
+                    / <span className="text-green-600">{bankPayments}</span>{" "}
+                    Bank
+                  </p>
+                </div>
+                <div className="p-3 bg-orange-100 rounded-full">
+                  <CreditCard className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
             </div>
@@ -319,7 +301,7 @@ export default function AllPaymentsReport() {
 
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-green-600" />
                 <span className="ml-3 text-gray-600">Loading payments...</span>
               </div>
             ) : !data || data.payments.length === 0 ? (
@@ -458,7 +440,6 @@ export default function AllPaymentsReport() {
               </>
             )}
           </div>
-        </div>
       </div>
     </DashboardLayout>
   );

@@ -46,19 +46,18 @@ export default function AddSupplierForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-4">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
+        <div className="page-header">
+          <div className="flex items-center gap-4">
             <Link
               href="/suppliers"
-              className="inline-flex items-center p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+              className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Add New Supplier</h1>
+              <h1 className="page-title">Add New Supplier</h1>
               <p className="mt-1 text-gray-600">Create a new supplier profile</p>
             </div>
           </div>
@@ -220,7 +219,6 @@ export default function AddSupplierForm() {
             </div>
           </form>
         </div>
-      </div>
     </div>
   );
 }

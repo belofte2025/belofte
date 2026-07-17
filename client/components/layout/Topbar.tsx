@@ -10,116 +10,81 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    setShowDropdown(false);
-  };
-
   return (
     <>
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        {/* Left side - Mobile menu + Search */}
-        <div className="flex items-center space-x-4">
-          {/* Mobile Menu Button */}
+      <header className="bg-white border-b border-gray-200 h-14 px-3 flex items-center justify-between lg:px-6">
+        {/* Left */}
+        <div className="flex items-center gap-3">
           <button
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 -ml-1 rounded-lg hover:bg-gray-100 transition-colors"
             onClick={onMenuClick}
+            aria-label="Open menu"
           >
             <Menu className="w-5 h-5 text-gray-600" />
           </button>
 
-          {/* Search bar - hidden on mobile */}
-          <div className="hidden lg:flex items-center">
-            <div className="relative">
-              <div className="inline-flex items-center bg-blue-700 text-white px-5 py-2 rounded-lg shadow-md">
-                <span className="text-base font-semibold">
-                  {user?.company?.companyName || "EYO Solutions"}
-                </span>
-              </div>
-            </div>
+          <div className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold truncate max-w-[160px] sm:max-w-xs">
+            {user?.company?.companyName || "PETROS"}
           </div>
         </div>
 
-        {/* Right side - Notifications + User */}
-        <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+        {/* Right */}
+        <div className="flex items-center gap-1">
+          <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
             <Bell className="w-5 h-5 text-gray-600" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
           </button>
 
-          {/* User info - desktop only */}
-          <div className="hidden lg:block relative">
+          <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg p-2 transition-colors"
+              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="User menu"
             >
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
-                  {user?.userName || "User"} - {user?.role}
-                </p>
-              </div>
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-semibold text-sm">
                   {user?.email?.charAt(0).toUpperCase() || "U"}
                 </span>
               </div>
-              <ChevronDown
-                className={`w-4 h-4 text-gray-500 transition-transform ${
-                  showDropdown ? "rotate-180" : ""
-                }`}
-              />
+              <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[100px] truncate">
+                {user?.userName || "User"}
+              </span>
+              <ChevronDown className={`hidden sm:block w-4 h-4 text-gray-400 transition-transform ${showDropdown ? "rotate-180" : ""}`} />
             </button>
 
-            {/* Dropdown Menu */}
             {showDropdown && (
               <>
-                {/* Backdrop */}
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowDropdown(false)}
-                />
-
-                {/* Dropdown */}
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user?.userName}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {user?.email}
-                    </p>
+                <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-1.5 z-20 animate-fade-in">
+                  <div className="px-4 py-2.5 border-b border-gray-100">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{user?.userName}</p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    <p className="text-xs text-blue-600 font-medium mt-0.5">{user?.role}</p>
                   </div>
 
                   <button
-                    onClick={() => {
-                      setShowDropdown(false);
-                      // Add profile navigation if needed
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
                   >
-                    <User className="w-4 h-4 text-gray-500" />
+                    <User className="w-4 h-4 text-gray-400" />
                     Profile
                   </button>
 
                   <button
-                    onClick={() => {
-                      setShowDropdown(false);
-                      setShowPasswordModal(true);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    onClick={() => { setShowDropdown(false); setShowPasswordModal(true); }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
                   >
-                    <Lock className="w-4 h-4 text-gray-500" />
+                    <Lock className="w-4 h-4 text-gray-400" />
                     Update Password
                   </button>
 
-                  <div className="border-t border-gray-100 mt-2 pt-2">
+                  <div className="border-t border-gray-100 mt-1 pt-1">
                     <button
-                      onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
+                      onClick={() => { logout(); setShowDropdown(false); }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
-                      Logout
+                      Sign out
                     </button>
                   </div>
                 </div>
@@ -129,11 +94,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         </div>
       </header>
 
-      {/* Update Password Modal */}
-      <UpdatePasswordModal
-        isOpen={showPasswordModal}
-        onClose={() => setShowPasswordModal(false)}
-      />
+      <UpdatePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
     </>
   );
 }

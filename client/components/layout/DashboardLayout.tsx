@@ -2,30 +2,32 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import BottomNav from "./BottomNav";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggle = () => setSidebarOpen((v) => !v);
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-gray-50 via-white to-blue-50/30 relative">
-      {/* Sidebar (mobile + desktop) */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar: fixed drawer on mobile, fixed sidebar on desktop */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-      <div className="flex-1 flex flex-col">
-        {/* Topbar */}
-        <div className="fixed top-0 left-0 right-0 z-30 lg:left-72">
-          <Topbar onMenuClick={() => setSidebarOpen((prev) => !prev)} />
+      {/* Main area — offset by sidebar width on desktop */}
+      <div className="lg:pl-64 flex flex-col min-h-screen">
+        {/* Sticky topbar */}
+        <div className="sticky top-0 z-30">
+          <Topbar onMenuClick={toggle} />
         </div>
 
-        {/* Page content */}
-        <main className="mt-16 p-4 lg:p-6 animate-fade-in">
-          <div className="max-w-7xl w-full mx-auto">{children}</div>
+        {/* Page content — extra bottom padding on mobile for bottom nav */}
+        <main className="flex-1 pb-20 lg:pb-6 animate-fade-in">
+          <div className="page-container">{children}</div>
         </main>
       </div>
+
+      {/* Bottom navigation (mobile only) */}
+      <BottomNav onMenuClick={toggle} />
     </div>
   );
 }

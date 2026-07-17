@@ -341,20 +341,18 @@ export default function EditSalesPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="space-y-4">
           {/* Header */}
-          <div className="mb-4">
+          <div className="page-header">
             <button
               onClick={() => router.back()}
-              className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
             </button>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-1">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Edit Sales</h1>
+                <h1 className="page-title">Edit Sales</h1>
                 <p className="mt-1 text-gray-600">
                   Search, select, and edit multiple sales at once
                 </p>
@@ -632,7 +630,6 @@ export default function EditSalesPage() {
               </div>
             </div>
           )}
-        </div>
       </div>
 
       {/* Modals */}

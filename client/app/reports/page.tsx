@@ -1,117 +1,44 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import {
-  Users,
-  Package,
-  Container,
-  FileText,
-  ArrowUpRight,
-  TrendingDown
-} from "lucide-react";
+import { Users, Package, Container, FileText, TrendingDown, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
-
-interface QuickReportProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  color: string;
-  href: string;
-}
-
-function QuickReportCard({
-  icon,
-  title,
-  description,
-  color,
-  href,
-}: QuickReportProps) {
-  return (
-    <Link href={href}>
-      <div
-        className={`group relative overflow-hidden bg-gradient-to-br ${color} p-6 shadow-lg hover:shadow-xl transition-all duration-200`}
-      >
-        <div className="relative z-10">
-          <div className="mb-3 inline-flex p-2 rounded-lg bg-white/20 backdrop-blur-sm">
-            {icon}
-          </div>
-          <h3 className="text-lg font-bold text-white mb-1">{title}</h3>
-          <p className="text-white/80 text-sm mb-3">{description}</p>
-          <div className="flex items-center text-white font-medium text-sm group-hover:translate-x-1 transition-transform duration-200">
-            Generate Report
-            <ArrowUpRight className="w-4 h-4 ml-2" />
-          </div>
-        </div>
-        <div className="absolute top-0 right-0 -mt-2 -mr-2 h-16 w-16 rounded-full bg-white/10" />
-      </div>
-    </Link>
-  );
-}
+const reportCards = [
+  { icon: FileText,     title: "Sales Summary",      description: "Detailed breakdown of all sales activities",             gradient: "from-blue-500 to-blue-700",   href: "/reports/sales"              },
+  { icon: Users,        title: "Customer Analytics", description: "Customer behavior and transaction history",              gradient: "from-green-500 to-green-700", href: "/reports/customers"          },
+  { icon: Container,    title: "Container Reports",  description: "Container processing and inventory status",             gradient: "from-purple-500 to-purple-700", href: "/reports/containers"        },
+  { icon: Package,      title: "Inventory Status",   description: "Current stock levels and movement tracking",            gradient: "from-orange-500 to-orange-700", href: "/reports/inventory"         },
+  { icon: TrendingDown, title: "Item Transactions",  description: "Detailed transaction history to track negative stock",  gradient: "from-indigo-500 to-indigo-700", href: "/reports/item-transactions" },
+];
 
 export default function ReportsPage() {
-
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* Header */}
-          <div className="mb-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Reports & Analytics
-                </h1>
-                <p className="mt-1 text-gray-600">
-                  Comprehensive insights into your business performance
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="space-y-4">
+        <div className="page-header">
+          <h1 className="page-title">Reports</h1>
+        </div>
 
-          {/* Quick Reports */}
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Quick Reports
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <QuickReportCard
-                icon={<FileText className="w-6 h-6 text-white" />}
-                title="Sales Summary"
-                description="Detailed breakdown of all sales activities"
-                color="from-blue-500 to-blue-700"
-                href="/reports/sales"
-              />
-              <QuickReportCard
-                icon={<Users className="w-6 h-6 text-white" />}
-                title="Customer Analytics"
-                description="Customer behavior and transaction history"
-                color="from-green-500 to-green-700"
-                href="/reports/customers"
-              />
-              <QuickReportCard
-                icon={<Container className="w-6 h-6 text-white" />}
-                title="Container Reports"
-                description="Container processing and inventory status"
-                color="from-purple-500 to-purple-700"
-                href="/reports/containers"
-              />
-              <QuickReportCard
-                icon={<Package className="w-6 h-6 text-white" />}
-                title="Inventory Status"
-                description="Current stock levels and movement tracking"
-                color="from-orange-500 to-orange-700"
-                href="/reports/inventory"
-              />
-              <QuickReportCard
-                icon={<TrendingDown className="w-6 h-6 text-white" />}
-                title="Item Transactions"
-                description="Detailed transaction history to track negative stock"
-                color="from-indigo-500 to-indigo-700"
-                href="/reports/item-transactions"
-              />
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {reportCards.map(({ icon: Icon, title, description, gradient, href }) => (
+            <Link key={href} href={href}>
+              <div className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} p-5 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95`}>
+                <div className="relative z-10">
+                  <div className="mb-3 inline-flex p-2.5 rounded-xl bg-white/20">
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-1">{title}</h3>
+                  <p className="text-white/80 text-xs mb-3 leading-relaxed">{description}</p>
+                  <div className="flex items-center text-white font-medium text-xs">
+                    Generate Report
+                    <ArrowUpRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+                <div className="absolute top-0 right-0 -mt-2 -mr-2 h-16 w-16 rounded-full bg-white/10" />
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </DashboardLayout>

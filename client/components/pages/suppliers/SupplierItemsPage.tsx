@@ -40,7 +40,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
   ]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<SupplierItem | null>(null);
-  const [editForm, setEditForm] = useState({ alias: "", price: 0 });
+  const [editForm, setEditForm] = useState({ itemName: "", alias: "", price: 0 });
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter items based on search
@@ -151,7 +151,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
 
   const handleOpenEditModal = (item: SupplierItem) => {
     setEditingItem(item);
-    setEditForm({ alias: item.alias || "", price: item.price });
+    setEditForm({ itemName: item.itemName, alias: item.alias || "", price: item.price });
     setShowEditModal(true);
   };
 
@@ -160,6 +160,11 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
 
     if (!editingItem) return;
 
+    if (!editForm.itemName.trim()) {
+      toast.error("Item name is required");
+      return;
+    }
+
     if (editForm.price <= 0) {
       toast.error("Please provide a valid price");
       return;
@@ -167,7 +172,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
 
     try {
       const updatedItem = await updateSupplierItem(editingItem.id, {
-        itemName: editingItem.itemName,
+        itemName: editForm.itemName.trim(),
         alias: editForm.alias || undefined,
         price: editForm.price,
       });
@@ -185,32 +190,29 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="space-y-4">
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-3 text-gray-600">Loading supplier items...</span>
           </div>
-        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="space-y-4">
         {/* Header */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className="page-header">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
                 href={`/suppliers/${supplierId}`}
-                className="inline-flex items-center p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+                className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="page-title">
                   {supplier?.suppliername} Items
                 </h1>
                 <p className="mt-1 text-gray-600">Manage supplier item catalog and pricing</p>
@@ -412,7 +414,6 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
             </div>
           )}
         </div>
-      </div>
 
       {/* Add Item Modal */}
       <Dialog open={showAddModal} onClose={() => {}} className="relative z-50">
@@ -616,21 +617,27 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
             </Dialog.Title>
 
             <form onSubmit={handleEditItem} className="space-y-4">
-              {/* Item Name - Read Only */}
+              {/* Item Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Item Name
+                <label htmlFor="editItemName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Item Name *
                 </label>
                 <div className="relative">
                   <Package className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
-                    value={editingItem?.itemName || ""}
-                    disabled
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded bg-gray-50 text-gray-500 cursor-not-allowed"
+                    id="editItemName"
+                    value={editForm.itemName}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, itemName: e.target.value }))}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Item name cannot be changed</p>
+                {editForm.itemName !== editingItem?.itemName && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Renaming will update all sales, container items, and stock adjustments for this supplier.
+                  </p>
+                )}
               </div>
 
               {/* Alias - Editable */}

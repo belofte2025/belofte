@@ -3,18 +3,19 @@ import { authenticate } from "../middlewares/auth.middleware";
 import { requirePermission } from "../middlewares/authorizePermission";
 import {
   recordCustomerPayment,
-  getCustomerStatement,
   updateCustomerPayment,
   deleteCustomerPayment,
   getCustomerPayments,
   getAllCustomerPayments,
 } from "../controllers/customerPayment.controller";
+import { getCustomerStatement } from "../controllers/customer.controller";
 
 const router = Router();
 router.use(authenticate);
 
 router.post("/", requirePermission("payments.create"), recordCustomerPayment);
 
+// Delegates to the authoritative statement implementation in customer.controller
 router.get("/:id/statement", getCustomerStatement);
 
 /**

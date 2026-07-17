@@ -245,6 +245,7 @@ export const getContainerItemsBySupplier = async (
   res: Response
 ) => {
   const { id: supplierId } = req.params;
+  const companyId = req.user?.companyId;
 
   if (!supplierId) {
     res.status(400).json({ error: "Supplier ID is required" });
@@ -253,7 +254,7 @@ export const getContainerItemsBySupplier = async (
 
   try {
     const containers = await prisma.container.findMany({
-      where: { supplierId },
+      where: { supplierId, companyId },
       include: {
         ContainerItem: true,
       },
@@ -297,13 +298,13 @@ export const getContainerItemsBySupplier = async (
     return;
   }
 };
-// controller/sales.controller.ts
 export const getSalesByCustomerId = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const companyId = req.user?.companyId;
 
   try {
     const sales = await prisma.sale.findMany({
-      where: { customerId: id },
+      where: { customerId: id, companyId },
       include: { SaleItem: true },
       orderBy: { createdAt: "desc" },
     });
@@ -324,39 +325,40 @@ export const getSalesByCustomerId = async (req: Request, res: Response) => {
   }
 };
 
-// Get a specific sale by ID
 export const getSaleById = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const companyId = req.user?.companyId;
 
   try {
     const sale = await prisma.sale.findUnique({
       where: { id },
-      include: {
-        SaleItem: true,
-        Customer: true,
-      },
+      include: { SaleItem: true, Customer: true },
     });
 
-    if (!sale) {
+    if (!sale || sale.companyId !== companyId) {
       res.status(404).json({ error: "Sale not found" });
-      return; // ADD THIS RETURN STATEMENT
+      return;
     }
 
     res.json(sale);
-    return; // OPTIONAL: Add this for consistency
   } catch (error) {
     console.error("Error fetching sale:", error);
     res.status(500).json({ error: "Internal server error" });
-    return; // OPTIONAL: Add this for consistency
   }
 };
-// Update sale and items
 export const updateSale = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { saleType, items, saleDate } = req.body;
   const userId = req.user?.id;
+  const companyId = req.user?.companyId;
 
   try {
+    const existing = await prisma.sale.findUnique({ where: { id }, select: { companyId: true } });
+    if (!existing || existing.companyId !== companyId) {
+      res.status(404).json({ error: "Sale not found" });
+      return;
+    }
+
     const updateData: any = {
       saleType,
       SaleItem: {
@@ -412,13 +414,16 @@ export const updateSale = async (req: Request, res: Response) => {
 export const updateSaleTotalAmount = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { totalAmount } = req.body;
+  const companyId = req.user?.companyId;
 
   try {
-    const sale = await prisma.sale.update({
-      where: { id },
-      data: { totalAmount },
-    });
+    const existing = await prisma.sale.findUnique({ where: { id }, select: { companyId: true } });
+    if (!existing || existing.companyId !== companyId) {
+      res.status(404).json({ error: "Sale not found" });
+      return;
+    }
 
+    const sale = await prisma.sale.update({ where: { id }, data: { totalAmount } });
     res.json(sale);
   } catch (error) {
     console.error("Error updating sale:", error);

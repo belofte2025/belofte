@@ -19,6 +19,7 @@ import {
   CheckCircle,
   Plus,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 
@@ -39,6 +40,94 @@ type SupplierItem = {
   alias?: string | null;
   price: number;
 };
+
+type ItemWarning = {
+  itemName: string;
+  type: "double-space" | "similar";
+  suggestion: string;
+  score?: number;
+};
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length,
+    n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function nameSimilarity(a: string, b: string): number {
+  const an = a.trim().toLowerCase();
+  const bn = b.trim().toLowerCase();
+  if (an === bn) return 1;
+  const dist = levenshtein(an, bn);
+  return 1 - dist / Math.max(an.length, bn.length, 1);
+}
+
+function computeWarnings(
+  items: ParsedExcelItem[],
+  knownItems: SupplierItem[]
+): ItemWarning[] {
+  const result: ItemWarning[] = [];
+  const THRESHOLD = 0.75;
+
+  items.forEach((item) => {
+    const name = item.itemName;
+    if (!name) return;
+
+    // Check for double spaces or leading/trailing spaces
+    const fixed = name.trim().replace(/\s{2,}/g, " ");
+    if (fixed !== name) {
+      result.push({ itemName: name, type: "double-space", suggestion: fixed });
+      return;
+    }
+
+    // Check similarity against known supplier items
+    let best: { name: string; score: number } | null = null;
+    for (const known of knownItems) {
+      const score = nameSimilarity(name, known.itemName);
+      if (score >= THRESHOLD && score < 1 && (!best || score > best.score)) {
+        best = { name: known.itemName, score };
+      }
+    }
+
+    // Also check within the upload list itself
+    if (!best) {
+      for (const other of items) {
+        if (other.itemName === name) continue;
+        const score = nameSimilarity(name, other.itemName);
+        if (
+          score >= THRESHOLD &&
+          score < 1 &&
+          name > other.itemName &&
+          (!best || score > best.score)
+        ) {
+          best = { name: other.itemName, score };
+        }
+      }
+    }
+
+    if (best) {
+      result.push({
+        itemName: name,
+        type: "similar",
+        suggestion: best.name,
+        score: best.score,
+      });
+    }
+  });
+
+  return result;
+}
 
 export default function AddContainerForm() {
   const router = useRouter();
@@ -64,6 +153,9 @@ export default function AddContainerForm() {
   // Preview modal state
   const [showPreview, setShowPreview] = useState(false);
 
+  // Name warnings state
+  const [warnings, setWarnings] = useState<ItemWarning[]>([]);
+
   useEffect(() => {
     getSuppliers().then((res) => {
       setSupplierOptions(
@@ -88,6 +180,7 @@ export default function AddContainerForm() {
     const parsed = XLSX.utils.sheet_to_json(worksheet) as ParsedExcelItem[];
     setSelectedItems(parsed);
     setMode("excel");
+    setWarnings(computeWarnings(parsed, supplierItems));
   };
 
   const handleQuantityChange = (itemName: string, qty: number) => {
@@ -118,6 +211,20 @@ export default function AddContainerForm() {
     setSelectedItems((prev) =>
       prev.filter((item) => item.itemName !== itemName)
     );
+    setWarnings((prev) => prev.filter((w) => w.itemName !== itemName));
+  };
+
+  const handleApplySuggestion = (originalName: string, suggestion: string) => {
+    setSelectedItems((prev) =>
+      prev.map((item) =>
+        item.itemName === originalName ? { ...item, itemName: suggestion } : item
+      )
+    );
+    setWarnings((prev) => prev.filter((w) => w.itemName !== originalName));
+  };
+
+  const handleDismissWarning = (itemName: string) => {
+    setWarnings((prev) => prev.filter((w) => w.itemName !== itemName));
   };
 
   const handleAddNewItem = () => {
@@ -171,6 +278,7 @@ export default function AddContainerForm() {
 
   const handleClearPreview = () => {
     setSelectedItems([]);
+    setWarnings([]);
     setMode("none");
   };
 
@@ -243,33 +351,24 @@ export default function AddContainerForm() {
     : "N/A";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-4">
         {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => router.back()}
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Containers
-          </button>
+        <div className="page-header">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg">
-              <Container className="w-6 h-6 text-white" />
-            </div>
+            <button
+              onClick={() => router.back()}
+              className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Add New Container
-              </h1>
-              <p className="text-gray-600">
-                Create a new container with inventory items
-              </p>
+              <h1 className="page-title">Add Container</h1>
+              <p className="text-xs text-gray-500 mt-0.5">Create a new container with inventory items</p>
             </div>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-4">
           {/* Left Column - Container Details */}
           <div className="lg:col-span-1 space-y-6">
             {/* Basic Information */}
@@ -573,6 +672,60 @@ export default function AddContainerForm() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Name Warnings Panel */}
+              {warnings.length > 0 && (
+                <div className="p-4 border-b border-amber-200 bg-amber-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-amber-800">
+                      {warnings.length} item name{warnings.length > 1 ? "s" : ""} may cause duplicates
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {warnings.map((w) => (
+                      <div
+                        key={w.itemName}
+                        className="flex flex-wrap items-center gap-2 bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm"
+                      >
+                        <div className="flex-1 min-w-0">
+                          {w.type === "double-space" ? (
+                            <span className="text-amber-700">
+                              <span className="font-medium text-red-600">&ldquo;{w.itemName}&rdquo;</span>
+                              {" "}has extra spaces
+                            </span>
+                          ) : (
+                            <span className="text-amber-700">
+                              <span className="font-medium text-red-600">&ldquo;{w.itemName}&rdquo;</span>
+                              {" "}looks similar to{" "}
+                              <span className="font-medium text-gray-800">&ldquo;{w.suggestion}&rdquo;</span>
+                              {w.score !== undefined && (
+                                <span className="ml-1 text-xs text-gray-500">
+                                  ({Math.round(w.score * 100)}% match)
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => handleApplySuggestion(w.itemName, w.suggestion)}
+                            className="px-2 py-1 bg-amber-600 text-white text-xs rounded hover:bg-amber-700 transition-colors font-medium"
+                          >
+                            Use &ldquo;{w.suggestion}&rdquo;
+                          </button>
+                          <button
+                            onClick={() => handleDismissWarning(w.itemName)}
+                            className="px-2 py-1 border border-gray-300 text-gray-600 text-xs rounded hover:bg-gray-100 transition-colors"
+                          >
+                            Keep original
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -940,7 +1093,6 @@ export default function AddContainerForm() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

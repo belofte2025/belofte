@@ -219,23 +219,16 @@ export default function SalesListPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="space-y-4">
           {/* Header */}
-          <div className="mb-4">
+          <div className="page-header">
             <button
               onClick={() => router.back()}
-              className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
             </button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Sales List</h1>
-              <p className="mt-1 text-gray-600">
-                {filteredSales.length} sale(s) found
-              </p>
-            </div>
+            <h1 className="page-title">Sales List</h1>
           </div>
 
           {/* Search and Filters */}
@@ -315,7 +308,7 @@ export default function SalesListPage() {
           {loading ? (
             <div className="bg-white shadow-sm border border-gray-200 p-16">
               <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
                 <span className="ml-3 text-gray-600">Loading sales...</span>
               </div>
             </div>
@@ -419,7 +412,6 @@ export default function SalesListPage() {
               ))}
             </div>
           )}
-        </div>
       </div>
 
       {/* Edit Sale Modal */}
