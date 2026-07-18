@@ -76,11 +76,11 @@ body {
 
 /* ── Stat card ── */
 .stat-card {
-  @apply bg-white rounded-xl border border-gray-200 p-4 shadow-sm;
+  @apply bg-white rounded-lg border border-gray-200 p-4 shadow-sm;
 }
 
 .stat-card .stat-label {
-  @apply text-xs font-medium text-gray-500 uppercase tracking-wide;
+  @apply text-xs font-medium text-gray-500 uppercase tracking-wider;
 }
 
 .stat-card .stat-value {
@@ -89,15 +89,15 @@ body {
 
 /* ── Card ── */
 .card {
-  @apply bg-white shadow-sm border border-gray-100 rounded-xl p-4 lg:p-6 transition-all duration-200;
+  @apply bg-white shadow-sm border border-gray-200 rounded-lg p-4 lg:p-6 transition-all duration-200;
 }
 
 .card:hover {
-  @apply shadow-md border-gray-200;
+  @apply shadow-md;
 }
 
 .card-hover {
-  @apply hover:shadow-xl hover:-translate-y-0.5 cursor-pointer;
+  @apply hover:shadow-md hover:-translate-y-0.5 cursor-pointer;
 }
 
 /* ── Input ── */
@@ -139,28 +139,36 @@ body {
 
 /* ── Responsive table wrapper ── */
 .table-wrapper {
-  @apply w-full overflow-x-auto -mx-0 rounded-xl border border-gray-200 bg-white shadow-sm;
+  @apply w-full overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm;
 }
 
 table.data-table {
-  @apply min-w-full divide-y divide-gray-200;
+  @apply min-w-full;
 }
 
-table.data-table thead { @apply bg-gray-50; }
+table.data-table thead {
+  @apply bg-gray-50 border-b-2 border-gray-200;
+}
 
 table.data-table th {
   @apply px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap;
 }
 
 table.data-table td {
-  @apply px-4 py-3 text-sm text-gray-900 whitespace-nowrap;
+  @apply px-4 py-3.5 text-sm text-gray-800 whitespace-nowrap border-b border-gray-100;
 }
 
-table.data-table tbody tr {
-  @apply border-b border-gray-100 hover:bg-gray-50 transition-colors;
+table.data-table tbody tr:nth-child(even) td {
+  @apply bg-gray-50/70;
 }
 
-table.data-table tbody tr:last-child { @apply border-0; }
+table.data-table tbody tr:last-child td {
+  @apply border-b-0;
+}
+
+table.data-table tbody tr:hover td {
+  @apply bg-blue-50/40;
+}
 
 /* ── Mobile list cards (replaces table on small screens) ── */
 .mobile-list {
@@ -168,7 +176,7 @@ table.data-table tbody tr:last-child { @apply border-0; }
 }
 
 .mobile-list-item {
-  @apply bg-white rounded-xl border border-gray-200 p-4 shadow-sm;
+  @apply bg-white rounded-lg border border-gray-200 p-4 shadow-sm;
 }
 
 /* ── Modal ── */

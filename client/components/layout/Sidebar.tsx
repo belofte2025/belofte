@@ -7,13 +7,13 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useState } from "react";
 import {
-  Home, Users, X, ShoppingCart, LogOut, ChevronRight, BarChart3,
+  Home, Users, X, ShoppingCart, LogOut, ChevronDown, BarChart3,
   Container, Package, TrendingUp, TrendingDown, Building2, Factory,
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
 } from "lucide-react";
 
-const navItems = [
+const mainItems = [
   { name: "Dashboard",  href: "/dashboard",  icon: Home,         permission: "dashboard.view" },
   { name: "Customers",  href: "/customers",  icon: Users,        permission: "customers.view" },
   { name: "Suppliers",  href: "/suppliers",  icon: Factory,      permission: "suppliers.view" },
@@ -22,35 +22,35 @@ const navItems = [
   { name: "Sales",      href: "/sales",      icon: ShoppingCart, permission: "sales.view" },
 ];
 
-const utilityItems = [
-  { name: "Overview",         href: "/utilities",                  icon: Settings, permission: "utilities.view" },
-  { name: "Customer Import",  href: "/utilities/customer-import",  icon: UserPlus, permission: "utilities.import" },
-  { name: "Supplier Import",  href: "/utilities/supplier-import",  icon: Truck,    permission: "utilities.import" },
-];
-
-const salesReportItems = [
-  { name: "Sales Summary", href: "/reports/sales",              icon: ShoppingBag },
-  { name: "Sales Details", href: "/reports/sales/saledetails",  icon: FileText },
-  { name: "Sales List",    href: "/reports/sales/saleslist",    icon: Factory },
-  { name: "Edit Sales",    href: "/reports/sales/editsales",    icon: Edit },
+const salesReportSub = [
+  { name: "Summary",    href: "/reports/sales",             icon: ShoppingBag },
+  { name: "Details",    href: "/reports/sales/saledetails", icon: FileText },
+  { name: "Sales List", href: "/reports/sales/saleslist",   icon: List },
+  { name: "Edit Sales", href: "/reports/sales/editsales",   icon: Edit },
 ];
 
 const reportItems = [
-  { name: "Overview",           href: "/reports",                  icon: BarChart3,     permission: "reports.view" },
-  { name: "Sales",              href: "/reports/sales",            icon: TrendingUp,    permission: "reports.view", submenu: salesReportItems },
-  { name: "Payments",           href: "/reports/payments",         icon: List,          permission: "reports.view" },
-  { name: "Customers",          href: "/reports/customers",        icon: Users,         permission: "reports.view" },
-  { name: "Suppliers",          href: "/reports/suppliers",        icon: Factory,       permission: "reports.view" },
-  { name: "Containers",         href: "/reports/containers",       icon: Container,     permission: "reports.view" },
-  { name: "Inventory",          href: "/reports/inventory",        icon: Package,       permission: "reports.view" },
-  { name: "Item Transactions",  href: "/reports/item-transactions",icon: TrendingDown,  permission: "reports.view" },
-  { name: "Cash Received",      href: "/reports/dailycash",        icon: PiggyBankIcon, permission: "reports.view" },
+  { name: "Overview",          href: "/reports",                   icon: BarChart3,     permission: "reports.view" },
+  { name: "Sales",             href: "/reports/sales",             icon: TrendingUp,    permission: "reports.view", sub: salesReportSub },
+  { name: "Payments",          href: "/reports/payments",          icon: List,          permission: "reports.view" },
+  { name: "Customers",         href: "/reports/customers",         icon: Users,         permission: "reports.view" },
+  { name: "Suppliers",         href: "/reports/suppliers",         icon: Factory,       permission: "reports.view" },
+  { name: "Containers",        href: "/reports/containers",        icon: Container,     permission: "reports.view" },
+  { name: "Inventory",         href: "/reports/inventory",         icon: Package,       permission: "reports.view" },
+  { name: "Item Transactions", href: "/reports/item-transactions", icon: TrendingDown,  permission: "reports.view" },
+  { name: "Cash Received",     href: "/reports/dailycash",         icon: PiggyBankIcon, permission: "reports.view" },
+];
+
+const utilityItems = [
+  { name: "Overview",        href: "/utilities",                 icon: Settings, permission: "utilities.view" },
+  { name: "Customer Import", href: "/utilities/customer-import", icon: UserPlus, permission: "utilities.import" },
+  { name: "Supplier Import", href: "/utilities/supplier-import", icon: Truck,    permission: "utilities.import" },
 ];
 
 const settingsItems = [
-  { name: "Role Management",      href: "/settings/roles",                  icon: Shield,      permission: "roles.manage" },
-  { name: "User Management",      href: "/settings/users",                  icon: UserCog,     permission: "users.view" },
-  { name: "Item Deduplication",   href: "/settings/item-deduplication",     icon: Package,     permission: "items.deduplicate" },
+  { name: "Role Management",    href: "/settings/roles",              icon: Shield,      permission: "roles.manage" },
+  { name: "User Management",    href: "/settings/users",              icon: UserCog,     permission: "users.view" },
+  { name: "Item Deduplication", href: "/settings/item-deduplication", icon: Package,     permission: "items.deduplicate" },
 ];
 
 const inventoryItems = [
@@ -59,30 +59,73 @@ const inventoryItems = [
 
 type SidebarProps = { open: boolean; setOpen: (v: boolean) => void };
 
-function NavGroup({
-  label, isOpen, onToggle, active, accent = "blue", children,
-}: {
-  label: string; isOpen: boolean; onToggle: () => void;
-  active: boolean; accent?: string; children: React.ReactNode;
-}) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="pt-1">
+    <p className="px-3 pt-5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 select-none first:pt-2">
+      {children}
+    </p>
+  );
+}
+
+function NavItem({
+  href, name, icon: Icon, exact = false, small = false, onClick,
+}: {
+  href: string; name: string; icon: React.ElementType;
+  exact?: boolean; small?: boolean; onClick?: () => void;
+}) {
+  const pathname = usePathname();
+  const active = exact ? pathname === href : pathname.startsWith(href);
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={clsx(
+        "group flex items-center gap-2.5 rounded-md transition-colors duration-150",
+        small ? "px-3 py-1.5 text-xs" : "px-3 py-2 text-sm",
+        active
+          ? "bg-blue-50 text-blue-700 font-semibold"
+          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+      )}
+    >
+      <Icon className={clsx(
+        "flex-shrink-0",
+        small ? "h-3.5 w-3.5" : "h-4 w-4",
+        active ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"
+      )} />
+      <span className="truncate flex-1">{name}</span>
+      {active && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />}
+    </Link>
+  );
+}
+
+function CollapsibleGroup({
+  label, defaultOpen, activeTest, children,
+}: {
+  label: string; defaultOpen: boolean; activeTest: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
       <button
-        onClick={onToggle}
+        onClick={() => setOpen(!open)}
         className={clsx(
-          "group relative flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
-          active
-            ? `bg-${accent}-50 text-${accent}-700`
-            : "text-gray-700 hover:bg-gray-50"
+          "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150",
+          activeTest
+            ? "text-blue-700 bg-blue-50"
+            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
         )}
       >
-        {active && <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-7 bg-${accent}-600 rounded-r-full`} />}
-        <span className="truncate pl-1">{label}</span>
-        <ChevronRight className={clsx("h-4 w-4 flex-shrink-0 transition-transform duration-200", isOpen && "rotate-90")} />
+        <span className="flex-1 text-left truncate">{label}</span>
+        <ChevronDown className={clsx(
+          "h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform duration-200",
+          open && "rotate-180"
+        )} />
       </button>
-      <div className={clsx("ml-3 space-y-0.5 overflow-hidden transition-all duration-200", isOpen ? "max-h-screen opacity-100 mt-0.5" : "max-h-0 opacity-0")}>
-        {children}
-      </div>
+      {open && (
+        <div className="mt-0.5 ml-3 pl-3 border-l border-gray-200 space-y-0.5">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -91,182 +134,154 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { hasPermission } = usePermissions();
-  const [reportsOpen,   setReportsOpen]   = useState(pathname.startsWith("/reports"));
-  const [utilitiesOpen, setUtilitiesOpen] = useState(pathname.startsWith("/utilities"));
-  const [salesSubOpen,  setSalesSubOpen]  = useState(pathname.startsWith("/reports/sales"));
-  const [settingsOpen,  setSettingsOpen]  = useState(pathname.startsWith("/settings"));
-  const [inventoryOpen, setInventoryOpen] = useState(pathname.startsWith("/inventory"));
+  const [salesSubOpen, setSalesSubOpen] = useState(pathname.startsWith("/reports/sales"));
 
-  const visibleNav      = navItems.filter(i => hasPermission(i.permission));
-  const visibleUtil     = utilityItems.filter(i => hasPermission(i.permission));
+  const visibleMain     = mainItems.filter(i => hasPermission(i.permission));
   const visibleReports  = reportItems.filter(i => hasPermission(i.permission));
+  const visibleUtils    = utilityItems.filter(i => hasPermission(i.permission));
   const visibleSettings = settingsItems.filter(i => hasPermission(i.permission));
   const visibleInv      = inventoryItems.filter(i => hasPermission(i.permission));
 
   const close = () => setOpen(false);
 
-  const navLink = (href: string, name: string, Icon: React.ElementType, small = false) => {
-    const active = small ? pathname === href : pathname.startsWith(href);
-    return (
-      <Link
-        key={name}
-        href={href}
-        onClick={close}
-        className={clsx(
-          "relative flex items-center rounded-xl font-medium transition-all duration-200",
-          small ? "px-3 py-2 text-xs" : "px-3 py-2.5 text-sm",
-          active
-            ? "bg-blue-50 text-blue-700"
-            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-        )}
-      >
-        {active && !small && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-7 bg-blue-600 rounded-r-full" />}
-        <Icon className={clsx(small ? "mr-2 h-3.5 w-3.5" : "mr-3 h-4 w-4", active ? "text-blue-600" : "text-gray-400")} />
-        <span className="truncate">{name}</span>
-      </Link>
-    );
-  };
-
   return (
     <>
-      {/* Overlay */}
+      {/* Mobile overlay */}
       <div
         className={clsx(
-          "fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 transition-opacity duration-300 lg:hidden",
+          "fixed inset-0 bg-gray-900/40 z-40 transition-opacity duration-300 lg:hidden",
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={close}
       />
 
       {/* Sidebar panel */}
-      <aside
-        className={clsx(
-          "fixed top-0 left-0 z-50 w-64 h-screen flex flex-col bg-white border-r border-gray-200 shadow-xl",
-          "transform transition-transform duration-300 ease-in-out",
-          "lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        {/* Logo */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
+      <aside className={clsx(
+        "fixed top-0 left-0 z-50 w-64 h-screen flex flex-col",
+        "bg-[#f8fafc] border-r border-gray-200",
+        "transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+        open ? "translate-x-0" : "-translate-x-full"
+      )}>
+
+        {/* Logo bar */}
+        <div className="h-14 flex items-center justify-between px-4 border-b border-gray-200 bg-white flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+            <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center flex-shrink-0">
               <Building2 className="w-4 h-4 text-white" />
             </div>
-            <span className="text-base font-bold text-gray-900">PETROS</span>
+            <span className="text-sm font-bold text-gray-900 tracking-tight">PETROS</span>
           </div>
-          <button
-            onClick={close}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-          >
+          <button onClick={close} className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors">
             <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {/* Main items */}
-          {visibleNav.map(({ name, href, icon: Icon }) =>
-            navLink(href, name, Icon)
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+
+          {visibleMain.length > 0 && (
+            <>
+              <SectionLabel>Main</SectionLabel>
+              {visibleMain.map(({ name, href, icon }) => (
+                <NavItem key={href} href={href} name={name} icon={icon} exact={href === "/dashboard"} onClick={close} />
+              ))}
+            </>
           )}
 
-          {/* Reports */}
           {visibleReports.length > 0 && (
-            <NavGroup
-              label="Reports"
-              isOpen={reportsOpen}
-              onToggle={() => setReportsOpen(!reportsOpen)}
-              active={pathname.startsWith("/reports")}
-            >
-              {visibleReports.map(({ name, href, icon: Icon, submenu }) => {
-                if (submenu) {
-                  return (
-                    <div key={name}>
-                      <button
-                        onClick={() => setSalesSubOpen(!salesSubOpen)}
-                        className={clsx(
-                          "flex w-full items-center justify-between px-3 py-2 text-xs font-medium rounded-lg transition-colors",
-                          pathname.startsWith(href)
-                            ? "bg-blue-100 text-blue-800"
-                            : "text-gray-600 hover:bg-gray-50"
+            <>
+              <SectionLabel>Reports</SectionLabel>
+              <CollapsibleGroup
+                label="Reports"
+                defaultOpen={pathname.startsWith("/reports")}
+                activeTest={pathname.startsWith("/reports")}
+              >
+                {visibleReports.map(({ name, href, icon: Icon, sub }) => {
+                  if (sub) {
+                    return (
+                      <div key={href}>
+                        <button
+                          onClick={() => setSalesSubOpen(v => !v)}
+                          className={clsx(
+                            "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
+                            pathname.startsWith(href)
+                              ? "text-blue-700 font-semibold"
+                              : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                          <span className="flex-1 text-left truncate">{name}</span>
+                          <ChevronDown className={clsx("h-3 w-3 text-gray-400 flex-shrink-0 transition-transform duration-200", salesSubOpen && "rotate-180")} />
+                        </button>
+                        {salesSubOpen && (
+                          <div className="ml-3 pl-3 border-l border-gray-200 space-y-0.5 mt-0.5">
+                            {sub.map(({ name: n, href: h, icon: I }) => (
+                              <NavItem key={h} href={h} name={n} icon={I} exact onClick={close} small />
+                            ))}
+                          </div>
                         )}
-                      >
-                        <span className="flex items-center gap-2">
-                          <Icon className="h-3.5 w-3.5" />
-                          <span>{name}</span>
-                        </span>
-                        <ChevronRight className={clsx("h-3 w-3 transition-transform", salesSubOpen && "rotate-90")} />
-                      </button>
-                      <div className={clsx("ml-3 space-y-0.5 overflow-hidden transition-all duration-200", salesSubOpen ? "max-h-48 opacity-100 mt-0.5" : "max-h-0 opacity-0")}>
-                        {submenu.map(({ name: n, href: h, icon: I }) => navLink(h, n, I, true))}
                       </div>
-                    </div>
-                  );
-                }
-                return navLink(href, name, Icon, true);
-              })}
-            </NavGroup>
+                    );
+                  }
+                  return <NavItem key={href} href={href} name={name} icon={Icon} exact onClick={close} small />;
+                })}
+              </CollapsibleGroup>
+            </>
           )}
 
-          {/* Utilities */}
-          {visibleUtil.length > 0 && (
-            <NavGroup
-              label="Utilities"
-              isOpen={utilitiesOpen}
-              onToggle={() => setUtilitiesOpen(!utilitiesOpen)}
-              active={pathname.startsWith("/utilities")}
-              accent="emerald"
-            >
-              {visibleUtil.map(({ name, href, icon: Icon }) => navLink(href, name, Icon, true))}
-            </NavGroup>
-          )}
-
-          {/* Inventory */}
           {visibleInv.length > 0 && (
-            <NavGroup
-              label="Inventory"
-              isOpen={inventoryOpen}
-              onToggle={() => setInventoryOpen(!inventoryOpen)}
-              active={pathname.startsWith("/inventory")}
-              accent="orange"
-            >
-              {visibleInv.map(({ name, href, icon: Icon }) => navLink(href, name, Icon, true))}
-            </NavGroup>
+            <>
+              <SectionLabel>Inventory</SectionLabel>
+              {visibleInv.map(({ name, href, icon }) => (
+                <NavItem key={href} href={href} name={name} icon={icon} onClick={close} />
+              ))}
+            </>
           )}
 
-          {/* Settings */}
-          {visibleSettings.length > 0 && (
-            <NavGroup
-              label="Settings"
-              isOpen={settingsOpen}
-              onToggle={() => setSettingsOpen(!settingsOpen)}
-              active={pathname.startsWith("/settings")}
-              accent="purple"
-            >
-              {visibleSettings.map(({ name, href, icon: Icon }) => navLink(href, name, Icon, true))}
-            </NavGroup>
+          {visibleUtils.length > 0 && (
+            <>
+              <SectionLabel>Tools</SectionLabel>
+              <CollapsibleGroup
+                label="Utilities"
+                defaultOpen={pathname.startsWith("/utilities")}
+                activeTest={pathname.startsWith("/utilities")}
+              >
+                {visibleUtils.map(({ name, href, icon }) => (
+                  <NavItem key={href} href={href} name={name} icon={icon} exact onClick={close} small />
+                ))}
+              </CollapsibleGroup>
+            </>
           )}
+
+          {visibleSettings.length > 0 && (
+            <>
+              <SectionLabel>Settings</SectionLabel>
+              {visibleSettings.map(({ name, href, icon }) => (
+                <NavItem key={href} href={href} name={name} icon={icon} onClick={close} />
+              ))}
+            </>
+          )}
+
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-gray-200 p-3 flex-shrink-0">
-          <div className="flex items-center gap-3 px-2 py-2 mb-1 rounded-xl bg-gray-50">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="border-t border-gray-200 bg-white p-3 flex-shrink-0 space-y-1">
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-md">
+            <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center flex-shrink-0">
               <span className="text-white font-semibold text-xs">
                 {user?.email?.charAt(0).toUpperCase() || "U"}
               </span>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user?.userName || "User"}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.role}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-gray-900 truncate leading-snug">{user?.userName || "User"}</p>
+              <p className="text-[10px] text-gray-400 truncate leading-snug">{user?.role}</p>
             </div>
           </div>
-
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-600 rounded-xl hover:bg-red-50 hover:text-red-700 transition-all group"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-500 rounded-md hover:bg-red-50 hover:text-red-600 transition-colors group"
           >
-            <LogOut className="h-4 w-4 group-hover:text-red-600 transition-colors" />
+            <LogOut className="h-4 w-4 group-hover:text-red-500 transition-colors" />
             Sign out
           </button>
         </div>
