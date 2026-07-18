@@ -284,6 +284,14 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
         </nav>
 
+        {/* Developer credit */}
+        <div className="px-3 py-2 flex-shrink-0">
+          <p className="text-[10px] text-gray-400 text-center leading-snug">
+            Developed by <span className="font-medium text-gray-500">EYO Solutions Ghana</span>
+          </p>
+          <p className="text-[10px] text-gray-400 text-center">0246462398</p>
+        </div>
+
         {/* User footer */}
         <div className="border-t border-gray-200 bg-white p-3 flex-shrink-0 space-y-1">
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-md">
