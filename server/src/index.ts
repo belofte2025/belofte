@@ -22,6 +22,7 @@ import customerDebtroutes from "./routes/customerDebt.routes";
 import smsRoutes from "./routes/sms.routes";
 import roleRoutes from "./routes/role.routes";
 import itemRoutes from "./routes/item.routes";
+import accountingRoutes from "./routes/accounting.routes";
 dotenv.config();
 
 const app = express();
@@ -61,6 +62,7 @@ app.use("/api/audit", auditRoutes);
 app.use("/api/sms", smsRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/items", itemRoutes);
+app.use("/api/accounting", accountingRoutes);
 
 // ───────────────────── Static (Next.js export) ─────────────────────
 const clientBuildPath = path.join(__dirname, "../../client/out");
