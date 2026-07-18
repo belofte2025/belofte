@@ -11,6 +11,7 @@ import {
   Container, Package, TrendingUp, TrendingDown, Building2, Factory,
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
+  BookOpen, BookText, ArrowLeftRight, LineChart,
 } from "lucide-react";
 
 const mainItems = [
@@ -55,6 +56,14 @@ const settingsItems = [
 
 const inventoryItems = [
   { name: "Stock Adjustments", href: "/inventory/adjustments", icon: ClipboardList, permission: "inventory.adjust" },
+];
+
+const accountingItems = [
+  { name: "Overview",          href: "/accounting",                        icon: BookOpen },
+  { name: "Chart of Accounts", href: "/accounting/chart-of-accounts",      icon: BookText },
+  { name: "Journal",           href: "/accounting/journal",                 icon: FileText },
+  { name: "Transfers",         href: "/accounting/transfers",               icon: ArrowLeftRight },
+  { name: "Reports",           href: "/accounting/reports",                 icon: LineChart },
 ];
 
 type SidebarProps = { open: boolean; setOpen: (v: boolean) => void };
@@ -252,6 +261,17 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
               </CollapsibleGroup>
             </>
           )}
+
+          <SectionLabel>Accounting</SectionLabel>
+          <CollapsibleGroup
+            label="Accounting"
+            defaultOpen={pathname.startsWith("/accounting")}
+            activeTest={pathname.startsWith("/accounting")}
+          >
+            {accountingItems.map(({ name, href, icon }) => (
+              <NavItem key={href} href={href} name={name} icon={icon} exact onClick={close} small />
+            ))}
+          </CollapsibleGroup>
 
           {visibleSettings.length > 0 && (
             <>

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
+import { postCustomerPaymentJournal } from "../services/accounting/journalEngine";
 
 export const recordCustomerPayment = async (req: Request, res: Response) => {
   const { customerId, amount, note, paymentType, paymentDate } = req.body;
@@ -25,6 +26,17 @@ export const recordCustomerPayment = async (req: Request, res: Response) => {
     const payment = await prisma.customerPayment.create({
       data: paymentData,
     });
+
+    // Post accounting journal if enabled (non-fatal)
+    try {
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { enableAccounting: true } });
+      if (company?.enableAccounting && req.user?.id) {
+        await postCustomerPaymentJournal(prisma as any, payment, companyId, req.user.id);
+      }
+    } catch (journalErr) {
+      console.error("Payment journal failed (non-fatal):", journalErr);
+    }
+
     res.status(201).json(payment);
   } catch (err) {
     res.status(500).json({ error: "Failed to record payment", detail: err });

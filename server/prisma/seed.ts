@@ -58,6 +58,17 @@ const permissions = [
   { code: 'utilities.view', name: 'Access Utilities', category: 'utilities', description: 'Access utility tools' },
   { code: 'utilities.import', name: 'Import Data', category: 'utilities', description: 'Import customers and suppliers' },
 
+  // Inventory
+  { code: 'inventory.adjust', name: 'Adjust Inventory', category: 'inventory', description: 'Create stock adjustments' },
+
+  // Accounting
+  { code: 'accounting.view', name: 'View Accounting', category: 'accounting', description: 'View chart of accounts, journal entries, and reports' },
+  { code: 'accounting.manage_coa', name: 'Manage Chart of Accounts', category: 'accounting', description: 'Create and edit accounts in the COA' },
+  { code: 'accounting.post_journal', name: 'Post Manual Journals', category: 'accounting', description: 'Create and post manual journal entries' },
+  { code: 'accounting.reverse_journal', name: 'Reverse Journals', category: 'accounting', description: 'Reverse posted journal entries' },
+  { code: 'accounting.transfers', name: 'Record Transfers', category: 'accounting', description: 'Create ledger transfer records' },
+  { code: 'accounting.reports', name: 'View Accounting Reports', category: 'accounting', description: 'Access trial balance, P&L, and balance sheet' },
+
   // User Management
   { code: 'users.view', name: 'View Users', category: 'settings', description: 'View user list' },
   { code: 'users.create', name: 'Create Users', category: 'settings', description: 'Add new users' },
@@ -85,6 +96,9 @@ const roleTemplates = {
       'utilities.view', 'utilities.import',
       'users.view', 'users.create', 'users.edit', 'users.delete',
       'roles.manage',
+      'inventory.adjust',
+      'accounting.view', 'accounting.manage_coa', 'accounting.post_journal',
+      'accounting.reverse_journal', 'accounting.transfers', 'accounting.reports',
     ],
   },
   manager: {
@@ -102,6 +116,8 @@ const roleTemplates = {
       'debts.view', 'debts.create', 'debts.edit',
       'utilities.view',
       'users.view',
+      'inventory.adjust',
+      'accounting.view', 'accounting.post_journal', 'accounting.transfers', 'accounting.reports',
     ],
   },
   sales_attendant: {

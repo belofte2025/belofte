@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 import { logUpdate, EntityType } from "../utils/auditLogger";
+import { postSaleJournal } from "../services/accounting/journalEngine";
 
 export const recordSale = async (req: Request, res: Response) => {
   const { saleType, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
@@ -219,6 +220,16 @@ export const recordSale = async (req: Request, res: Response) => {
         },
       },
     });
+    // Post accounting journal if enabled (non-fatal)
+    try {
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { enableAccounting: true } });
+      if (company?.enableAccounting && req.user?.id) {
+        await postSaleJournal(prisma as any, sale, items, companyId, req.user.id);
+      }
+    } catch (journalErr) {
+      console.error("Journal entry failed (non-fatal):", journalErr);
+    }
+
     res.status(201).json(sale);
   } catch (err) {
     console.error("Sale recording error:", err);

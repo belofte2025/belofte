@@ -8,6 +8,50 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ── Accounting Enums ──────────────────────────────────────────────────────────
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  COGS
+  EXPENSE
+}
+
+enum NormalBalance {
+  DEBIT
+  CREDIT
+}
+
+enum JournalEntryStatus {
+  POSTED
+  REVERSED
+  VOID
+}
+
+enum JournalSource {
+  SALE
+  PURCHASE
+  CUSTOMER_PAYMENT
+  SUPPLIER_PAYMENT
+  EXPENSE
+  CUSTOMER_RETURN
+  SUPPLIER_RETURN
+  STOCK_ADJUSTMENT
+  TRANSFER
+  MANUAL
+  PAYROLL
+}
+
+enum TransferPartyType {
+  CUSTOMER
+  SUPPLIER
+  ACCOUNT
+}
+
+// ── Core Models ───────────────────────────────────────────────────────────────
+
 model AuditLog {
   id          String   @id @default(uuid())
   userId      String
@@ -20,21 +64,25 @@ model AuditLog {
 }
 
 model Company {
-  id              String            @id @default(uuid())
-  address         String?
-  phone           String?
-  createdAt       DateTime          @default(now())
-  companyName     String
-  Container       Container[]
-  Customer        Customer[]
-  CustomerDebt    CustomerDebt[]
-  CustomerPayment CustomerPayment[]
-  Role            Role[]
-  SMSLog          SMSLog[]
-  Sale            Sale[]
-  StockAdjustment StockAdjustment[]
-  Supplier        Supplier[]
-  User            User[]
+  id               String           @id @default(uuid())
+  address          String?
+  phone            String?
+  createdAt        DateTime         @default(now())
+  companyName      String
+  enableAccounting Boolean          @default(false)
+  Account          Account[]
+  Container        Container[]
+  Customer         Customer[]
+  CustomerDebt     CustomerDebt[]
+  CustomerPayment  CustomerPayment[]
+  JournalEntry     JournalEntry[]
+  LedgerTransfer   LedgerTransfer[]
+  Role             Role[]
+  SMSLog           SMSLog[]
+  Sale             Sale[]
+  StockAdjustment  StockAdjustment[]
+  Supplier         Supplier[]
+  User             User[]
 }
 
 model Container {
@@ -63,17 +111,19 @@ model ContainerItem {
 }
 
 model Customer {
-  id              String            @id @default(uuid())
+  id              String           @id @default(uuid())
   phone           String
-  balance         Float             @default(0)
+  balance         Float            @default(0)
   companyId       String
-  createdAt       DateTime          @default(now())
+  createdAt       DateTime         @default(now())
   customerName    String
-  Company         Company           @relation(fields: [companyId], references: [id])
+  Company         Company          @relation(fields: [companyId], references: [id])
   CustomerDebt    CustomerDebt[]
   CustomerPayment CustomerPayment[]
   SMSLog          SMSLog[]
   Sale            Sale[]
+  DebitTransfers  LedgerTransfer[] @relation("TransferDebitCustomer")
+  CreditTransfers LedgerTransfer[] @relation("TransferCreditCustomer")
 }
 
 model CustomerDebt {
@@ -91,15 +141,16 @@ model CustomerDebt {
 }
 
 model CustomerPayment {
-  id          String   @id @default(uuid())
-  customerId  String
-  companyId   String
-  amount      Float
-  note        String?
-  createdAt   DateTime @default(now())
-  paymentType String?  @db.VarChar
-  Company     Company  @relation(fields: [companyId], references: [id])
-  Customer    Customer @relation(fields: [customerId], references: [id])
+  id            String         @id @default(uuid())
+  customerId    String
+  companyId     String
+  amount        Float
+  note          String?
+  createdAt     DateTime       @default(now())
+  paymentType   String?        @db.VarChar
+  Company       Company        @relation(fields: [companyId], references: [id])
+  Customer      Customer       @relation(fields: [customerId], references: [id])
+  JournalEntries JournalEntry[]
 }
 
 model Permission {
@@ -150,20 +201,21 @@ model SMSLog {
 }
 
 model Sale {
-  id            String     @id @default(uuid())
-  saleType      String
-  sourceType    String
-  sourceId      String
-  customerId    String
-  companyId     String
-  totalAmount   Float
-  createdAt     DateTime   @default(now())
-  discountType  String?
-  discountValue Float      @default(0)
-  subtotal      Float      @default(0)
-  Company       Company    @relation(fields: [companyId], references: [id])
-  Customer      Customer   @relation(fields: [customerId], references: [id])
-  SaleItem      SaleItem[]
+  id             String         @id @default(uuid())
+  saleType       String
+  sourceType     String
+  sourceId       String
+  customerId     String
+  companyId      String
+  totalAmount    Float
+  createdAt      DateTime       @default(now())
+  discountType   String?
+  discountValue  Float          @default(0)
+  subtotal       Float          @default(0)
+  Company        Company        @relation(fields: [companyId], references: [id])
+  Customer       Customer       @relation(fields: [customerId], references: [id])
+  SaleItem       SaleItem[]
+  JournalEntries JournalEntry[]
 }
 
 model SaleItem {
@@ -196,37 +248,144 @@ model StockAdjustment {
 }
 
 model Supplier {
-  id              String            @id @default(uuid())
+  id              String           @id @default(uuid())
   contact         String
   country         String
   companyId       String
-  createdAt       DateTime          @default(now())
+  createdAt       DateTime         @default(now())
   suppliername    String
   Container       Container[]
   StockAdjustment StockAdjustment[]
-  Company         Company           @relation(fields: [companyId], references: [id])
+  Company         Company          @relation(fields: [companyId], references: [id])
   SupplierItem    SupplierItem[]
+  DebitTransfers  LedgerTransfer[] @relation("TransferDebitSupplier")
+  CreditTransfers LedgerTransfer[] @relation("TransferCreditSupplier")
 }
 
 model SupplierItem {
-  id         String   @id @default(uuid())
-  supplierId String
-  itemName   String
-  price      Float
-  alias      String?
-  Supplier   Supplier @relation(fields: [supplierId], references: [id])
+  id              String   @id @default(uuid())
+  supplierId      String
+  itemName        String
+  price           Float
+  alias           String?
+  incomeAccountId String?
+  cogsAccountId   String?
+  Supplier        Supplier @relation(fields: [supplierId], references: [id])
+  IncomeAccount   Account? @relation("IncomeAccount", fields: [incomeAccountId], references: [id])
+  CogsAccount     Account? @relation("CogsAccount", fields: [cogsAccountId], references: [id])
 }
 
 model User {
-  id              String            @id @default(uuid())
-  email           String            @unique
+  id              String           @id @default(uuid())
+  email           String           @unique
   password        String
   companyId       String
-  createdAt       DateTime          @default(now())
+  createdAt       DateTime         @default(now())
   userName        String
   roleId          String?
   AuditLog        AuditLog[]
   StockAdjustment StockAdjustment[]
-  Company         Company           @relation(fields: [companyId], references: [id])
-  Role            Role?             @relation(fields: [roleId], references: [id])
+  Company         Company          @relation(fields: [companyId], references: [id])
+  Role            Role?            @relation(fields: [roleId], references: [id])
+  JournalEntries  JournalEntry[]   @relation("JournalPostedBy")
+  LedgerTransfers LedgerTransfer[] @relation("TransferPostedBy")
+}
+
+// ── Accounting Models ─────────────────────────────────────────────────────────
+
+model Account {
+  id              String           @id @default(uuid())
+  companyId       String
+  code            String
+  name            String
+  type            AccountType
+  normalBalance   NormalBalance
+  parentId        String?
+  isSystemAccount Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  description     String?
+  createdAt       DateTime         @default(now())
+  Company         Company          @relation(fields: [companyId], references: [id])
+  Parent          Account?         @relation("AccountParent", fields: [parentId], references: [id])
+  Children        Account[]        @relation("AccountParent")
+  JournalLines    JournalLine[]
+  DebitTransfers  LedgerTransfer[] @relation("TransferDebitAccount")
+  CreditTransfers LedgerTransfer[] @relation("TransferCreditAccount")
+  IncomeItems     SupplierItem[]   @relation("IncomeAccount")
+  CogsItems       SupplierItem[]   @relation("CogsAccount")
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model JournalEntry {
+  id                String             @id @default(uuid())
+  companyId         String
+  entryNumber       String
+  date              DateTime
+  description       String
+  source            JournalSource
+  status            JournalEntryStatus @default(POSTED)
+  saleId            String?
+  customerPaymentId String?
+  ledgerTransferId  String?
+  reversalOfId      String?
+  postedById        String
+  createdAt         DateTime           @default(now())
+  Company           Company            @relation(fields: [companyId], references: [id])
+  PostedBy          User               @relation("JournalPostedBy", fields: [postedById], references: [id])
+  Sale              Sale?              @relation(fields: [saleId], references: [id])
+  CustomerPayment   CustomerPayment?   @relation(fields: [customerPaymentId], references: [id])
+  LedgerTransfer    LedgerTransfer?    @relation("JELedgerTransfer", fields: [ledgerTransferId], references: [id])
+  ReversalOf        JournalEntry?      @relation("JEReversalOf", fields: [reversalOfId], references: [id])
+  Reversals         JournalEntry[]     @relation("JEReversalOf")
+  lines             JournalLine[]
+
+  @@unique([companyId, entryNumber])
+  @@index([companyId])
+  @@index([saleId])
+  @@index([customerPaymentId])
+}
+
+model JournalLine {
+  id             String       @id @default(uuid())
+  journalEntryId String
+  accountId      String
+  debit          Float        @default(0)
+  credit         Float        @default(0)
+  description    String?
+  Account        Account      @relation(fields: [accountId], references: [id])
+  JournalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@index([accountId])
+}
+
+model LedgerTransfer {
+  id               String            @id @default(uuid())
+  companyId        String
+  amount           Float
+  description      String
+  date             DateTime
+  debitPartyType   TransferPartyType
+  debitCustomerId  String?
+  debitSupplierId  String?
+  debitAccountId   String?
+  creditPartyType  TransferPartyType
+  creditCustomerId String?
+  creditSupplierId String?
+  creditAccountId  String?
+  postedById       String
+  createdAt        DateTime          @default(now())
+  Company          Company           @relation(fields: [companyId], references: [id])
+  PostedBy         User              @relation("TransferPostedBy", fields: [postedById], references: [id])
+  DebitCustomer    Customer?         @relation("TransferDebitCustomer", fields: [debitCustomerId], references: [id])
+  CreditCustomer   Customer?         @relation("TransferCreditCustomer", fields: [creditCustomerId], references: [id])
+  DebitSupplier    Supplier?         @relation("TransferDebitSupplier", fields: [debitSupplierId], references: [id])
+  CreditSupplier   Supplier?         @relation("TransferCreditSupplier", fields: [creditSupplierId], references: [id])
+  DebitAccount     Account?          @relation("TransferDebitAccount", fields: [debitAccountId], references: [id])
+  CreditAccount    Account?          @relation("TransferCreditAccount", fields: [creditAccountId], references: [id])
+  JournalEntries   JournalEntry[]    @relation("JELedgerTransfer")
+
+  @@index([companyId])
 }
