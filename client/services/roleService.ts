@@ -26,6 +26,18 @@ export type Role = {
   };
 };
 
+// Prisma returns PascalCase relation names; normalize to the frontend type shape
+function normalizeRole(raw: any): Role {
+  return {
+    ...raw,
+    permissions: (raw.RolePermission ?? raw.permissions ?? []).map((rp: any) => ({
+      permissionId: rp.permissionId,
+      permission: rp.Permission ?? rp.permission,
+    })),
+    _count: raw._count ? { users: raw._count.User ?? raw._count.users ?? 0 } : undefined,
+  };
+}
+
 export type CreateRoleData = {
   name: string;
   description?: string;
@@ -50,7 +62,7 @@ export type AssignRoleData = {
  */
 export const getRoles = async (): Promise<Role[]> => {
   const response = await api.get("/roles");
-  return response.data;
+  return (response.data as any[]).map(normalizeRole);
 };
 
 /**
@@ -58,7 +70,7 @@ export const getRoles = async (): Promise<Role[]> => {
  */
 export const getRoleById = async (id: string): Promise<Role> => {
   const response = await api.get(`/roles/${id}`);
-  return response.data;
+  return normalizeRole(response.data);
 };
 
 /**
@@ -77,7 +89,7 @@ export const getPermissions = async (): Promise<{
  */
 export const createRole = async (data: CreateRoleData): Promise<Role> => {
   const response = await api.post("/roles", data);
-  return response.data;
+  return normalizeRole(response.data);
 };
 
 /**
@@ -88,7 +100,7 @@ export const updateRole = async (
   data: UpdateRoleData
 ): Promise<Role> => {
   const response = await api.put(`/roles/${id}`, data);
-  return response.data;
+  return normalizeRole(response.data);
 };
 
 /**
