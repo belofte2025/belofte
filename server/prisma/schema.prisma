@@ -249,6 +249,7 @@ model SaleItem {
   itemName  String
   quantity  Int
   unitPrice Float
+  costPrice Float  @default(0)
   Sale      Sale   @relation(fields: [saleId], references: [id])
 }
 

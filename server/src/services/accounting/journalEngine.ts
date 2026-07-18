@@ -7,6 +7,7 @@ interface SaleItem {
   itemName: string;
   quantity: number;
   unitPrice: number;
+  costPrice?: number;
 }
 
 interface SaleRecord {
@@ -39,31 +40,13 @@ export async function postSaleJournal(
     { accountId: revenueAccountId, debit: 0,     credit: amount, description: `Sale revenue` },
   ];
 
-  // COGS: look up cost prices from SupplierItem
-  try {
-    const itemNames = items.map(i => i.itemName);
-    const supplierItems = await (tx as PrismaClient).supplierItem.findMany({
-      where: { itemName: { in: itemNames }, Supplier: { companyId } },
-      select: { itemName: true, price: true },
-    });
-    const costMap = new Map(supplierItems.map(si => [si.itemName, si.price]));
-
-    let totalCost = 0;
-    for (const item of items) {
-      const cost = costMap.get(item.itemName);
-      if (cost != null && cost > 0) {
-        totalCost += cost * item.quantity;
-      }
-    }
-
-    if (totalCost > 0) {
-      const cogsId = await getAccountId(tx, companyId, ACCOUNT_CODES.COGS);
-      const inventoryId = await getAccountId(tx, companyId, ACCOUNT_CODES.INVENTORY);
-      lines.push({ accountId: cogsId,      debit: totalCost, credit: 0,         description: "COGS" });
-      lines.push({ accountId: inventoryId, debit: 0,         credit: totalCost, description: "Inventory reduction" });
-    }
-  } catch {
-    // COGS lookup failed — post revenue-only journal
+  // COGS: use cost price captured at point of sale
+  const totalCost = items.reduce((s, i) => s + (i.costPrice ?? 0) * i.quantity, 0);
+  if (totalCost > 0) {
+    const cogsId      = await getAccountId(tx, companyId, ACCOUNT_CODES.COGS);
+    const inventoryId = await getAccountId(tx, companyId, ACCOUNT_CODES.INVENTORY);
+    lines.push({ accountId: cogsId,      debit: totalCost, credit: 0,         description: "COGS" });
+    lines.push({ accountId: inventoryId, debit: 0,         credit: totalCost, description: "Inventory reduction" });
   }
 
   assertBalanced(lines);

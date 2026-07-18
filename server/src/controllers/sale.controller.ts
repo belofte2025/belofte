@@ -171,6 +171,28 @@ export const recordSale = async (req: Request, res: Response) => {
       }
     }
 
+    // Look up purchase cost prices for COGS journaling
+    const itemNames = items.map((i: { itemName: string }) => i.itemName);
+    const costPriceMap = new Map<string, number>();
+    try {
+      if (sourceType === "container" && sourceId) {
+        const containerItems = await prisma.containerItem.findMany({
+          where: { containerId: sourceId, itemName: { in: itemNames } },
+          select: { itemName: true, unitPrice: true },
+        });
+        containerItems.forEach((ci) => costPriceMap.set(ci.itemName, ci.unitPrice));
+      } else {
+        const latestCosts = await prisma.containerItem.findMany({
+          where: { itemName: { in: itemNames }, Container: { companyId } },
+          select: { itemName: true, unitPrice: true },
+          orderBy: { Container: { arrivalDate: "desc" } },
+        });
+        latestCosts.forEach((ci) => {
+          if (!costPriceMap.has(ci.itemName)) costPriceMap.set(ci.itemName, ci.unitPrice);
+        });
+      }
+    } catch { /* cost lookup non-fatal */ }
+
     // Calculate subtotal (sum of all items before discount)
     const subtotal = items.reduce(
       (sum: number, i: { unitPrice: number; quantity: number }) =>
@@ -214,6 +236,7 @@ export const recordSale = async (req: Request, res: Response) => {
                 itemName: i.itemName,
                 quantity: i.quantity,
                 unitPrice: i.unitPrice,
+                costPrice: costPriceMap.get(i.itemName) ?? 0,
               })
             ),
           },
@@ -224,7 +247,11 @@ export const recordSale = async (req: Request, res: Response) => {
     try {
       const company = await prisma.company.findUnique({ where: { id: companyId }, select: { enableAccounting: true } });
       if (company?.enableAccounting && req.user?.id) {
-        await postSaleJournal(prisma as any, sale, items, companyId, req.user.id);
+        const itemsWithCost = items.map((i: any) => ({
+          ...i,
+          costPrice: costPriceMap.get(i.itemName) ?? 0,
+        }));
+        await postSaleJournal(prisma as any, sale, itemsWithCost, companyId, req.user.id);
       }
     } catch (journalErr) {
       console.error("Journal entry failed (non-fatal):", journalErr);
