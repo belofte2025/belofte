@@ -42,6 +42,23 @@ enum JournalSource {
   TRANSFER
   MANUAL
   PAYROLL
+  INVOICE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum WaybillStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
 }
 
 enum TransferPartyType {
@@ -75,6 +92,8 @@ model Company {
   Customer         Customer[]
   CustomerDebt     CustomerDebt[]
   CustomerPayment  CustomerPayment[]
+  Expense          Expense[]
+  Invoice          Invoice[]
   JournalEntry     JournalEntry[]
   LedgerTransfer   LedgerTransfer[]
   Role             Role[]
@@ -83,6 +102,7 @@ model Company {
   StockAdjustment  StockAdjustment[]
   Supplier         Supplier[]
   User             User[]
+  Waybill          Waybill[]
 }
 
 model Container {
@@ -120,8 +140,10 @@ model Customer {
   Company         Company          @relation(fields: [companyId], references: [id])
   CustomerDebt    CustomerDebt[]
   CustomerPayment CustomerPayment[]
+  Invoice         Invoice[]
   SMSLog          SMSLog[]
   Sale            Sale[]
+  Waybill         Waybill[]
   DebitTransfers  LedgerTransfer[] @relation("TransferDebitCustomer")
   CreditTransfers LedgerTransfer[] @relation("TransferCreditCustomer")
 }
@@ -147,10 +169,11 @@ model CustomerPayment {
   amount        Float
   note          String?
   createdAt     DateTime       @default(now())
-  paymentType   String?        @db.VarChar
-  Company       Company        @relation(fields: [companyId], references: [id])
-  Customer      Customer       @relation(fields: [customerId], references: [id])
-  JournalEntries JournalEntry[]
+  paymentType         String?        @db.VarChar
+  depositAccountCode  String?
+  Company             Company        @relation(fields: [companyId], references: [id])
+  Customer            Customer       @relation(fields: [customerId], references: [id])
+  JournalEntries      JournalEntry[]
 }
 
 model Permission {
@@ -215,6 +238,8 @@ model Sale {
   Company        Company        @relation(fields: [companyId], references: [id])
   Customer       Customer       @relation(fields: [customerId], references: [id])
   SaleItem       SaleItem[]
+  Invoice        Invoice[]
+  Waybill        Waybill[]
   JournalEntries JournalEntry[]
 }
 
@@ -289,6 +314,7 @@ model User {
   Role            Role?            @relation(fields: [roleId], references: [id])
   JournalEntries  JournalEntry[]   @relation("JournalPostedBy")
   LedgerTransfers LedgerTransfer[] @relation("TransferPostedBy")
+  Expenses        Expense[]        @relation("ExpensePostedBy")
 }
 
 // ── Accounting Models ─────────────────────────────────────────────────────────
@@ -308,11 +334,13 @@ model Account {
   Company         Company          @relation(fields: [companyId], references: [id])
   Parent          Account?         @relation("AccountParent", fields: [parentId], references: [id])
   Children        Account[]        @relation("AccountParent")
-  JournalLines    JournalLine[]
-  DebitTransfers  LedgerTransfer[] @relation("TransferDebitAccount")
-  CreditTransfers LedgerTransfer[] @relation("TransferCreditAccount")
-  IncomeItems     SupplierItem[]   @relation("IncomeAccount")
-  CogsItems       SupplierItem[]   @relation("CogsAccount")
+  JournalLines         JournalLine[]
+  DebitTransfers       LedgerTransfer[] @relation("TransferDebitAccount")
+  CreditTransfers      LedgerTransfer[] @relation("TransferCreditAccount")
+  IncomeItems          SupplierItem[]   @relation("IncomeAccount")
+  CogsItems            SupplierItem[]   @relation("CogsAccount")
+  ExpenseEntries       Expense[]        @relation("ExpenseAccount")
+  ExpensePayments      Expense[]        @relation("ExpensePaymentAccount")
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -329,6 +357,8 @@ model JournalEntry {
   saleId            String?
   customerPaymentId String?
   ledgerTransferId  String?
+  invoiceId         String?
+  expenseId         String?
   reversalOfId      String?
   postedById        String
   createdAt         DateTime           @default(now())
@@ -337,6 +367,8 @@ model JournalEntry {
   Sale              Sale?              @relation(fields: [saleId], references: [id])
   CustomerPayment   CustomerPayment?   @relation(fields: [customerPaymentId], references: [id])
   LedgerTransfer    LedgerTransfer?    @relation("JELedgerTransfer", fields: [ledgerTransferId], references: [id])
+  Invoice           Invoice?           @relation(fields: [invoiceId], references: [id])
+  Expense           Expense?           @relation(fields: [expenseId], references: [id])
   ReversalOf        JournalEntry?      @relation("JEReversalOf", fields: [reversalOfId], references: [id])
   Reversals         JournalEntry[]     @relation("JEReversalOf")
   lines             JournalLine[]
@@ -387,5 +419,102 @@ model LedgerTransfer {
   CreditAccount    Account?          @relation("TransferCreditAccount", fields: [creditAccountId], references: [id])
   JournalEntries   JournalEntry[]    @relation("JELedgerTransfer")
 
+  @@index([companyId])
+}
+
+// ── Invoice / Waybill / Expense ───────────────────────────────────────────────
+
+model Invoice {
+  id            String        @id @default(uuid())
+  companyId     String
+  customerId    String
+  saleId        String?
+  invoiceNumber String
+  issueDate     DateTime      @default(now())
+  dueDate       DateTime?
+  status        InvoiceStatus @default(DRAFT)
+  notes         String?
+  terms         String?
+  subtotal      Float
+  discountValue Float         @default(0)
+  totalAmount   Float
+  paidAmount    Float         @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  Company       Company       @relation(fields: [companyId], references: [id])
+  Customer      Customer      @relation(fields: [customerId], references: [id])
+  Sale          Sale?         @relation(fields: [saleId], references: [id])
+  Items         InvoiceItem[]
+  JournalEntries JournalEntry[]
+  Waybill       Waybill[]
+
+  @@unique([companyId, invoiceNumber])
+  @@index([companyId])
+  @@index([customerId])
+}
+
+model InvoiceItem {
+  id        String  @id @default(uuid())
+  invoiceId String
+  itemName  String
+  quantity  Int
+  unitPrice Float
+  total     Float
+  Invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Waybill {
+  id            String        @id @default(uuid())
+  companyId     String
+  customerId    String?
+  saleId        String?
+  invoiceId     String?
+  waybillNumber String
+  issueDate     DateTime      @default(now())
+  deliveryDate  DateTime?
+  deliveredTo   String?
+  driverName    String?
+  vehicleNo     String?
+  notes         String?
+  status        WaybillStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  Company       Company       @relation(fields: [companyId], references: [id])
+  Customer      Customer?     @relation(fields: [customerId], references: [id])
+  Sale          Sale?         @relation(fields: [saleId], references: [id])
+  Invoice       Invoice?      @relation(fields: [invoiceId], references: [id])
+  Items         WaybillItem[]
+
+  @@unique([companyId, waybillNumber])
+  @@index([companyId])
+}
+
+model WaybillItem {
+  id        String  @id @default(uuid())
+  waybillId String
+  itemName  String
+  quantity  Int
+  unit      String?
+  Waybill   Waybill @relation(fields: [waybillId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id               String   @id @default(uuid())
+  companyId        String
+  expenseNumber    String
+  date             DateTime
+  description      String
+  amount           Float
+  accountId        String
+  paymentAccountId String
+  reference        String?
+  postedById       String
+  createdAt        DateTime @default(now())
+  Company          Company  @relation(fields: [companyId], references: [id])
+  ExpenseAccount   Account  @relation("ExpenseAccount",        fields: [accountId],        references: [id])
+  PaymentAccount   Account  @relation("ExpensePaymentAccount", fields: [paymentAccountId], references: [id])
+  PostedBy         User     @relation("ExpensePostedBy",       fields: [postedById],       references: [id])
+  JournalEntries   JournalEntry[]
+
+  @@unique([companyId, expenseNumber])
   @@index([companyId])
 }

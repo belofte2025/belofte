@@ -11,7 +11,7 @@ import {
   Container, Package, TrendingUp, TrendingDown, Building2, Factory,
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
-  BookOpen, BookText, ArrowLeftRight, LineChart,
+  BookOpen, BookText, ArrowLeftRight, LineChart, Receipt, BadgeDollarSign,
 } from "lucide-react";
 
 const mainItems = [
@@ -60,6 +60,9 @@ const inventoryItems = [
 
 const accountingItems = [
   { name: "Overview",          href: "/accounting",                        icon: BookOpen },
+  { name: "Invoices",          href: "/accounting/invoices",               icon: Receipt },
+  { name: "Expenses",          href: "/accounting/expenses",               icon: BadgeDollarSign },
+  { name: "Waybills",          href: "/accounting/waybills",               icon: Truck },
   { name: "Chart of Accounts", href: "/accounting/chart-of-accounts",      icon: BookText },
   { name: "Journal",           href: "/accounting/journal",                 icon: FileText },
   { name: "Transfers",         href: "/accounting/transfers",               icon: ArrowLeftRight },

@@ -1,5 +1,5 @@
 import { PrismaClient, JournalSource } from "@prisma/client";
-import { ACCOUNT_CODES, getAccountId, assertBalanced, nextEntryNumber } from "./accounts";
+import { ACCOUNT_CODES, getAccountId, assertBalanced, nextEntryNumber, paymentTypeToAccountCode } from "./accounts";
 
 type Tx = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 
@@ -29,9 +29,9 @@ export async function postSaleJournal(
   const entryNumber = await nextEntryNumber(tx, companyId);
   const amount = sale.totalAmount;
 
-  // Determine debit account based on sale type
+  // Determine debit account: credit sale → AR, cash sale → Cash on Hand
   const debitCode = sale.saleType === "CREDIT" ? ACCOUNT_CODES.ACCOUNTS_RECEIVABLE : ACCOUNT_CODES.CASH_ON_HAND;
-  const debitAccountId = await getAccountId(tx, companyId, debitCode);
+  const debitAccountId   = await getAccountId(tx, companyId, debitCode);
   const revenueAccountId = await getAccountId(tx, companyId, ACCOUNT_CODES.SALES_REVENUE);
 
   const lines: { accountId: string; debit: number; credit: number; description?: string }[] = [
@@ -100,12 +100,8 @@ export async function postCustomerPaymentJournal(
   const tx = prismaOrTx as Tx;
   const entryNumber = await nextEntryNumber(tx, companyId);
 
-  // Debit account depends on payment method
-  let debitCode = ACCOUNT_CODES.CASH_ON_HAND;
-  if (payment.paymentType?.toLowerCase().includes("bank")) debitCode = ACCOUNT_CODES.CASH_IN_BANK;
-  if (payment.paymentType?.toLowerCase().includes("mobile") || payment.paymentType?.toLowerCase().includes("momo")) {
-    debitCode = ACCOUNT_CODES.MOBILE_MONEY;
-  }
+  // Debit account: use explicit depositAccountCode, then fall back to paymentType inference
+  const debitCode = paymentTypeToAccountCode((payment as any).depositAccountCode || payment.paymentType);
 
   const debitAccountId = await getAccountId(tx, companyId, debitCode);
   const arAccountId    = await getAccountId(tx, companyId, ACCOUNT_CODES.ACCOUNTS_RECEIVABLE);
@@ -196,6 +192,112 @@ export async function postStockAdjustmentJournal(
       date,
       description: "Stock adjustment",
       source: JournalSource.STOCK_ADJUSTMENT,
+      postedById,
+      lines: { create: lines },
+    },
+  });
+}
+
+// Invoice journal: DR AR + CR Revenue (+ COGS if cost available)
+interface InvoiceRecord {
+  id: string;
+  totalAmount: number;
+  subtotal: number;
+  companyId: string;
+  issueDate: Date;
+}
+
+interface InvoiceLineItem {
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export async function postInvoiceJournal(
+  prismaOrTx: PrismaClient | Tx,
+  invoice: InvoiceRecord,
+  items: InvoiceLineItem[],
+  companyId: string,
+  postedById: string
+): Promise<void> {
+  const tx = prismaOrTx as Tx;
+  const entryNumber  = await nextEntryNumber(tx, companyId);
+  const arAccountId  = await getAccountId(tx, companyId, ACCOUNT_CODES.ACCOUNTS_RECEIVABLE);
+  const revAccountId = await getAccountId(tx, companyId, ACCOUNT_CODES.SALES_REVENUE);
+
+  const lines: { accountId: string; debit: number; credit: number; description?: string }[] = [
+    { accountId: arAccountId,  debit: invoice.totalAmount, credit: 0,                    description: `Invoice ${invoice.id}` },
+    { accountId: revAccountId, debit: 0,                   credit: invoice.totalAmount,  description: "Sales revenue" },
+  ];
+
+  // COGS lookup
+  try {
+    const itemNames = items.map(i => i.itemName);
+    const supplierItems = await (tx as PrismaClient).supplierItem.findMany({
+      where: { itemName: { in: itemNames }, Supplier: { companyId } },
+      select: { itemName: true, price: true },
+    });
+    const costMap = new Map(supplierItems.map(si => [si.itemName, si.price]));
+    const totalCost = items.reduce((s, i) => s + (costMap.get(i.itemName) ?? 0) * i.quantity, 0);
+    if (totalCost > 0) {
+      const cogsId      = await getAccountId(tx, companyId, ACCOUNT_CODES.COGS);
+      const inventoryId = await getAccountId(tx, companyId, ACCOUNT_CODES.INVENTORY);
+      lines.push({ accountId: cogsId,      debit: totalCost, credit: 0,         description: "COGS" });
+      lines.push({ accountId: inventoryId, debit: 0,         credit: totalCost, description: "Inventory reduction" });
+    }
+  } catch { /* skip COGS if lookup fails */ }
+
+  assertBalanced(lines);
+
+  await (tx as PrismaClient).journalEntry.create({
+    data: {
+      companyId,
+      entryNumber,
+      date: invoice.issueDate,
+      description: "Invoice issued",
+      source: JournalSource.INVOICE,
+      invoiceId: invoice.id,
+      postedById,
+      lines: { create: lines },
+    },
+  });
+}
+
+// Expense journal: DR expense account + CR payment account (Cash/Bank/MoMo)
+interface ExpenseRecord {
+  id: string;
+  amount: number;
+  description: string;
+  accountId: string;
+  paymentAccountId: string;
+  date: Date;
+  companyId: string;
+}
+
+export async function postExpenseJournal(
+  prismaOrTx: PrismaClient | Tx,
+  expense: ExpenseRecord,
+  companyId: string,
+  postedById: string
+): Promise<void> {
+  const tx = prismaOrTx as Tx;
+  const entryNumber = await nextEntryNumber(tx, companyId);
+
+  const lines = [
+    { accountId: expense.accountId,        debit: expense.amount, credit: 0,              description: expense.description },
+    { accountId: expense.paymentAccountId, debit: 0,              credit: expense.amount, description: "Payment" },
+  ];
+
+  assertBalanced(lines);
+
+  await (tx as PrismaClient).journalEntry.create({
+    data: {
+      companyId,
+      entryNumber,
+      date: expense.date,
+      description: expense.description,
+      source: JournalSource.EXPENSE,
+      expenseId: expense.id,
       postedById,
       lines: { create: lines },
     },
