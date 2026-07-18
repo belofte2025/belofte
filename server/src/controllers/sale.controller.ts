@@ -391,11 +391,34 @@ export const updateSale = async (req: Request, res: Response) => {
   const companyId = req.user?.companyId;
 
   try {
-    const existing = await prisma.sale.findUnique({ where: { id }, select: { companyId: true } });
+    const existing = await prisma.sale.findUnique({
+      where: { id },
+      select: { companyId: true, sourceType: true, sourceId: true },
+    });
     if (!existing || existing.companyId !== companyId) {
       res.status(404).json({ error: "Sale not found" });
       return;
     }
+
+    // Re-look up cost prices so COGS stays accurate after edit
+    const editedItemNames = items.map((i: { itemName: string }) => i.itemName);
+    const editCostMap = new Map<string, number>();
+    try {
+      if (existing.sourceType === "container" && existing.sourceId) {
+        const cItems = await prisma.containerItem.findMany({
+          where: { containerId: existing.sourceId, itemName: { in: editedItemNames } },
+          select: { itemName: true, unitPrice: true },
+        });
+        cItems.forEach((ci) => editCostMap.set(ci.itemName, ci.unitPrice));
+      } else {
+        const cItems = await prisma.containerItem.findMany({
+          where: { itemName: { in: editedItemNames }, Container: { companyId } },
+          select: { itemName: true, unitPrice: true },
+          orderBy: { Container: { arrivalDate: "desc" } },
+        });
+        cItems.forEach((ci) => { if (!editCostMap.has(ci.itemName)) editCostMap.set(ci.itemName, ci.unitPrice); });
+      }
+    } catch { /* non-fatal — costPrice stays 0 */ }
 
     const updateData: any = {
       saleType,
@@ -411,6 +434,7 @@ export const updateSale = async (req: Request, res: Response) => {
               itemName: item.itemName,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
+              costPrice: editCostMap.get(item.itemName) ?? 0,
             })
           ),
         },

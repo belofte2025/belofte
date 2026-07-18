@@ -127,13 +127,15 @@ export async function postStockAdjustmentJournal(
 ): Promise<void> {
   const tx = prismaOrTx as Tx;
 
-  // Look up cost prices for all items
+  // Look up actual purchase costs from ContainerItem (not SupplierItem.price which is selling price)
   const itemNames = adjustments.map(a => a.itemName);
-  const supplierItems = await (tx as PrismaClient).supplierItem.findMany({
-    where: { supplierId, itemName: { in: itemNames } },
-    select: { itemName: true, price: true },
+  const containerItems = await (tx as PrismaClient).containerItem.findMany({
+    where: { itemName: { in: itemNames }, Container: { supplierId, companyId } },
+    select: { itemName: true, unitPrice: true },
+    orderBy: { Container: { arrivalDate: "desc" } } as any,
   });
-  const costMap = new Map(supplierItems.map(si => [si.itemName, si.price]));
+  const costMap = new Map<string, number>();
+  containerItems.forEach((ci: any) => { if (!costMap.has(ci.itemName)) costMap.set(ci.itemName, ci.unitPrice); });
 
   let totalLoss = 0;
   let totalGain = 0;
@@ -213,14 +215,16 @@ export async function postInvoiceJournal(
     { accountId: revAccountId, debit: 0,                   credit: invoice.totalAmount,  description: "Sales revenue" },
   ];
 
-  // COGS lookup
+  // COGS: use most recent ContainerItem.unitPrice (actual purchase cost, not selling price)
   try {
     const itemNames = items.map(i => i.itemName);
-    const supplierItems = await (tx as PrismaClient).supplierItem.findMany({
-      where: { itemName: { in: itemNames }, Supplier: { companyId } },
-      select: { itemName: true, price: true },
+    const containerItems = await (tx as PrismaClient).containerItem.findMany({
+      where: { itemName: { in: itemNames }, Container: { companyId } },
+      select: { itemName: true, unitPrice: true },
+      orderBy: { Container: { arrivalDate: "desc" } } as any,
     });
-    const costMap = new Map(supplierItems.map(si => [si.itemName, si.price]));
+    const costMap = new Map<string, number>();
+    containerItems.forEach((ci: any) => { if (!costMap.has(ci.itemName)) costMap.set(ci.itemName, ci.unitPrice); });
     const totalCost = items.reduce((s, i) => s + (costMap.get(i.itemName) ?? 0) * i.quantity, 0);
     if (totalCost > 0) {
       const cogsId      = await getAccountId(tx, companyId, ACCOUNT_CODES.COGS);

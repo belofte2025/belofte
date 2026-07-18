@@ -143,6 +143,17 @@ export const mergeDuplicateItems = async (req: Request, res: Response): Promise<
           data: { itemName: masterName },
         });
 
+        // Keep invoice and waybill records consistent with renamed items
+        await tx.invoiceItem.updateMany({
+          where: { itemName: { in: duplicateNames }, Invoice: { companyId } },
+          data: { itemName: masterName },
+        });
+
+        await tx.waybillItem.updateMany({
+          where: { itemName: { in: duplicateNames }, Waybill: { companyId } },
+          data: { itemName: masterName },
+        });
+
         const existingMasterItem = await tx.supplierItem.findFirst({
           where: { supplierId, itemName: masterName },
         });
