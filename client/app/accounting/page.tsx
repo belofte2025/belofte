@@ -10,6 +10,8 @@ import {
   BarChart3,
   AlertCircle,
   ChevronRight,
+  Receipt,
+  Truck,
 } from "lucide-react";
 import { getAccounts } from "@/services/accountingService";
 import toast from "react-hot-toast";
@@ -42,6 +44,27 @@ const navCards = [
     title: "Reports",
     description: "Trial balance, income statement, balance sheet",
     color: "text-orange-600 bg-orange-50",
+  },
+  {
+    href: "/accounting/invoices",
+    icon: FileText,
+    title: "Invoices",
+    description: "Create and manage customer invoices",
+    color: "text-indigo-600 bg-indigo-50",
+  },
+  {
+    href: "/accounting/expenses",
+    icon: Receipt,
+    title: "Expenses",
+    description: "Record and track business expenses",
+    color: "text-rose-600 bg-rose-50",
+  },
+  {
+    href: "/accounting/waybills",
+    icon: Truck,
+    title: "Waybills",
+    description: "Manage delivery waybills and tracking",
+    color: "text-teal-600 bg-teal-50",
   },
 ];
 
