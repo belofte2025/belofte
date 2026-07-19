@@ -47,7 +47,7 @@ function NewWaybillInner() {
     Promise.all([api.get("/customers"), getSupplierItemsWithSales()])
       .then(([custRes, itemData]) => {
         const customerOpts: CustomerOption[] = custRes.data.map((c: any) => ({
-          label: c.customerName,
+          label: c.name || c.customerName,
           value: c.id,
         }));
         setCustomers(customerOpts);

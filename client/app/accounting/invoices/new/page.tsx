@@ -46,7 +46,7 @@ export default function NewInvoicePage() {
   useEffect(() => {
     Promise.all([api.get("/customers"), getSupplierItemsWithSales()])
       .then(([custRes, itemData]) => {
-        setCustomers(custRes.data.map((c: any) => ({ label: c.customerName, value: c.id })));
+        setCustomers(custRes.data.map((c: any) => ({ label: c.name || c.customerName, value: c.id })));
         setAllItems(itemData);
       })
       .catch(() => toast.error("Failed to load data"));
