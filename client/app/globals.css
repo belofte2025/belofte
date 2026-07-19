@@ -39,6 +39,18 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  /* EYO Solutions brand cyan — overrides all Tailwind blue-* utilities */
+  --color-blue-50:  #e0f7ff;
+  --color-blue-100: #b8eeff;
+  --color-blue-200: #82e0ff;
+  --color-blue-300: #45cfff;
+  --color-blue-400: #1abdff;
+  --color-blue-500: #00aeef;
+  --color-blue-600: #0099d6;
+  --color-blue-700: #007cb5;
+  --color-blue-800: #005a8c;
+  --color-blue-900: #003d60;
+  --color-blue-950: #002340;
 }
 
 @media (prefers-color-scheme: dark) {

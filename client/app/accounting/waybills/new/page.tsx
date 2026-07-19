@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft, Truck, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Truck, Search, Trash2, FileText, Link2 } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { createWaybill } from "@/services/waybillService";
+import { getInvoice } from "@/services/invoiceService";
 import { getSupplierItemsWithSales } from "@/services/supplierService";
 import Select from "react-select";
 import toast from "react-hot-toast";
@@ -23,8 +24,11 @@ type SupplierItem = {
 type CartEntry = { itemName: string; supplierName: string; quantity: number; unit: string };
 type CustomerOption = { label: string; value: string };
 
-export default function NewWaybillPage() {
+function NewWaybillInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromInvoiceId = searchParams.get("fromInvoice");
+
   const [allItems, setAllItems] = useState<SupplierItem[]>([]);
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [search, setSearch] = useState("");
@@ -37,15 +41,45 @@ export default function NewWaybillPage() {
   const [vehicleNo, setVehicleNo] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [fromInvoiceNumber, setFromInvoiceNumber] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([api.get("/customers/list"), getSupplierItemsWithSales()])
       .then(([custRes, itemData]) => {
-        setCustomers(custRes.data.map((c: any) => ({ label: c.customerName, value: c.id })));
+        const customerOpts: CustomerOption[] = custRes.data.map((c: any) => ({
+          label: c.customerName,
+          value: c.id,
+        }));
+        setCustomers(customerOpts);
         setAllItems(itemData);
+
+        if (fromInvoiceId) {
+          getInvoice(fromInvoiceId)
+            .then((invoice) => {
+              setFromInvoiceNumber(invoice.invoiceNumber);
+              if (invoice.customerId) {
+                const match = customerOpts.find((c) => c.value === invoice.customerId);
+                if (match) setSelectedCustomer(match);
+              }
+              if (invoice.Items && invoice.Items.length > 0) {
+                setCart(
+                  invoice.Items.map((item) => ({
+                    itemName: item.itemName,
+                    supplierName: "",
+                    quantity: item.quantity,
+                    unit: "",
+                  }))
+                );
+              }
+              if (invoice.Customer?.customerName) {
+                setDeliveredTo(invoice.Customer.customerName);
+              }
+            })
+            .catch(() => toast.error("Could not load invoice details"));
+        }
       })
       .catch(() => toast.error("Failed to load data"));
-  }, []);
+  }, [fromInvoiceId]);
 
   const filteredItems = useMemo(
     () =>
@@ -58,12 +92,21 @@ export default function NewWaybillPage() {
     [allItems, search]
   );
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, SupplierItem[]>();
+    for (const item of filteredItems) {
+      const list = map.get(item.supplierName) ?? [];
+      map.set(item.supplierName, [...list, item]);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [filteredItems]);
+
   const addItem = (item: SupplierItem) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.itemName === item.itemName);
       if (existing) {
         return prev.map((c) =>
-          c.itemName === item.itemName ? { ...c, quantity: c.quantity + 1 } : c
+          c.itemName === item.itemName ? { ...c, quantity: c.quantity + 1, supplierName: item.supplierName } : c
         );
       }
       return [...prev, { itemName: item.itemName, supplierName: item.supplierName, quantity: 1, unit: "" }];
@@ -113,7 +156,7 @@ export default function NewWaybillPage() {
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-4">
             <Link href="/accounting/waybills" className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
@@ -123,10 +166,17 @@ export default function NewWaybillPage() {
             </div>
           </div>
 
+          {fromInvoiceNumber && (
+            <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium" style={{ background: "#e0f7ff", borderColor: "#0099d6", color: "#005a8c" }}>
+              <Link2 className="w-4 h-4 flex-shrink-0" style={{ color: "#0099d6" }} />
+              Pre-filled from Invoice <span className="font-mono font-bold">{fromInvoiceNumber}</span>
+            </div>
+          )}
+
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Left sidebar */}
             <div className="lg:col-span-1 space-y-4">
-              {/* Customer (optional) */}
+              {/* Customer */}
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Customer</h3>
                 <Select
@@ -136,13 +186,19 @@ export default function NewWaybillPage() {
                   placeholder="Select customer (optional)..."
                   isClearable
                   className="text-sm"
+                  classNamePrefix="react-select"
                   styles={{
-                    control: (base) => ({
+                    control: (base, state) => ({
                       ...base,
-                      border: "1px solid #e5e7eb",
+                      border: state.isFocused ? "1px solid #0099d6" : "1px solid #e5e7eb",
                       borderRadius: "0.5rem",
-                      boxShadow: "none",
-                      "&:hover": { border: "1px solid #3b82f6" },
+                      boxShadow: state.isFocused ? "0 0 0 3px rgba(0,174,239,0.15)" : "none",
+                      "&:hover": { border: "1px solid #0099d6" },
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected ? "#0099d6" : state.isFocused ? "#e0f7ff" : "white",
+                      color: state.isSelected ? "white" : "#111827",
                     }),
                   }}
                 />
@@ -184,8 +240,8 @@ export default function NewWaybillPage() {
               {/* Items list */}
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-900">Items</h3>
-                  <span className="badge badge-blue">{cart.length}</span>
+                  <h3 className="text-sm font-semibold text-gray-900">Waybill Lines</h3>
+                  <span className="badge badge-blue">{cart.length} items</span>
                 </div>
 
                 {cart.length === 0 ? (
@@ -197,7 +253,9 @@ export default function NewWaybillPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-gray-900 truncate">{entry.itemName}</p>
-                            <p className="text-xs text-gray-500 truncate">{entry.supplierName}</p>
+                            {entry.supplierName && (
+                              <p className="text-xs text-gray-500 truncate">{entry.supplierName}</p>
+                            )}
                           </div>
                           <button onClick={() => removeFromCart(idx)} className="text-gray-400 hover:text-red-500 flex-shrink-0 p-0.5">
                             <Trash2 className="w-3.5 h-3.5" />
@@ -227,7 +285,8 @@ export default function NewWaybillPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={saving || cart.length === 0}
-                  className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: "#0099d6" }}
                 >
                   <Truck className="w-4 h-4" />
                   {saving ? "Creating..." : "Create Waybill"}
@@ -235,7 +294,7 @@ export default function NewWaybillPage() {
               </div>
             </div>
 
-            {/* Right — item search grid */}
+            {/* Right — item search grouped by supplier */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="relative mb-4">
@@ -246,46 +305,60 @@ export default function NewWaybillPage() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="input pl-9"
-                    autoFocus
                   />
                 </div>
 
-                {filteredItems.length === 0 ? (
+                {grouped.length === 0 ? (
                   <div className="text-center py-16 text-gray-400">
-                    <Truck className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     <p className="text-sm font-medium">No items found</p>
+                    <p className="text-xs mt-1">Try a different search term</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[calc(100vh-280px)] overflow-y-auto">
-                    {filteredItems.map((item) => {
-                      const inCart = cart.find((c) => c.itemName === item.itemName);
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => addItem(item)}
-                          className={`text-left p-3 rounded-xl border-2 transition-all ${
-                            inCart
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
-                          }`}
-                        >
-                          <p className="text-sm font-semibold text-gray-900 truncate">{item.itemName}</p>
-                          <p className="text-xs text-gray-500 truncate mt-0.5">{item.supplierName}</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-gray-400">
-                              {item.available > 0 ? `${item.available} available` : "No stock"}
-                            </span>
-                            {inCart ? (
-                              <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5 font-medium">
-                                ×{inCart.quantity}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-gray-400">tap to add</span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
+                  <div className="space-y-5 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+                    {grouped.map(([supplierName, items]) => (
+                      <div key={supplierName}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#0099d6" }}>
+                            {supplierName}
+                          </p>
+                          <span className="text-xs text-gray-400">({items.length})</span>
+                          <div className="flex-1 h-px bg-gray-100" />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                          {items.map((item) => {
+                            const inCart = cart.find((c) => c.itemName === item.itemName);
+                            return (
+                              <button
+                                key={item.id}
+                                onClick={() => addItem(item)}
+                                className={`text-left p-3 rounded-xl border-2 transition-all ${
+                                  inCart
+                                    ? "border-blue-500 bg-blue-50"
+                                    : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                                }`}
+                              >
+                                <p className="text-sm font-semibold text-gray-900 truncate">{item.itemName}</p>
+                                <div className="flex items-center justify-between mt-1.5">
+                                  <span className={`text-xs font-medium ${item.available > 0 ? "text-green-600" : "text-red-500"}`}>
+                                    {item.available > 0 ? `${item.available} in stock` : "Out of stock"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-end mt-1">
+                                  {inCart ? (
+                                    <span className="text-xs text-white rounded-full px-2 py-0.5 font-medium" style={{ background: "#0099d6" }}>
+                                      ×{inCart.quantity}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">tap to add</span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -294,5 +367,19 @@ export default function NewWaybillPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function NewWaybillPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+        </div>
+      </DashboardLayout>
+    }>
+      <NewWaybillInner />
+    </Suspense>
   );
 }

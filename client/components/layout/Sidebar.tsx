@@ -6,9 +6,10 @@ import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useState } from "react";
+import Image from "next/image";
 import {
   Home, Users, X, ShoppingCart, LogOut, ChevronDown, BarChart3,
-  Container, Package, TrendingUp, TrendingDown, Building2, Factory,
+  Container, Package, TrendingUp, TrendingDown, Factory,
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
   BookOpen, BookText, ArrowLeftRight, LineChart, Receipt, BadgeDollarSign,
@@ -176,15 +177,15 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
       )}>
 
         {/* Logo bar */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-gray-200 bg-white flex-shrink-0">
+        <div className="h-14 flex items-center justify-between px-4 border-b flex-shrink-0" style={{ background: "#0A2540", borderColor: "#1a3a5c" }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-4 h-4 text-white" />
+            <div className="bg-white rounded-lg p-1 flex-shrink-0">
+              <Image src="/icon/eyo.png" alt="EYO" width={22} height={22} className="object-contain block" priority />
             </div>
-            <span className="text-sm font-bold text-gray-900 tracking-tight">PETROS</span>
+            <span className="text-sm font-bold text-white tracking-tight">PETROS</span>
           </div>
-          <button onClick={close} className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors">
-            <X className="w-4 h-4 text-gray-500" />
+          <button onClick={close} className="lg:hidden p-1.5 rounded-md transition-colors" style={{ color: "rgba(255,255,255,0.7)" }}>
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -298,7 +299,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         {/* User footer */}
         <div className="border-t border-gray-200 bg-white p-3 flex-shrink-0 space-y-1">
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-md">
-            <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: "#00AEEF" }}>
               <span className="text-white font-semibold text-xs">
                 {user?.email?.charAt(0).toUpperCase() || "U"}
               </span>
