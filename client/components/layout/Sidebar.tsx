@@ -179,9 +179,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         {/* Logo bar */}
         <div className="h-14 flex items-center justify-between px-4 border-b flex-shrink-0" style={{ background: "#0A2540", borderColor: "#1a3a5c" }}>
           <div className="flex items-center gap-2.5">
-            <div className="bg-white rounded-lg p-1 flex-shrink-0">
-              <Image src="/icon/eyo.png" alt="EYO" width={22} height={22} className="object-contain block" priority />
-            </div>
+            <Image src="/icon/eyo.png" alt="EYO" width={22} height={22} className="object-contain block flex-shrink-0" priority />
             <span className="text-sm font-bold text-white tracking-tight">PETROS</span>
           </div>
           <button onClick={close} className="lg:hidden p-1.5 rounded-md transition-colors" style={{ color: "rgba(255,255,255,0.7)" }}>
