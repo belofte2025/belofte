@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Plus, X, Receipt } from "lucide-react";
+import { Plus, X, Receipt, AlertCircle } from "lucide-react";
+import Link from "next/link";
 import { getExpenses, createExpense, Expense } from "@/services/expenseService";
 import { getAccounts, Account } from "@/services/accountingService";
 import { formatCurrency } from "@/utils/format";
@@ -121,6 +122,23 @@ export default function ExpensesPage() {
           </div>
         </div>
 
+        {!loading && expenseAccounts.length === 0 && (
+          <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-900">Expense accounts not set up</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Go to{" "}
+                <Link href="/accounting/chart-of-accounts" className="font-semibold underline">
+                  Chart of Accounts
+                </Link>{" "}
+                and click &ldquo;Seed Default Accounts&rdquo; to create the standard expense categories
+                (Rent, Salaries, Utilities, Transport, etc.).
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="card">
           <div className="flex flex-wrap gap-3">
             <input
@@ -238,6 +256,18 @@ export default function ExpensesPage() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-3">
+              {expenseAccounts.length === 0 && (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-amber-800">
+                    No expense accounts found.{" "}
+                    <Link href="/accounting/chart-of-accounts" className="font-medium underline">
+                      Set up your Chart of Accounts
+                    </Link>{" "}
+                    and click &ldquo;Seed Default Accounts&rdquo; to get started.
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Date *</label>

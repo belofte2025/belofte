@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, X, Trash2, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getInvoices, createInvoice, Invoice } from "@/services/invoiceService";
+import { getSupplierItemsWithSales } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
@@ -48,6 +49,7 @@ export default function InvoicesPage() {
   const [form, setForm] = useState(defaultForm());
   const [items, setItems] = useState<LineItem[]>([emptyItem()]);
   const [saving, setSaving] = useState(false);
+  const [allItems, setAllItems] = useState<{ itemName: string; unitPrice: number }[]>([]);
 
   const fetchInvoices = () => {
     setLoading(true);
@@ -70,6 +72,9 @@ export default function InvoicesPage() {
       .get("/customers/list")
       .then((res) => setCustomers(res.data))
       .catch(() => {});
+    getSupplierItemsWithSales()
+      .then((data) => setAllItems(data.map((d: any) => ({ itemName: d.itemName, unitPrice: d.unitPrice }))))
+      .catch(() => {});
   }, []);
 
   const totalValue = invoices.reduce((s, i) => s + i.totalAmount, 0);
@@ -78,6 +83,17 @@ export default function InvoicesPage() {
 
   const updateItem = (index: number, field: keyof LineItem, value: string) => {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, [field]: value } : it)));
+  };
+
+  const handleItemNameChange = (index: number, value: string) => {
+    const matched = allItems.find((item) => item.itemName === value);
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === index
+          ? { ...it, itemName: value, unitPrice: matched ? String(matched.unitPrice) : it.unitPrice }
+          : it
+      )
+    );
   };
 
   const removeItem = (index: number) => {
@@ -363,11 +379,17 @@ export default function InvoicesPage() {
                       <div className="col-span-5">
                         <input
                           type="text"
+                          list={`invoice-items-${i}`}
                           className="input"
                           placeholder="Item name"
                           value={it.itemName}
-                          onChange={(e) => updateItem(i, "itemName", e.target.value)}
+                          onChange={(e) => handleItemNameChange(i, e.target.value)}
                         />
+                        <datalist id={`invoice-items-${i}`}>
+                          {allItems.map((item, idx) => (
+                            <option key={idx} value={item.itemName} />
+                          ))}
+                        </datalist>
                       </div>
                       <div className="col-span-2">
                         <input
