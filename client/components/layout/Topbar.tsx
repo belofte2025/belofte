@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Menu, Bell, ChevronDown, User, Lock, LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import UpdatePasswordModal from "@/components/auth/UpdatePasswordModal";
@@ -27,16 +26,8 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Branded chip — white pill with EYO logo + company name */}
-          <div className="flex items-center gap-2 bg-white rounded-xl px-2.5 py-1.5 shadow-sm">
-            <Image
-              src="/icon/eyo.png"
-              alt="EYO Solutions"
-              width={28}
-              height={28}
-              className="object-contain flex-shrink-0"
-              priority
-            />
+          {/* Company name chip */}
+          <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-1.5 shadow-sm">
             <span className="text-sm font-bold text-gray-900 truncate max-w-[120px] sm:max-w-[200px]">
               {user?.company?.companyName || "PETROS"}
             </span>
