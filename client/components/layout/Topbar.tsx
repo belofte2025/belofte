@@ -26,12 +26,9 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Company name chip */}
-          <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-1.5 shadow-sm">
-            <span className="text-sm font-bold text-gray-900 truncate max-w-[120px] sm:max-w-[200px]">
-              {user?.company?.companyName || "PETROS"}
-            </span>
-          </div>
+          <span className="text-sm font-bold text-white truncate max-w-[120px] sm:max-w-[200px]">
+            {user?.company?.companyName || "PETROS"}
+          </span>
         </div>
 
         {/* Right */}
