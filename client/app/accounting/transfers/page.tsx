@@ -2,51 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft, Plus, ArrowLeftRight, X } from "lucide-react";
+import { ArrowLeft, Plus, ArrowLeftRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  getLedgerTransfers,
-  createLedgerTransfer,
-  getAccounts,
-  LedgerTransfer,
-  Account,
-  LedgerTransferData,
-} from "@/services/accountingService";
+import { getLedgerTransfers, LedgerTransfer } from "@/services/accountingService";
 import { formatCurrency } from "@/utils/format";
 import toast from "react-hot-toast";
-
-const PARTY_TYPES = ["CUSTOMER", "SUPPLIER", "ACCOUNT"] as const;
-type PartyType = (typeof PARTY_TYPES)[number];
-
-interface Party {
-  type: PartyType;
-  id: string;
-}
-
-const defaultParty = (): Party => ({ type: "ACCOUNT", id: "" });
-
-interface TransferForm {
-  date: string;
-  amount: string;
-  description: string;
-  debitParty: Party;
-  creditParty: Party;
-}
 
 export default function TransfersPage() {
   const router = useRouter();
   const [transfers, setTransfers] = useState<LedgerTransfer[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<TransferForm>({
-    date: new Date().toISOString().split("T")[0],
-    amount: "",
-    description: "",
-    debitParty: defaultParty(),
-    creditParty: defaultParty(),
-  });
 
   const fetchTransfers = useCallback(() => {
     setLoading(true);
@@ -58,91 +23,7 @@ export default function TransfersPage() {
 
   useEffect(() => {
     fetchTransfers();
-    getAccounts().then(setAccounts).catch(() => {});
   }, [fetchTransfers]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.amount || parseFloat(form.amount) <= 0) {
-      toast.error("Amount must be greater than zero");
-      return;
-    }
-    if (!form.debitParty.id || !form.creditParty.id) {
-      toast.error("Both debit and credit parties are required");
-      return;
-    }
-    setSaving(true);
-    try {
-      const payload: LedgerTransferData = {
-        date: form.date,
-        amount: parseFloat(form.amount),
-        description: form.description,
-        debitPartyType: form.debitParty.type,
-        debitPartyId: form.debitParty.id,
-        creditPartyType: form.creditParty.type,
-        creditPartyId: form.creditParty.id,
-      };
-      await createLedgerTransfer(payload);
-      toast.success("Transfer created");
-      setShowModal(false);
-      setForm({
-        date: new Date().toISOString().split("T")[0],
-        amount: "",
-        description: "",
-        debitParty: defaultParty(),
-        creditParty: defaultParty(),
-      });
-      fetchTransfers();
-    } catch {
-      toast.error("Failed to create transfer");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const PartySelect = ({
-    label,
-    party,
-    onChange,
-  }: {
-    label: string;
-    party: Party;
-    onChange: (p: Party) => void;
-  }) => (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-gray-700">{label}</p>
-      <select
-        className="input"
-        value={party.type}
-        onChange={(e) => onChange({ type: e.target.value as PartyType, id: "" })}
-      >
-        {PARTY_TYPES.map((t) => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
-      {party.type === "ACCOUNT" ? (
-        <select
-          className="input"
-          value={party.id}
-          onChange={(e) => onChange({ ...party, id: e.target.value })}
-        >
-          <option value="">Select account</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.code} — {a.name}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input
-          className="input"
-          placeholder={`${party.type} name / ID`}
-          value={party.id}
-          onChange={(e) => onChange({ ...party, id: e.target.value })}
-        />
-      )}
-    </div>
-  );
 
   return (
     <DashboardLayout>
@@ -157,7 +38,7 @@ export default function TransfersPage() {
             </button>
             <h1 className="page-title">Ledger Transfers</h1>
           </div>
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">
+          <button onClick={() => router.push("/accounting/transfers/new")} className="btn btn-primary">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Transfer</span>
           </button>
@@ -228,83 +109,6 @@ export default function TransfersPage() {
           </>
         )}
       </div>
-
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-900">New Ledger Transfer</h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="icon-btn text-gray-400 hover:text-gray-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Date *</label>
-                  <input
-                    type="date"
-                    value={form.date}
-                    onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    className="input"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Amount *</label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={form.amount}
-                    onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                    className="input"
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-                <input
-                  type="text"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="input"
-                  placeholder="Transfer description"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 pt-4">
-                <PartySelect
-                  label="Debit Party (From)"
-                  party={form.debitParty}
-                  onChange={(p) => setForm({ ...form, debitParty: p })}
-                />
-                <PartySelect
-                  label="Credit Party (To)"
-                  party={form.creditParty}
-                  onChange={(p) => setForm({ ...form, creditParty: p })}
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="btn btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="btn btn-primary flex-1">
-                  {saving ? "Saving..." : "Create Transfer"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 }
