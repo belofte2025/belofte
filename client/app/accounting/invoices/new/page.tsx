@@ -158,14 +158,16 @@ export default function NewInvoicePage() {
                       ...base,
                       border: state.isFocused ? "1px solid #0099d6" : "1px solid #e5e7eb",
                       borderRadius: "0.5rem",
-                      boxShadow: state.isFocused ? "0 0 0 3px rgba(0,174,239,0.15)" : "none",
+                      boxShadow: state.isFocused ? "0 0 0 3px rgba(0,153,214,0.15)" : "none",
                       "&:hover": { border: "1px solid #0099d6" },
                     }),
                     option: (base, state) => ({
                       ...base,
-                      backgroundColor: state.isSelected ? "#0099d6" : state.isFocused ? "#e0f7ff" : "white",
+                      backgroundColor: state.isSelected ? "#0099d6" : state.isFocused ? "#f3f4f6" : "white",
                       color: state.isSelected ? "white" : "#111827",
+                      cursor: "pointer",
                     }),
+                    menu: (base) => ({ ...base, zIndex: 50 }),
                   }}
                 />
               </div>
