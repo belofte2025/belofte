@@ -320,3 +320,14 @@ table.data-table tbody tr:hover td {
   min-width: 36px;
   min-height: 36px;
 }
+
+/* ── react-select — force light theme (dark-mode body color would bleed in) ── */
+.react-select__control { background-color: white !important; }
+.react-select__input-container,
+.react-select__input { color: #111827 !important; }
+.react-select__single-value { color: #111827 !important; }
+.react-select__placeholder { color: #9ca3af !important; }
+.react-select__menu { background-color: white !important; }
+.react-select__option { color: #111827 !important; }
+.react-select__option--is-focused { background-color: #f3f4f6 !important; }
+.react-select__option--is-selected { background-color: #0099d6 !important; color: white !important; }
