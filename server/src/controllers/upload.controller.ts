@@ -32,8 +32,34 @@ export const uploadContainerItems = async (
   }
 
   try {
+    // Resolve canonical item names via case-insensitive / alias match
+    const container = await prisma.container.findUnique({
+      where: { id: containerId },
+      select: { supplierId: true },
+    });
+
+    const resolvedItems = await Promise.all(
+      items.map(async (item) => {
+        const inputName = item.itemName.trim();
+        if (container?.supplierId) {
+          const ciMatch = await prisma.supplierItem.findFirst({
+            where: { supplierId: container.supplierId, itemName: { equals: inputName, mode: "insensitive" } },
+            select: { itemName: true },
+          });
+          if (ciMatch) return { ...item, itemName: ciMatch.itemName };
+
+          const aliasMatch = await prisma.supplierItem.findFirst({
+            where: { supplierId: container.supplierId, alias: { equals: inputName, mode: "insensitive" } },
+            select: { itemName: true },
+          });
+          if (aliasMatch) return { ...item, itemName: aliasMatch.itemName };
+        }
+        return { ...item, itemName: inputName };
+      })
+    );
+
     await prisma.containerItem.createMany({
-      data: items.map((item) => ({
+      data: resolvedItems.map((item) => ({
         containerId,
         itemName: item.itemName,
         quantity: item.quantity,
@@ -41,7 +67,7 @@ export const uploadContainerItems = async (
         unitPrice: 0,
       })),
     });
-    res.status(201).json({ message: "Items uploaded", items });
+    res.status(201).json({ message: "Items uploaded", items: resolvedItems });
   } catch (err) {
     res.status(500).json({ error: "Failed to save items", detail: err });
   }

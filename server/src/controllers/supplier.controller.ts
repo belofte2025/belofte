@@ -187,10 +187,19 @@ export const addSupplierItem = async (req: Request, res: Response) => {
       return;
     }
 
+    const trimmedName = (itemName as string).trim();
+    const duplicate = await prisma.supplierItem.findFirst({
+      where: { supplierId, itemName: { equals: trimmedName, mode: "insensitive" } },
+    });
+    if (duplicate) {
+      res.status(409).json({ error: "An item with this name already exists for this supplier" });
+      return;
+    }
+
     const item = await prisma.supplierItem.create({
       data: {
         supplierId,
-        itemName,
+        itemName: trimmedName,
         alias,
         price,
       },
@@ -301,12 +310,19 @@ export const updateSupplierItem = async (req: Request, res: Response) => {
 
     const supplierId = existingItem.supplierId;
     const oldName = existingItem.itemName;
-    const newName = itemName ?? oldName;
+    const newName = itemName != null ? (itemName as string).trim() : oldName;
     const nameChanged = newName !== oldName;
 
     let item;
 
     if (nameChanged) {
+      const duplicate = await prisma.supplierItem.findFirst({
+        where: { supplierId, itemName: { equals: newName, mode: "insensitive" }, NOT: { id } },
+      });
+      if (duplicate) {
+        res.status(409).json({ error: "An item with this name already exists for this supplier" });
+        return;
+      }
       // Get all containers for this supplier to find affected sales
       const containers = await prisma.container.findMany({
         where: { supplierId, companyId },

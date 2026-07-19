@@ -36,7 +36,8 @@ export const createContainer = async (req: Request, res: Response) => {
     const { containerNo, arrivalDate, year, supplierId, items } = req.body;
     const companyId = req.user!.companyId;
 
-    await upsertSupplierItems(supplierId, items); // Ensure SupplierItems are updated
+    // Resolve canonical names (case-insensitive + alias match) and upsert SupplierItems
+    const nameMap = await upsertSupplierItems(supplierId, items);
 
     const container = await prisma.container.create({
       data: {
@@ -47,7 +48,7 @@ export const createContainer = async (req: Request, res: Response) => {
         companyId,
         ContainerItem: {
           create: items.map((item: { itemName: string; quantity: number; unitPrice: number }) => ({
-            itemName: item.itemName,
+            itemName: nameMap.get(item.itemName) ?? item.itemName.trim(),
             quantity: item.quantity,
             unitPrice: item.unitPrice,
           })),
@@ -435,49 +436,52 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
     return;
   }
 };
+// Returns a map of original input name → canonical SupplierItem name.
+// Resolves case-insensitive exact matches and alias matches before creating new rows.
 const upsertSupplierItems = async (
   supplierId: string,
   ContainerItem: { itemName: string; unitPrice: number; alias?: string }[]
-) => {
+): Promise<Map<string, string>> => {
+  const nameMap = new Map<string, string>();
+
   for (const item of ContainerItem) {
-    const existing = await prisma.supplierItem.findFirst({
-      where: {
+    const inputName = item.itemName.trim();
+
+    // 1. Case-insensitive exact match on itemName
+    const ciMatch = await prisma.supplierItem.findFirst({
+      where: { supplierId, itemName: { equals: inputName, mode: "insensitive" } },
+    });
+    if (ciMatch) {
+      nameMap.set(item.itemName, ciMatch.itemName);
+      if (ciMatch.price !== item.unitPrice) {
+        await prisma.supplierItem.update({ where: { id: ciMatch.id }, data: { price: item.unitPrice } });
+      }
+      continue;
+    }
+
+    // 2. Alias match — the Excel name may be a registered alias for an existing item
+    const aliasMatch = await prisma.supplierItem.findFirst({
+      where: { supplierId, alias: { equals: inputName, mode: "insensitive" } },
+    });
+    if (aliasMatch) {
+      nameMap.set(item.itemName, aliasMatch.itemName);
+      if (aliasMatch.price !== item.unitPrice) {
+        await prisma.supplierItem.update({ where: { id: aliasMatch.id }, data: { price: item.unitPrice } });
+      }
+      continue;
+    }
+
+    // 3. No match — create new SupplierItem using normalised (trimmed) name
+    await prisma.supplierItem.create({
+      data: {
         supplierId,
-        itemName: item.itemName,
+        itemName: inputName,
+        alias: item.alias || null,
+        price: item.unitPrice,
       },
     });
-
-    if (existing) {
-      // Prepare update data
-      const updateData: { price?: number; alias?: string | null } = {};
-
-      // Update price if different
-      if (existing.price !== item.unitPrice) {
-        updateData.price = item.unitPrice;
-      }
-
-      // Update alias if provided and different
-      if (item.alias !== undefined && existing.alias !== item.alias) {
-        updateData.alias = item.alias || null;
-      }
-
-      // Only update if there are changes
-      if (Object.keys(updateData).length > 0) {
-        await prisma.supplierItem.update({
-          where: { id: existing.id },
-          data: updateData,
-        });
-      }
-    } else {
-      // Insert new item
-      await prisma.supplierItem.create({
-        data: {
-          supplierId,
-          itemName: item.itemName,
-          alias: item.alias || null,
-          price: item.unitPrice,
-        },
-      });
-    }
+    nameMap.set(item.itemName, inputName);
   }
+
+  return nameMap;
 };

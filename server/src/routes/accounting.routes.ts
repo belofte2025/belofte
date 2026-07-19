@@ -5,6 +5,7 @@ import {
   getJournalEntries, getJournalEntry, createManualJournal, reverseJournalEntry,
   getLedgerTransfers, createLedgerTransfer,
   getTrialBalance, getIncomeStatement, getBalanceSheet, getGeneralLedger,
+  runAccountingBackfill,
 } from "../controllers/accounting.controller";
 import { getInvoices, getInvoice, createInvoice, updateInvoiceStatus, recordInvoicePayment, deleteInvoice } from "../controllers/invoice.controller";
 import { getExpenses, getExpense, createExpense, deleteExpense } from "../controllers/expense.controller";
@@ -54,5 +55,8 @@ router.get("/reports/trial-balance",     getTrialBalance);
 router.get("/reports/income-statement",  getIncomeStatement);
 router.get("/reports/balance-sheet",     getBalanceSheet);
 router.get("/reports/ledger/:accountId", getGeneralLedger);
+
+// Backfill
+router.post("/backfill", runAccountingBackfill);
 
 export default router;

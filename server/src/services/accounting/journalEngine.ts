@@ -183,7 +183,23 @@ export async function postStockAdjustmentJournal(
   });
 }
 
-// Invoice journal: DR AR + CR Revenue (+ COGS if cost available)
+// Shared helper: look up most recent purchase cost per item name from ContainerItem
+export async function lookupItemCosts(
+  prismaOrTx: PrismaClient | Tx,
+  companyId: string,
+  itemNames: string[]
+): Promise<Map<string, number>> {
+  const rows = await (prismaOrTx as PrismaClient).containerItem.findMany({
+    where: { itemName: { in: itemNames }, Container: { companyId } },
+    select: { itemName: true, unitPrice: true },
+    orderBy: { Container: { arrivalDate: "desc" } } as any,
+  });
+  const map = new Map<string, number>();
+  rows.forEach((r: any) => { if (!map.has(r.itemName)) map.set(r.itemName, r.unitPrice); });
+  return map;
+}
+
+// Invoice journal: DR AR + CR Revenue (+ COGS if costPrice captured at creation)
 interface InvoiceRecord {
   id: string;
   totalAmount: number;
@@ -196,6 +212,7 @@ interface InvoiceLineItem {
   itemName: string;
   quantity: number;
   unitPrice: number;
+  costPrice?: number;
 }
 
 export async function postInvoiceJournal(
@@ -215,24 +232,14 @@ export async function postInvoiceJournal(
     { accountId: revAccountId, debit: 0,                   credit: invoice.totalAmount,  description: "Sales revenue" },
   ];
 
-  // COGS: use most recent ContainerItem.unitPrice (actual purchase cost, not selling price)
-  try {
-    const itemNames = items.map(i => i.itemName);
-    const containerItems = await (tx as PrismaClient).containerItem.findMany({
-      where: { itemName: { in: itemNames }, Container: { companyId } },
-      select: { itemName: true, unitPrice: true },
-      orderBy: { Container: { arrivalDate: "desc" } } as any,
-    });
-    const costMap = new Map<string, number>();
-    containerItems.forEach((ci: any) => { if (!costMap.has(ci.itemName)) costMap.set(ci.itemName, ci.unitPrice); });
-    const totalCost = items.reduce((s, i) => s + (costMap.get(i.itemName) ?? 0) * i.quantity, 0);
-    if (totalCost > 0) {
-      const cogsId      = await getAccountId(tx, companyId, ACCOUNT_CODES.COGS);
-      const inventoryId = await getAccountId(tx, companyId, ACCOUNT_CODES.INVENTORY);
-      lines.push({ accountId: cogsId,      debit: totalCost, credit: 0,         description: "COGS" });
-      lines.push({ accountId: inventoryId, debit: 0,         credit: totalCost, description: "Inventory reduction" });
-    }
-  } catch { /* skip COGS if lookup fails */ }
+  // COGS: use costPrice frozen at invoice creation time
+  const totalCost = items.reduce((s, i) => s + (i.costPrice ?? 0) * i.quantity, 0);
+  if (totalCost > 0) {
+    const cogsId      = await getAccountId(tx, companyId, ACCOUNT_CODES.COGS);
+    const inventoryId = await getAccountId(tx, companyId, ACCOUNT_CODES.INVENTORY);
+    lines.push({ accountId: cogsId,      debit: totalCost, credit: 0,         description: "COGS" });
+    lines.push({ accountId: inventoryId, debit: 0,         credit: totalCost, description: "Inventory reduction" });
+  }
 
   assertBalanced(lines);
 

@@ -26,6 +26,7 @@ interface Supplier {
 interface Item {
   id: string;
   itemName: string;
+  containerOnly?: boolean;
 }
 
 interface PendingChange {
@@ -64,8 +65,20 @@ export default function ItemDeduplicationPage() {
   const loadSupplierItems = async (supplierId: string) => {
     setLoading(true);
     try {
-      const response = await api.get(`/suppliers/${supplierId}/items`);
-      setItems(response.data);
+      const [supplierRes, statsRes] = await Promise.all([
+        api.get(`/suppliers/${supplierId}/items`),
+        api.get(`/items/supplier/${supplierId}/statistics`).catch(() => ({ data: [] })),
+      ]);
+
+      const supplierItems: Item[] = supplierRes.data;
+      const supplierNames = new Set(supplierItems.map((i) => i.itemName.toLowerCase()));
+
+      // Add items that exist in ContainerItem but have no SupplierItem row
+      const containerOnlyItems: Item[] = (statsRes.data as any[])
+        .filter((s) => !supplierNames.has(s.itemName.toLowerCase()))
+        .map((s) => ({ id: s.id, itemName: s.itemName, containerOnly: true }));
+
+      setItems([...supplierItems, ...containerOnlyItems]);
       setPendingChanges({});
       setEditingItem(null);
     } catch (error) {
@@ -399,10 +412,15 @@ export default function ItemDeduplicationPage() {
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-medium text-gray-900">
                                       {item.itemName}
                                     </span>
+                                    {item.containerOnly && (
+                                      <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded-full">
+                                        container only
+                                      </span>
+                                    )}
                                     {hasSpacingIssues(item.itemName) && (
                                       <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full flex items-center gap-1">
                                         <AlertTriangle className="w-3 h-3" />

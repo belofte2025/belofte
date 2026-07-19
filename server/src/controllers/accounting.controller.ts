@@ -3,6 +3,7 @@ import prisma from "../utils/prisma";
 import { seedDefaultAccounts } from "../services/accounting/seedAccounts";
 import { assertBalanced, nextEntryNumber } from "../services/accounting/accounts";
 import { JournalSource, JournalEntryStatus, AccountType, NormalBalance } from "@prisma/client";
+import { postSaleJournal, postCustomerPaymentJournal } from "../services/accounting/journalEngine";
 
 // ── Chart of Accounts ─────────────────────────────────────────────────────────
 
@@ -345,7 +346,11 @@ export const getIncomeStatement = async (req: Request, res: Response) => {
     const totalExpenses = expenses.reduce((s, r) => s + r.balance, 0);
     const netIncome     = grossProfit - totalExpenses;
 
-    res.json({ revenue, cogs, expenses, totalRevenue, totalCogs, grossProfit, totalExpenses, netIncome, startDate: start, endDate: end });
+    const unpostedSalesCount = await prisma.sale.count({
+      where: { companyId, createdAt: { gte: start, lte: end }, JournalEntries: { none: {} } },
+    });
+
+    res.json({ revenue, cogs, expenses, totalRevenue, totalCogs, grossProfit, totalExpenses, netIncome, startDate: start, endDate: end, hasUnpostedSales: unpostedSalesCount > 0, unpostedSalesCount });
   } catch {
     res.status(500).json({ error: "Failed to generate income statement" });
   }
@@ -420,5 +425,70 @@ export const getGeneralLedger = async (req: Request, res: Response) => {
     res.json({ account, rows });
   } catch {
     res.status(500).json({ error: "Failed to fetch general ledger" });
+  }
+};
+
+// ── Accounting Backfill ───────────────────────────────────────────────────────
+// Posts journal entries for historical sales/payments that pre-date accounting being enabled.
+// Always sequential (nextEntryNumber is non-atomic). Idempotent — skips if journal already exists.
+export const runAccountingBackfill = async (req: Request, res: Response) => {
+  const companyId = req.user?.companyId;
+  const postedById = req.user?.id;
+  if (!companyId || !postedById) { res.status(400).json({ error: "Missing auth context" }); return; }
+
+  const { scope = "all", dryRun = false, maxRecords = 200 } = req.body;
+  const limit = Math.min(parseInt(String(maxRecords)) || 200, 500);
+
+  let salesPosted = 0, paymentsPosted = 0, skipped = 0;
+  const errors: string[] = [];
+
+  try {
+    if (scope === "sales" || scope === "all") {
+      const sales = await prisma.sale.findMany({
+        where: { companyId, JournalEntries: { none: {} } },
+        include: { SaleItem: true },
+        orderBy: { createdAt: "asc" },
+        take: limit,
+      });
+
+      for (const sale of sales) {
+        try {
+          const already = await prisma.journalEntry.findFirst({ where: { saleId: sale.id } });
+          if (already) { skipped++; continue; }
+          if (!dryRun) {
+            await postSaleJournal(prisma as any, sale, (sale as any).SaleItem, companyId, postedById);
+          }
+          salesPosted++;
+        } catch (err: any) {
+          errors.push(`Sale ${sale.id}: ${err.message}`);
+        }
+      }
+    }
+
+    if (scope === "payments" || scope === "all") {
+      const payments = await prisma.customerPayment.findMany({
+        where: { companyId, JournalEntries: { none: {} } },
+        orderBy: { createdAt: "asc" },
+        take: limit,
+      });
+
+      for (const payment of payments) {
+        try {
+          const already = await prisma.journalEntry.findFirst({ where: { customerPaymentId: payment.id } });
+          if (already) { skipped++; continue; }
+          if (!dryRun) {
+            await postCustomerPaymentJournal(prisma as any, payment, companyId, postedById);
+          }
+          paymentsPosted++;
+        } catch (err: any) {
+          errors.push(`Payment ${payment.id}: ${err.message}`);
+        }
+      }
+    }
+
+    const remaining = await prisma.sale.count({ where: { companyId, JournalEntries: { none: {} } } });
+    res.json({ salesPosted, paymentsPosted, skipped, errors, dryRun, remainingUnposted: remaining });
+  } catch (err: any) {
+    res.status(500).json({ error: "Backfill failed", detail: err.message });
   }
 };

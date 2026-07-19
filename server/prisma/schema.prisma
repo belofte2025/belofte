@@ -461,6 +461,7 @@ model InvoiceItem {
   quantity  Int
   unitPrice Float
   total     Float
+  costPrice Float   @default(0)
   Invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 

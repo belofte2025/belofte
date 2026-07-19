@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
-import { postInvoiceJournal } from "../services/accounting/journalEngine";
+import { postInvoiceJournal, lookupItemCosts } from "../services/accounting/journalEngine";
 import { nextInvoiceNumber } from "../services/accounting/accounts";
 import { InvoiceStatus } from "@prisma/client";
 
@@ -66,6 +66,9 @@ export const createInvoice = async (req: Request, res: Response) => {
     const subtotal = items.reduce((s: number, i: any) => s + i.quantity * i.unitPrice, 0);
     const totalAmount = Math.max(0, subtotal - parseFloat(discountValue));
 
+    // Look up purchase costs at invoice creation time so COGS is frozen
+    const costMap = await lookupItemCosts(prisma as any, companyId, items.map((i: any) => i.itemName));
+
     const invoice = await prisma.invoice.create({
       data: {
         companyId, customerId, invoiceNumber,
@@ -78,6 +81,7 @@ export const createInvoice = async (req: Request, res: Response) => {
             quantity: parseInt(i.quantity),
             unitPrice: parseFloat(i.unitPrice),
             total: parseInt(i.quantity) * parseFloat(i.unitPrice),
+            costPrice: costMap.get(i.itemName) ?? 0,
           })),
         },
       },
