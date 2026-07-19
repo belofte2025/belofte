@@ -219,3 +219,21 @@ export const getGeneralLedger = async (
   const res = await api.get(`/accounting/reports/ledger/${accountId}?${params.toString()}`);
   return res.data;
 };
+
+export interface BackfillResult {
+  salesPosted: number;
+  paymentsPosted: number;
+  skipped: number;
+  errors: string[];
+  dryRun: boolean;
+  remainingUnposted: number;
+}
+
+export const runBackfill = async (opts: {
+  scope?: "sales" | "payments" | "all";
+  dryRun?: boolean;
+  maxRecords?: number;
+}): Promise<BackfillResult> => {
+  const res = await api.post("/accounting/backfill", opts);
+  return res.data;
+};
