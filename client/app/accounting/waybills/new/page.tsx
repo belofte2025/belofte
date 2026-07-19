@@ -44,7 +44,7 @@ function NewWaybillInner() {
   const [fromInvoiceNumber, setFromInvoiceNumber] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([api.get("/customers/list"), getSupplierItemsWithSales()])
+    Promise.all([api.get("/customers"), getSupplierItemsWithSales()])
       .then(([custRes, itemData]) => {
         const customerOpts: CustomerOption[] = custRes.data.map((c: any) => ({
           label: c.customerName,

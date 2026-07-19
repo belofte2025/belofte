@@ -44,7 +44,7 @@ export default function NewInvoicePage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.get("/customers/list"), getSupplierItemsWithSales()])
+    Promise.all([api.get("/customers"), getSupplierItemsWithSales()])
       .then(([custRes, itemData]) => {
         setCustomers(custRes.data.map((c: any) => ({ label: c.customerName, value: c.id })));
         setAllItems(itemData);
