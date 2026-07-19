@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Petros Enterprise Brochure – EYO Solutions</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --blue: #1565c0;
+      --blue-dark: #0d47a1;
+      --blue-mid: #1976d2;
+      --blue-light: #e3f0ff;
+      --blue-pale: #f0f6ff;
+      --white: #ffffff;
+      --text: #0d1b3e;
+      --text-soft: #3a4a6b;
+      --red: #c0392b;
+      --green: #0f9b58;
+      --gold: #f5a623;
+    }
+
+    html,
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #b0c4de;
+      color: var(--text);
+    }
+
+    /* ── EACH PAGE = A4 ── */
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: var(--white);
+      margin: 16px auto;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 50px rgba(21, 101, 192, 0.25);
+    }
+
+    @media print {
+
+      html,
+      body {
+        background: none;
+        margin: 0;
+      }
+
+      .page {
+        margin: 0;
+        box-shadow: none;
+        width: 210mm;
+        height: 297mm;
+        page-break-after: always;
+      }
+
+      .page:last-child {
+        page-break-after: avoid;
+      }
+    }
+
+    /* ════════════════════════════
+       PAGE 1
+    ════════════════════════════ */
+
+    /* ── P1 HERO ── */
+    .p1-hero {
+      background: linear-gradient(145deg, var(--blue-dark) 0%, var(--blue) 50%, var(--blue-mid) 100%);
+      color: var(--white);
+      padding: 28px 24px 22px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .p1-hero::before {
+      content: '';
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.09) 0%, transparent 70%);
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 50%;
+    }
+
+    .p1-hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--gold), #fff5, var(--gold));
+    }
+
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--gold);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.65rem;
+      box-shadow: 0 4px 14px rgba(245, 166, 35, 0.5);
+    }
+
+    .brand-name {
+      text-align: left;
+    }
+
+    .brand-name h2 {
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .brand-name span {
+      font-size: 0.76rem;
+      opacity: 0.75;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: var(--white);
+      font-weight: 700;
+      font-size: 0.74rem;
+      letter-spacing: 1.5px;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .p1-hero h1 {
+      font-size: 2.1rem;
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+
+    .p1-hero h1 span {
+      color: var(--gold);
+    }
+
+    .p1-hero p {
+      font-size: 0.9rem;
+      opacity: 0.88;
+      max-width: 380px;
+      margin: 0 auto 16px;
+      line-height: 1.6;
+    }
+
+    .hero-cta {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 1.02rem;
+      padding: 10px 28px;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 6px 20px rgba(245, 166, 35, 0.5);
+    }
+
+    /* ── P1 TRIAL BANNER ── */
+    .trial-banner {
+      background: var(--green);
+      color: var(--white);
+      text-align: center;
+      padding: 8px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .trial-banner strong {
+      font-size: 1.15em;
+    }
+
+    .trial-banner span {
+      opacity: 0.9;
+      font-weight: 400;
+    }
+
+    /* ── P1 PAIN SECTION ── */
+    .p1-pain {
+      padding: 16px 20px 14px;
+      flex-shrink: 0;
+    }
+
+    .sec-label {
+      text-align: center;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--blue);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .sec-title {
+      text-align: center;
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .pain-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .pain-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 12px 10px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(21, 101, 192, 0.08);
+      border-top: 3px solid var(--red);
+    }
+
+    .pain-icon {
+      font-size: 1.65rem;
+      margin-bottom: 5px;
+    }
+
+    .pain-card h3 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 3px;
+      color: var(--red);
+    }
+
+    .pain-card p {
+      font-size: 0.86rem;
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+
+    /* ── P1 UNIQUE HIGHLIGHTS ── */
+    .p1-highlights {
+      background: linear-gradient(160deg, var(--blue-dark) 0%, var(--blue) 100%);
+      padding: 16px 20px 18px;
+      flex: 1;
+    }
+
+    .p1-highlights .sec-label {
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .p1-highlights .sec-title {
+      color: var(--white);
+    }
+
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .hi-card {
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px 11px;
+    }
+
+    .hi-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .hi-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gold);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+    }
+
+    .hi-card h3 {
+      color: var(--white);
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .hi-card p {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 0.84rem;
+      line-height: 1.6;
+    }
+
+    .unique-tag {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    /* ── P1 FOOTER BAR ── */
+    .p1-footer {
+      background: var(--blue-dark);
+      color: rgba(255, 255, 255, 0.55);
+      padding: 7px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      flex-shrink: 0;
+    }
+
+    .p1-footer strong {
+      color: var(--gold);
+    }
+
+    .page-num {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+
+    /* ════════════════════════════
+       PAGE 2
+    ════════════════════════════ */
+
+    /* ── P2 HEADER ── */
+    .p2-header {
+      background: linear-gradient(90deg, var(--blue-dark) 0%, var(--blue-mid) 100%);
+      color: var(--white);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .p2-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .p2-brand-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gold);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+    }
+
+    .p2-brand h3 {
+      font-size: 1.28rem;
+      font-weight: 900;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .p2-brand span {
+      font-size: 0.72rem;
+      opacity: 0.7;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .p2-header-tag {
+      font-size: 0.84rem;
+      font-weight: 700;
+      opacity: 0.85;
+      text-align: right;
+    }
+
+    /* ── P2 FEATURES ── */
+    .p2-features {
+      background: var(--blue-pale);
+      padding: 14px 20px 12px;
+      flex-shrink: 0;
+    }
+
+    .p2-features .sec-label {
+      color: var(--blue);
+    }
+
+    .p2-features .sec-title {
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .feat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .feat-card {
+      background: var(--white);
+      border-radius: 10px;
+      padding: 10px 11px;
+      box-shadow: 0 2px 10px rgba(21, 101, 192, 0.08);
+      border-left: 3px solid var(--blue);
+    }
+
+    .feat-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .feat-ic {
+      width: 28px;
+      height: 28px;
+      background: var(--blue-light);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.28rem;
+      flex-shrink: 0;
+    }
+
+    .feat-card h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--blue-dark);
+      line-height: 1.2;
+    }
+
+    .feat-card p {
+      font-size: 0.82rem;
+      color: var(--text-soft);
+      line-height: 1.55;
+    }
+
+    /* ── P2 INFO STRIPS ── */
+    .strip {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 20px;
+      flex-shrink: 0;
+    }
+
+    .strip-icon {
+      font-size: 2.1rem;
+      flex-shrink: 0;
+    }
+
+    .strip h3 {
+      font-size: 0.92rem;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .strip p {
+      font-size: 0.86rem;
+      line-height: 1.5;
+      opacity: 0.88;
+    }
+
+    .strip-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 5px;
+    }
+
+    .s-pill {
+      border-radius: 20px;
+      padding: 2px 9px;
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+
+    .strip-realtime {
+      background: var(--blue-light);
+      border-left: 4px solid var(--blue);
+      color: var(--text);
+    }
+
+    .strip-realtime h3 {
+      color: var(--blue-dark);
+    }
+
+    .strip-realtime .s-pill {
+      background: var(--blue);
+      color: var(--white);
+    }
+
+    .strip-mobile {
+      background: var(--blue-pale);
+      border-left: 4px solid #42a5f5;
+      color: var(--text);
+    }
+
+    .strip-mobile h3 {
+      color: var(--blue-dark);
+    }
+
+    .strip-mobile .s-pill {
+      background: #42a5f5;
+      color: var(--white);
+    }
+
+    .strip-manager {
+      background: linear-gradient(90deg, var(--blue-dark) 0%, #1a237e 100%);
+      color: var(--white);
+    }
+
+    .strip-manager h3 {
+      color: var(--gold);
+    }
+
+    .strip-manager .s-pill {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--white);
+    }
+
+    /* ── P2 MODULES ── */
+    .p2-modules {
+      padding: 10px 20px 10px;
+      flex-shrink: 0;
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .mod-pill {
+      background: var(--white);
+      border-radius: 9px;
+      padding: 7px 4px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(21, 101, 192, 0.08);
+      border-bottom: 2px solid var(--blue);
+    }
+
+    .mod-pill .mi {
+      font-size: 1.28rem;
+      margin-bottom: 2px;
+    }
+
+    .mod-pill p {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── P2 CTA ── */
+    .p2-cta {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+      padding: 16px 20px;
+      text-align: center;
+      color: var(--white);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .p2-cta h2 {
+      font-size: 1.35rem;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .p2-cta p {
+      font-size: 0.92rem;
+      opacity: 0.9;
+      margin-bottom: 12px;
+      line-height: 1.55;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-feats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .cta-feat {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .cta-feat::before {
+      content: '✓  ';
+    }
+
+    .cta-btn {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 10px 28px;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ── P2 FOOTER ── */
+    .p2-footer {
+      background: var(--blue-dark);
+      color: rgba(255, 255, 255, 0.55);
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      flex-shrink: 0;
+    }
+
+    .p2-footer strong {
+      color: var(--gold);
+    }
+
+    .p2-footer .page-num {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--blue-light);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════
+       PAGE 1 — FRONT
+  ══════════════════════════════════ -->
+  <div class="page" id="page1">
+
+    <!-- HERO -->
+    <div class="p1-hero">
+      <div class="brand-logo">
+        <div class="brand-icon">🏢</div>
+        <div class="brand-name">
+          <h2>PETROS ENTERPRISE</h2>
+          <span>Powered by EYO Solutions</span>
+        </div>
+      </div>
+      <div class="hero-badge">Made for Kantamanto Traders &amp; Entrepreneurs</div>
+      <h1>Run Your Business<br><span>The Smart Way</span></h1>
+      <p>Stop losing money to confusion. Track your stock, containers, sales, debts, and customers — all in one place.
+        No complicated training needed.</p>
+      <a href="#" class="hero-cta">Start Free 2-Month Trial →</a>
+    </div>
+
+    <!-- TRIAL BANNER -->
+    <div class="trial-banner">
+      🎉 <strong>2 Months FREE</strong>
+      <span>|&nbsp; No credit card &nbsp;·&nbsp; No commitment &nbsp;·&nbsp; Just results</span>
+    </div>
+
+    <!-- PAIN POINTS -->
+    <div class="p1-pain">
+      <div class="sec-label">Sound Familiar?</div>
+      <div class="sec-title">Problems Every Trader Faces</div>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="pain-icon">📒</div>
+          <h3>Paper Records Get Lost</h3>
+          <p>Notebooks tear, pages go missing. You can never find what you need when you need it.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon">😤</div>
+          <h3>Customers Owe You Money</h3>
+          <p>Hard to track who owes what. Debts pile up and you lose track of your real balance.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon">📦</div>
+          <h3>Container Stock is Confusing</h3>
+          <p>Tracking what came in, what sold, and what remains from each container is a daily headache.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-icon">📊</div>
+          <h3>No Clear Picture of Profit</h3>
+          <p>At month end you don't really know if you made money — or just stayed busy.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIQUE HIGHLIGHTS -->
+    <div class="p1-highlights">
+      <div class="sec-label">What Makes Us Different</div>
+      <div class="sec-title">Built Uniquely for Kantamanto</div>
+      <div class="highlights-grid">
+        <div class="hi-card">
+          <div class="unique-tag">Unique</div>
+          <div class="hi-top">
+            <div class="hi-icon">🚢</div>
+            <h3>Container Offload Interface</h3>
+          </div>
+          <p>Upload your container list and offload items instantly. Tracks every item — quantities received, sold, and
+            remaining. Warns you of duplicates before they cause problems.</p>
+        </div>
+        <div class="hi-card">
+          <div class="unique-tag">Unique</div>
+          <div class="hi-top">
+            <div class="hi-icon">📦</div>
+            <h3>Inventory by Container &amp; Supplier</h3>
+          </div>
+          <p>See exactly which stock came from which container and which supplier. Physical inventory tracked separately
+            — no mixing up your bales.</p>
+        </div>
+        <div class="hi-card">
+          <div class="unique-tag">Unique</div>
+          <div class="hi-top">
+            <div class="hi-icon">🧾</div>
+            <h3>Container &amp; Regular Sales</h3>
+          </div>
+          <p>Sell directly from a container or do regular daily sales. Both tracked separately with full reports so you
+            always know where revenue is coming from.</p>
+        </div>
+        <div class="hi-card">
+          <div class="unique-tag">Unique</div>
+          <div class="hi-top">
+            <div class="hi-icon">🛠️</div>
+            <h3>Free Custom Build for You</h3>
+          </div>
+          <p>Tell us how your shop works and we customise the system to match your exact operation — free. Your system
+            will be different from every other trader's.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE FOOTER -->
+    <div class="p1-footer">
+      <span><strong>PETROS ENTERPRISE</strong> — by EYO Solutions &nbsp;·&nbsp; 0246462398</span>
+
+    </div>
+
+  </div><!-- /page1 -->
+
+
+  <!-- ══════════════════════════════════
+       PAGE 2 — BACK
+  ══════════════════════════════════ -->
+  <div class="page" id="page2">
+
+    <!-- HEADER -->
+    <div class="p2-header">
+      <div class="p2-brand">
+        <div class="p2-brand-icon">🏢</div>
+        <div>
+          <h3>PETROS ENTERPRISE</h3>
+          <span>by EYO Solutions · Kantamanto</span>
+        </div>
+      </div>
+      <div class="p2-header-tag">Complete Feature Overview</div>
+    </div>
+
+    <!-- FEATURES GRID -->
+    <div class="p2-features">
+      <div class="sec-label">Full Feature Set</div>
+      <div class="sec-title">Everything You Get in One System</div>
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="feat-row">
+            <div class="feat-ic">💳</div>
+            <h4>Customer Debts &amp; Credit Notes</h4>
+          </div>
+          <p>Track every customer balance. Issue credit notes for returns. Know exactly who owes you at all times.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-row">
+            <div class="feat-ic">📱</div>
+            <h4>SMS Alerts for Customers</h4>
+          </div>
+          <p>Send automatic SMS updates to customers about their balances, payments, and debt reminders.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-row">
+            <div class="feat-ic">📈</div>
+            <h4>Daily Cash Reports</h4>
+          </div>
+          <p>See your daily cash in from sales, payments to suppliers, and closing balance — no calculator needed.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-row">
+            <div class="feat-ic">🔐</div>
+            <h4>Role-Based Staff Access</h4>
+          </div>
+          <p>Cashier sees sales only. Store keeper sees stock only. Your financials stay private and secure.</p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- REAL-TIME STRIP -->
+    <div class="strip strip-realtime">
+      <div class="strip-icon">🌍</div>
+      <div>
+        <h3>Real-Time Data — Anywhere in the World</h3>
+        <p>Check your sales reports, customer balances, and stock levels live from any phone or computer — at the
+          market, at home, or abroad.</p>
+        <div class="strip-pills">
+          <div class="s-pill">📊 Live Sales Reports</div>
+          <div class="s-pill">👥 Customer Balances</div>
+          <div class="s-pill">📦 Stock Levels</div>
+          <div class="s-pill">🔄 Auto Updates</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOBILE STRIP -->
+    <div class="strip strip-mobile">
+      <div class="strip-icon">📱</div>
+      <div>
+        <h3>Works on Every Mobile Device</h3>
+        <p>iPhone, Android, big screen or small — fits perfectly on any device. No app to download. Just open your
+          browser and go.</p>
+        <div class="strip-pills">
+          <div class="s-pill">iPhone</div>
+          <div class="s-pill">Android</div>
+          <div class="s-pill">Tablet</div>
+          <div class="s-pill">Desktop</div>
+          <div class="s-pill">No App Needed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGER STRIP -->
+    <div class="strip strip-manager">
+      <div class="strip-icon">👔</div>
+      <div>
+        <h3>Managers &amp; Owners — Track From Outside the Shop</h3>
+        <p>Log in from anywhere and see real-time sales, inventory, and staff activity. Full control even when you're
+          away.</p>
+        <div class="strip-pills">
+          <div class="s-pill">📍 Monitor Remotely</div>
+          <div class="s-pill">📊 View Any Report</div>
+          <div class="s-pill">🔐 Control Access</div>
+          <div class="s-pill">💰 Check Daily Cash</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULES -->
+    <div class="p2-modules">
+      <div class="sec-label">Everything Included</div>
+      <div class="modules-grid">
+        <div class="mod-pill">
+          <div class="mi">🧾</div>
+          <p>Regular Sales</p>
+        </div>
+        <div class="mod-pill">
+          <div class="mi">🚢</div>
+          <p>Container Sales</p>
+        </div>
+        <div class="mod-pill">
+          <div class="mi">📦</div>
+          <p>Stock / Items</p>
+        </div>
+        <div class="mod-pill">
+          <div class="mi">🏭</div>
+          <p>Suppliers</p>
+        </div>
+        <div class="mod-pill">
+          <div class="mi">👥</div>
+          <p>Customers</p>
+        </div>
+        <div class="mod-pill">
+          <div class="mi">💰</div>
+          <p>Debts &amp; Pay</p>
+        </div>
+        <div class="mod-pill">
+          <div class="mi">📊</div>
+          <p>Reports</p>
+        </div>
+        <div class="mod-pill">
+          <div class="mi">📱</div>
+          <p>SMS Alerts</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="p2-cta" id="trial">
+      <h2>🛠️ We Build It Your Way — Free</h2>
+      <p>Every business is different. Tell us how your shop works and we will customise the system to match your exact
+        operation at no extra cost. Your system will be unique to <em>you</em>.</p>
+      <div class="cta-feats">
+        <div class="cta-feat">Custom workflows for your shop</div>
+        <div class="cta-feat">Built from your descriptions</div>
+        <div class="cta-feat">Different from every other trader</div>
+        <div class="cta-feat">No extra charge — included free</div>
+      </div>
+      <a href="#" class="cta-btn">Start Your 2-Month Free Trial →</a>
+    </div>
+
+    <!-- PAGE FOOTER -->
+    <div class="p2-footer">
+      <span><strong>PETROS ENTERPRISE</strong> — Built for Kantamanto Traders &amp; Entrepreneurs</span>
+      <span>Call EYO Solutions: <strong>0246462398</strong></span>
+
+    </div>
+
+  </div><!-- /page2 -->
+
+</body>
+
+</html>

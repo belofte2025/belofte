@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Petros Enterprise – A5 Infographic Brochure</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:      #1565c0;
+      --blue-dark: #0d47a1;
+      --blue-mid:  #1976d2;
+      --blue-light:#dceeff;
+      --blue-pale: #eef5ff;
+      --white:     #ffffff;
+      --text:      #0d1b3e;
+      --soft:      #3a4a6b;
+      --red:       #e53935;
+      --green:     #0f9b58;
+      --gold:      #f5a623;
+      --purple:    #6a1b9a;
+    }
+    html, body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #8aaad0;
+      color: var(--text);
+    }
+    .page {
+      width: 148mm;
+      height: 210mm;
+      background: var(--white);
+      margin: 14px auto;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 40px rgba(21,101,192,0.3);
+    }
+    @media print {
+      html, body { background: none; margin: 0; }
+      .page { margin: 0; box-shadow: none; width: 148mm; height: 210mm; page-break-after: always; }
+      .page:last-child { page-break-after: avoid; }
+    }
+
+    /* ── SHARED ── */
+    .pg-footer {
+      background: var(--blue-dark);
+      color: rgba(255,255,255,0.55);
+      padding: 5px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.62rem;
+      flex-shrink: 0;
+    }
+    .pg-footer strong { color: var(--gold); }
+    .pg-num {
+      background: rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.65);
+    }
+    .pg-label {
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.65;
+      margin-bottom: 4px;
+    }
+
+
+    /* ════════════════════════════
+       PAGE 1 — COVER
+    ════════════════════════════ */
+    .p1-bg {
+      background: linear-gradient(145deg, var(--blue-dark) 0%, var(--blue) 55%, var(--blue-mid) 100%);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px 18px 16px;
+      position: relative;
+      overflow: hidden;
+      color: var(--white);
+    }
+    .p1-bg::before {
+      content: '';
+      position: absolute;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 65%);
+      top: -80px; left: 50%; transform: translateX(-50%);
+      border-radius: 50%;
+    }
+    .p1-bg::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .cover-brand-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 14px; position: relative;
+    }
+    .cover-logo-box {
+      width: 58px; height: 58px;
+      background: var(--gold);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      box-shadow: 0 6px 22px rgba(245,166,35,0.55);
+    }
+    .cover-brand-text h2 {
+      font-size: 1.55rem; font-weight: 900; color: var(--gold);
+      letter-spacing: 1px; line-height: 1; text-align: left;
+    }
+    .cover-brand-text span {
+      font-size: 0.68rem; opacity: 0.75; letter-spacing: 2px;
+      text-transform: uppercase; font-weight: 600;
+    }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.28);
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px;
+      padding: 4px 13px; border-radius: 20px;
+      margin-bottom: 12px; text-transform: uppercase; position: relative;
+    }
+    .p1-bg h1 {
+      font-size: 2.4rem; font-weight: 900; line-height: 1.12;
+      margin-bottom: 10px; position: relative;
+    }
+    .p1-bg h1 span { color: var(--gold); }
+    /* 3 KEY STATS ROW */
+    .cover-stats {
+      display: flex; gap: 8px;
+      margin: 10px 0 16px;
+      position: relative;
+    }
+    .c-stat {
+      flex: 1;
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px 6px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .c-stat .stat-icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+    .c-stat .stat-val { font-size: 1.05rem; font-weight: 900; color: var(--gold); display: block; line-height: 1; }
+    .c-stat .stat-lbl { font-size: 0.62rem; opacity: 0.8; font-weight: 600; }
+    .cover-cta {
+      display: inline-block;
+      background: var(--gold); color: var(--text);
+      font-weight: 800; font-size: 0.95rem;
+      padding: 12px 28px; border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(245,166,35,0.5);
+      position: relative;
+    }
+    .cover-trial-bar {
+      background: var(--green); color: var(--white);
+      text-align: center; padding: 8px 14px;
+      font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
+    }
+    .cover-trial-bar strong { font-size: 1.1em; }
+
+
+    /* ════════════════════════════
+       PAGE 2 — BEFORE vs AFTER
+    ════════════════════════════ */
+    .p2-header {
+      background: linear-gradient(90deg, var(--blue-dark), var(--blue));
+      color: var(--white);
+      padding: 12px 16px 10px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .p2-header .pg-label { color: rgba(255,255,255,0.65); text-align: center; }
+    .p2-header h2 { font-size: 1.35rem; font-weight: 900; }
+
+    .ba-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .ba-col {
+      display: flex;
+      flex-direction: column;
+      padding: 10px 12px;
+      gap: 7px;
+    }
+    .ba-col.before { background: #fff5f5; border-right: 2px solid #eee; }
+    .ba-col.after  { background: var(--blue-pale); }
+    .ba-col-title {
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 900;
+      padding: 6px 0;
+      border-radius: 8px;
+      margin-bottom: 2px;
+      letter-spacing: 1px;
+    }
+    .ba-col.before .ba-col-title { background: var(--red); color: var(--white); }
+    .ba-col.after  .ba-col-title { background: var(--blue); color: var(--white); }
+    .ba-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      border-radius: 10px;
+      padding: 8px 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .ba-col.before .ba-item { border-left: 3px solid var(--red); }
+    .ba-col.after  .ba-item { border-left: 3px solid var(--green); }
+    .ba-item .bi { font-size: 1.5rem; flex-shrink: 0; }
+    .ba-item p { font-size: 0.75rem; font-weight: 700; color: var(--text); line-height: 1.35; }
+    .ba-col.before .ba-item p { color: var(--red); }
+    .ba-col.after  .ba-item p { color: #0a6e3b; }
+
+
+    /* ════════════════════════════
+       PAGE 3 & 4 — UNIQUE FEATURES (VISUAL)
+    ════════════════════════════ */
+    .uf-header {
+      background: linear-gradient(160deg, var(--blue-dark), var(--blue));
+      color: var(--white);
+      padding: 12px 16px 10px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .uf-header .pg-label { color: rgba(255,255,255,0.65); text-align: center; }
+    .uf-header h2 { font-size: 1.3rem; font-weight: 900; }
+
+    .uf-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: linear-gradient(160deg, var(--blue-dark) 0%, var(--blue) 100%);
+      padding: 10px 12px;
+      gap: 8px;
+    }
+    .uf-card {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 14px;
+      padding: 12px 14px;
+      flex: 1;
+    }
+    .uf-tag {
+      display: inline-block;
+      background: var(--gold); color: var(--text);
+      font-size: 0.6rem; font-weight: 800;
+      letter-spacing: 1px; padding: 2px 10px;
+      border-radius: 20px; margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .uf-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .uf-icon {
+      width: 48px; height: 48px;
+      background: var(--gold); border-radius: 13px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.65rem; flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(245,166,35,0.45);
+    }
+    .uf-card h3 { color: var(--white); font-size: 1rem; font-weight: 800; line-height: 1.25; }
+    /* MINI INFOGRAPHIC INSIDE EACH UF-CARD */
+    .uf-flow {
+      display: flex; align-items: center; gap: 4px;
+      flex-wrap: nowrap;
+    }
+    .uf-step {
+      flex: 1;
+      background: rgba(255,255,255,0.12);
+      border-radius: 9px;
+      padding: 7px 4px;
+      text-align: center;
+    }
+    .uf-step .s-icon { font-size: 1.2rem; display: block; margin-bottom: 2px; }
+    .uf-step .s-lbl { font-size: 0.62rem; font-weight: 700; color: rgba(255,255,255,0.85); }
+    .uf-arrow { font-size: 1rem; color: var(--gold); flex-shrink: 0; }
+
+    .uf-bullets { display: flex; flex-wrap: wrap; gap: 5px; }
+    .uf-bullet {
+      background: rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 0.7rem; font-weight: 600;
+      color: rgba(255,255,255,0.9);
+    }
+    .uf-bullet::before { content: '✓ '; color: var(--gold); }
+
+
+    /* ════════════════════════════
+       PAGE 5 — MORE FEATURES (BIG ICONS)
+    ════════════════════════════ */
+    .mf-header {
+      background: var(--blue-pale);
+      border-bottom: 3px solid var(--blue-light);
+      padding: 12px 16px 10px;
+      flex-shrink: 0; text-align: center;
+    }
+    .mf-header .pg-label { color: var(--blue); text-align: center; }
+    .mf-header h2 { font-size: 1.3rem; font-weight: 900; color: var(--text); }
+
+    .mf-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+    .mf-card {
+      border-radius: 14px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 3px 16px rgba(21,101,192,0.1);
+      border-top: 4px solid var(--blue);
+      background: var(--white);
+    }
+    .mf-big-icon { font-size: 2.5rem; margin-bottom: 6px; }
+    .mf-card h4 { font-size: 0.92rem; font-weight: 800; color: var(--blue-dark); margin-bottom: 6px; line-height: 1.2; }
+    .mf-bullets { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+    .mf-b {
+      background: var(--blue-pale);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--blue-dark);
+      text-align: left;
+    }
+    .mf-b::before { content: '✓ '; color: var(--green); }
+
+
+    /* ════════════════════════════
+       PAGE 6 — REAL-TIME & MOBILE
+    ════════════════════════════ */
+    .rt-hero {
+      background: linear-gradient(135deg, var(--blue-dark), var(--blue));
+      color: var(--white);
+      padding: 14px 16px 12px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .rt-hero .pg-label { color: rgba(255,255,255,0.65); text-align: center; }
+    .rt-globe { font-size: 3.5rem; display: block; margin: 6px 0; }
+    .rt-hero h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 4px; }
+    .rt-hero p { font-size: 0.78rem; opacity: 0.85; line-height: 1.5; max-width: 280px; margin: 0 auto; }
+
+    .rt-stat-row {
+      display: flex;
+      gap: 0;
+      flex-shrink: 0;
+    }
+    .rt-stat {
+      flex: 1;
+      background: var(--blue);
+      color: var(--white);
+      text-align: center;
+      padding: 10px 6px;
+      border-right: 1px solid rgba(255,255,255,0.15);
+    }
+    .rt-stat:last-child { border-right: none; }
+    .rt-stat .rs-icon { font-size: 1.5rem; display: block; margin-bottom: 3px; }
+    .rt-stat .rs-lbl { font-size: 0.68rem; font-weight: 700; }
+
+    .mob-section-v2 {
+      flex: 1;
+      background: var(--blue-pale);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+    .mob-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .mob-title-row .mob-icon { font-size: 2.2rem; }
+    .mob-title-row h3 { font-size: 1.05rem; font-weight: 900; color: var(--blue-dark); }
+    .mob-devices {
+      display: flex; gap: 8px; justify-content: center; margin-bottom: 10px;
+    }
+    .mob-device {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+      flex: 1;
+      box-shadow: 0 2px 10px rgba(21,101,192,0.1);
+      border-bottom: 3px solid var(--blue-mid);
+    }
+    .mob-device .d-icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+    .mob-device .d-lbl { font-size: 0.7rem; font-weight: 800; color: var(--blue-dark); }
+    .mob-note {
+      background: var(--green);
+      color: var(--white);
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+
+    /* ════════════════════════════
+       PAGE 7 — MANAGER + MODULES
+    ════════════════════════════ */
+    .mgr-hero {
+      background: linear-gradient(90deg, var(--blue-dark), #1a237e);
+      color: var(--white);
+      padding: 14px 16px 12px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .mgr-hero .pg-label { color: rgba(255,255,255,0.6); text-align: center; }
+    .mgr-icon-big { font-size: 3rem; display: block; margin: 6px 0; }
+    .mgr-hero h2 { font-size: 1.25rem; font-weight: 900; color: var(--gold); margin-bottom: 4px; }
+    .mgr-hero p { font-size: 0.78rem; opacity: 0.85; line-height: 1.5; }
+
+    .mgr-caps {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px 14px 8px;
+      flex-shrink: 0;
+    }
+    .mgr-cap {
+      background: var(--blue-pale);
+      border-radius: 11px;
+      padding: 10px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-left: 4px solid var(--blue);
+    }
+    .mgr-cap .mc-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .mgr-cap .mc-text { font-size: 0.78rem; font-weight: 800; color: var(--blue-dark); line-height: 1.3; }
+
+    .mod-section-v2 {
+      flex: 1;
+      background: var(--white);
+      padding: 8px 14px 10px;
+    }
+    .mod-section-v2 .pg-label { color: var(--blue); text-align: center; margin-bottom: 8px; }
+    .mod-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+    }
+    .mod-card {
+      background: var(--blue-pale);
+      border-radius: 10px;
+      padding: 8px 4px;
+      text-align: center;
+      border-bottom: 3px solid var(--blue);
+    }
+    .mod-card .mc { font-size: 1.4rem; margin-bottom: 3px; }
+    .mod-card p { font-size: 0.65rem; font-weight: 800; color: var(--blue-dark); }
+
+
+    /* ════════════════════════════
+       PAGE 8 — CTA / BACK COVER
+    ════════════════════════════ */
+    .cta-bg {
+      background: linear-gradient(145deg, var(--blue-dark) 0%, var(--blue) 60%, var(--blue-mid) 100%);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 22px 18px 16px;
+      text-align: center;
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-bg::before {
+      content: '';
+      position: absolute;
+      width: 240px; height: 240px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 65%);
+      bottom: -60px; right: -50px;
+      border-radius: 50%;
+    }
+    .cta-icon-big { font-size: 3.2rem; margin-bottom: 10px; position: relative; }
+    .cta-bg h2 { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; line-height: 1.15; position: relative; }
+    .cta-bg h2 span { color: var(--gold); }
+    .cta-bg > p { font-size: 0.85rem; opacity: 0.88; max-width: 280px; line-height: 1.6; margin-bottom: 16px; position: relative; }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      width: 100%;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .cta-g-item {
+      background: rgba(255,255,255,0.13);
+      border-radius: 11px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .cta-g-item .cgi { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+    .cta-g-item p { font-size: 0.72rem; font-weight: 700; line-height: 1.3; }
+    .cta-btn {
+      display: inline-block;
+      background: var(--gold); color: var(--text);
+      font-weight: 800; font-size: 0.95rem;
+      padding: 12px 28px; border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      margin-bottom: 14px; position: relative;
+    }
+    .cta-contact {
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      position: relative;
+      width: 100%;
+    }
+    .cta-contact strong { color: var(--gold); font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+
+  <!-- ══ PAGE 1 — COVER ══ -->
+  <div class="page" id="pg1">
+    <div class="p1-bg">
+      <div class="cover-brand-row">
+        <div class="cover-logo-box">🏢</div>
+        <div class="cover-brand-text">
+          <h2>PETROS ENTERPRISE</h2>
+          <span>Powered by EYO Solutions</span>
+        </div>
+      </div>
+      <div class="cover-badge">Made for Kantamanto Traders &amp; Entrepreneurs</div>
+      <h1>Run Your Business<br><span>The Smart Way</span></h1>
+      <div class="cover-stats">
+        <div class="c-stat">
+          <span class="stat-icon">🎁</span>
+          <span class="stat-val">2 Months</span>
+          <span class="stat-lbl">FREE Trial</span>
+        </div>
+        <div class="c-stat">
+          <span class="stat-icon">🌍</span>
+          <span class="stat-val">Real-Time</span>
+          <span class="stat-lbl">Anywhere</span>
+        </div>
+        <div class="c-stat">
+          <span class="stat-icon">📱</span>
+          <span class="stat-val">All Devices</span>
+          <span class="stat-lbl">Mobile Friendly</span>
+        </div>
+      </div>
+      <a href="#" class="cover-cta">Start Free 2-Month Trial →</a>
+    </div>
+    <div class="cover-trial-bar">
+      🎉 <strong>2 Months FREE</strong> &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; No commitment
+    </div>
+    <div class="pg-footer">
+      <span><strong>PETROS ENTERPRISE</strong> · EYO Solutions · 0246462398</span>
+      <span class="pg-num">1 / 8</span>
+    </div>
+  </div>
+
+
+  <!-- ══ PAGE 2 — BEFORE vs AFTER ══ -->
+  <div class="page" id="pg2">
+    <div class="p2-header">
+      <div class="pg-label">The Problem &amp; The Solution</div>
+      <h2>Before &amp; After Petros Enterprise</h2>
+    </div>
+    <div class="ba-grid">
+      <div class="ba-col before">
+        <div class="ba-col-title">❌ WITHOUT</div>
+        <div class="ba-item"><span class="bi">📒</span><p>Paper records get lost or torn</p></div>
+        <div class="ba-item"><span class="bi">😤</span><p>Can't track customer debts</p></div>
+        <div class="ba-item"><span class="bi">📦</span><p>Container stock confusion</p></div>
+        <div class="ba-item"><span class="bi">📉</span><p>No idea of real profit</p></div>
+        <div class="ba-item"><span class="bi">🏃</span><p>Must be in shop to check</p></div>
+        <div class="ba-item"><span class="bi">😰</span><p>Workers hide sales info</p></div>
+      </div>
+      <div class="ba-col after">
+        <div class="ba-col-title">✅ WITH</div>
+        <div class="ba-item"><span class="bi">☁️</span><p>All records saved online safely</p></div>
+        <div class="ba-item"><span class="bi">💰</span><p>Every customer balance tracked</p></div>
+        <div class="ba-item"><span class="bi">🚢</span><p>Container items tracked instantly</p></div>
+        <div class="ba-item"><span class="bi">📈</span><p>Daily profit reports, clear</p></div>
+        <div class="ba-item"><span class="bi">🌍</span><p>Check from anywhere in the world</p></div>
+        <div class="ba-item"><span class="bi">🔐</span><p>Role access — you see everything</p></div>
+      </div>
+    </div>
+    <div class="pg-footer">
+      <span><strong>PETROS ENTERPRISE</strong> · EYO Solutions · 0246462398</span>
+      <span class="pg-num">2 / 8</span>
+    </div>
+  </div>
+
+
+  <!-- ══ PAGE 3 — UNIQUE FEATURE: CONTAINER ══ -->
+  <div class="page" id="pg3">
+    <div class="uf-header">
+      <div class="pg-label">Unique Feature</div>
+      <h2>Container Tracking — Built for Kantamanto</h2>
+    </div>
+    <div class="uf-body">
+      <div class="uf-card">
+        <div class="uf-tag">Unique — No Other App Does This</div>
+        <div class="uf-top">
+          <div class="uf-icon">🚢</div>
+          <h3>Container Offload Interface</h3>
+        </div>
+        <!-- PROCESS FLOW INFOGRAPHIC -->
+        <div class="uf-flow">
+          <div class="uf-step"><span class="s-icon">📁</span><span class="s-lbl">Upload Excel</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">📦</span><span class="s-lbl">Items Loaded</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">🧾</span><span class="s-lbl">Sell &amp; Track</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">📊</span><span class="s-lbl">Full Report</span></div>
+        </div>
+      </div>
+      <div class="uf-card">
+        <div class="uf-tag">Unique — No Other App Does This</div>
+        <div class="uf-top">
+          <div class="uf-icon">📦</div>
+          <h3>Inventory by Container &amp; Supplier</h3>
+        </div>
+        <!-- VISUAL BREAKDOWN -->
+        <div class="uf-flow">
+          <div class="uf-step"><span class="s-icon">🏭</span><span class="s-lbl">Supplier A</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">🚢</span><span class="s-lbl">Container 1</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">👗</span><span class="s-lbl">Items</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">📍</span><span class="s-lbl">Always Traced</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pg-footer">
+      <span><strong>PETROS ENTERPRISE</strong> · EYO Solutions · 0246462398</span>
+      <span class="pg-num">3 / 8</span>
+    </div>
+  </div>
+
+
+  <!-- ══ PAGE 4 — UNIQUE FEATURE: SALES + CUSTOM ══ -->
+  <div class="page" id="pg4">
+    <div class="uf-header">
+      <div class="pg-label">Unique Feature</div>
+      <h2>Sales &amp; Free Customisation</h2>
+    </div>
+    <div class="uf-body">
+      <div class="uf-card">
+        <div class="uf-tag">Unique — Dual Sales System</div>
+        <div class="uf-top">
+          <div class="uf-icon">🧾</div>
+          <h3>Container Sales &amp; Regular Sales</h3>
+        </div>
+        <div class="uf-flow">
+          <div class="uf-step"><span class="s-icon">🚢</span><span class="s-lbl">Container Sale</span></div>
+          <span class="uf-arrow">+</span>
+          <div class="uf-step"><span class="s-icon">🛍️</span><span class="s-lbl">Regular Sale</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">📊</span><span class="s-lbl">Separate Reports</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">💰</span><span class="s-lbl">Clear Profit</span></div>
+        </div>
+      </div>
+      <div class="uf-card">
+        <div class="uf-tag">Free — Included at No Extra Cost</div>
+        <div class="uf-top">
+          <div class="uf-icon">🛠️</div>
+          <h3>We Build It Your Way — Free</h3>
+        </div>
+        <div class="uf-flow">
+          <div class="uf-step"><span class="s-icon">🗣️</span><span class="s-lbl">You Describe</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">⚙️</span><span class="s-lbl">We Build It</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">✅</span><span class="s-lbl">Your System</span></div>
+          <span class="uf-arrow">→</span>
+          <div class="uf-step"><span class="s-icon">🆓</span><span class="s-lbl">No Charge</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pg-footer">
+      <span><strong>PETROS ENTERPRISE</strong> · EYO Solutions · 0246462398</span>
+      <span class="pg-num">4 / 8</span>
+    </div>
+  </div>
+
+
+  <!-- ══ PAGE 5 — MORE FEATURES ══ -->
+  <div class="page" id="pg5">
+    <div class="mf-header">
+      <div class="pg-label">Full Feature Set</div>
+      <h2>Everything You Get in One System</h2>
+    </div>
+    <div class="mf-grid">
+      <div class="mf-card">
+        <div class="mf-big-icon">💳</div>
+        <h4>Customer Debts &amp; Credit Notes</h4>
+        <div class="mf-bullets">
+          <div class="mf-b">Track every customer balance</div>
+          <div class="mf-b">Issue credit notes for returns</div>
+          <div class="mf-b">Know who owes — always</div>
+        </div>
+      </div>
+      <div class="mf-card">
+        <div class="mf-big-icon">📱</div>
+        <h4>SMS Alerts for Customers</h4>
+        <div class="mf-bullets">
+          <div class="mf-b">Auto SMS on payment</div>
+          <div class="mf-b">Debt reminder messages</div>
+          <div class="mf-b">Sent directly from system</div>
+        </div>
+      </div>
+      <div class="mf-card">
+        <div class="mf-big-icon">📈</div>
+        <h4>Daily Cash Reports</h4>
+        <div class="mf-bullets">
+          <div class="mf-b">Cash in from sales daily</div>
+          <div class="mf-b">Payments to suppliers</div>
+          <div class="mf-b">Closing balance — clear</div>
+        </div>
+      </div>
+      <div class="mf-card">
+        <div class="mf-big-icon">🔐</div>
+        <h4>Role-Based Staff Access</h4>
+        <div class="mf-bullets">
+          <div class="mf-b">Cashier — sales only</div>
+          <div class="mf-b">Store keeper — stock only</div>
+          <div class="mf-b">Owner — sees everything</div>
+        </div>
+      </div>
+    </div>
+    <div class="pg-footer">
+      <span><strong>PETROS ENTERPRISE</strong> · EYO Solutions · 0246462398</span>
+      <span class="pg-num">5 / 8</span>
+    </div>
+  </div>
+
+
+  <!-- ══ PAGE 6 — REAL-TIME & MOBILE ══ -->
+  <div class="page" id="pg6">
+    <div class="rt-hero">
+      <div class="pg-label">Live Data — Always Connected</div>
+      <span class="rt-globe">🌍</span>
+      <h2>Check Your Business in Real-Time, Anywhere</h2>
+      <p>Sales, stock, and customer balances update live — from any device, any location, any time.</p>
+    </div>
+    <div class="rt-stat-row">
+      <div class="rt-stat"><span class="rs-icon">📊</span><span class="rs-lbl">Live Sales</span></div>
+      <div class="rt-stat"><span class="rs-icon">👥</span><span class="rs-lbl">Balances</span></div>
+      <div class="rt-stat"><span class="rs-icon">📦</span><span class="rs-lbl">Stock Levels</span></div>
+      <div class="rt-stat"><span class="rs-icon">🔄</span><span class="rs-lbl">Auto Updates</span></div>
+    </div>
+    <div class="mob-section-v2">
+      <div class="mob-title-row">
+        <span class="mob-icon">📱</span>
+        <h3>Works on Every Device — No App Download Needed</h3>
+      </div>
+      <div class="mob-devices">
+        <div class="mob-device"><span class="d-icon">📱</span><span class="d-lbl">iPhone</span></div>
+        <div class="mob-device"><span class="d-icon">📲</span><span class="d-lbl">Android</span></div>
+        <div class="mob-device"><span class="d-icon">📟</span><span class="d-lbl">Tablet</span></div>
+        <div class="mob-device"><span class="d-icon">💻</span><span class="d-lbl">Laptop</span></div>
+        <div class="mob-device"><span class="d-icon">🖥️</span><span class="d-lbl">Desktop</span></div>
+      </div>
+      <div class="mob-note">🌐 Just open your browser — start working instantly</div>
+    </div>
+    <div class="pg-footer">
+      <span><strong>PETROS ENTERPRISE</strong> · EYO Solutions · 0246462398</span>
+      <span class="pg-num">6 / 8</span>
+    </div>
+  </div>
+
+
+  <!-- ══ PAGE 7 — MANAGER + MODULES ══ -->
+  <div class="page" id="pg7">
+    <div class="mgr-hero">
+      <div class="pg-label">For Managers &amp; Business Owners</div>
+      <span class="mgr-icon-big">👔</span>
+      <h2>Track Your Shop From Outside</h2>
+      <p>You don't need to be there. Log in from anywhere — see everything happening in real time.</p>
+    </div>
+    <div class="mgr-caps">
+      <div class="mgr-cap"><span class="mc-icon">📍</span><span class="mc-text">Monitor shop remotely</span></div>
+      <div class="mgr-cap"><span class="mc-icon">📊</span><span class="mc-text">View any report live</span></div>
+      <div class="mgr-cap"><span class="mc-icon">🔐</span><span class="mc-text">Control staff access</span></div>
+      <div class="mgr-cap"><span class="mc-icon">💰</span><span class="mc-text">Check daily cash</span></div>
+    </div>
+    <div class="mod-section-v2">
+      <div class="pg-label">All Tools Included</div>
+      <div class="mod-grid">
+        <div class="mod-card"><span class="mc">🧾</span><p>Regular Sales</p></div>
+        <div class="mod-card"><span class="mc">🚢</span><p>Container Sales</p></div>
+        <div class="mod-card"><span class="mc">📦</span><p>Stock / Items</p></div>
+        <div class="mod-card"><span class="mc">🏭</span><p>Suppliers</p></div>
+        <div class="mod-card"><span class="mc">👥</span><p>Customers</p></div>
+        <div class="mod-card"><span class="mc">💰</span><p>Debts &amp; Pay</p></div>
+        <div class="mod-card"><span class="mc">📊</span><p>Reports</p></div>
+        <div class="mod-card"><span class="mc">📱</span><p>SMS Alerts</p></div>
+      </div>
+    </div>
+    <div class="pg-footer">
+      <span><strong>PETROS ENTERPRISE</strong> · EYO Solutions · 0246462398</span>
+      <span class="pg-num">7 / 8</span>
+    </div>
+  </div>
+
+
+  <!-- ══ PAGE 8 — CTA / BACK COVER ══ -->
+  <div class="page" id="pg8">
+    <div class="cta-bg">
+      <span class="cta-icon-big">🛠️</span>
+      <h2>We Build It<br><span>Your Way — Free</span></h2>
+      <p>Tell us how your shop works. We customise it to match your exact operation at no extra cost.</p>
+      <div class="cta-grid">
+        <div class="cta-g-item"><span class="cgi">🗣️</span><p>You describe your workflow</p></div>
+        <div class="cta-g-item"><span class="cgi">⚙️</span><p>We build it your way</p></div>
+        <div class="cta-g-item"><span class="cgi">🆔</span><p>Unique to your business</p></div>
+        <div class="cta-g-item"><span class="cgi">🆓</span><p>Completely free of charge</p></div>
+      </div>
+      <a href="#" class="cta-btn">🎉 Start Your 2-Month Free Trial →</a>
+      <div class="cta-contact">
+        <strong>EYO Solutions</strong> — Kantamanto, Accra<br>
+        📞 Call / WhatsApp: <strong>0246462398</strong><br>
+        <span style="opacity:0.75;font-size:0.75rem;">PETROS ENTERPRISE · Built for Kantamanto Traders</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
