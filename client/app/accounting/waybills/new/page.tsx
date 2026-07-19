@@ -194,14 +194,19 @@ function NewWaybillInner() {
                       borderRadius: "0.5rem",
                       boxShadow: state.isFocused ? "0 0 0 3px rgba(0,153,214,0.15)" : "none",
                       "&:hover": { border: "1px solid #0099d6" },
+                      backgroundColor: "white",
                     }),
+                    input: (base) => ({ ...base, color: "#111827" }),
+                    singleValue: (base) => ({ ...base, color: "#111827" }),
+                    placeholder: (base) => ({ ...base, color: "#9ca3af" }),
                     option: (base, state) => ({
                       ...base,
                       backgroundColor: state.isSelected ? "#0099d6" : state.isFocused ? "#f3f4f6" : "white",
                       color: state.isSelected ? "white" : "#111827",
                       cursor: "pointer",
                     }),
-                    menu: (base) => ({ ...base, zIndex: 50 }),
+                    menu: (base) => ({ ...base, zIndex: 50, backgroundColor: "white" }),
+                    menuList: (base) => ({ ...base, backgroundColor: "white" }),
                   }}
                 />
               </div>
