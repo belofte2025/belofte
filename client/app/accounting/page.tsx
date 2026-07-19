@@ -32,10 +32,21 @@ export default function AccountingPage() {
   const [dryRunResult, setDryRunResult] = useState<BackfillResult | null>(null);
   const [runResult, setRunResult] = useState<BackfillResult | null>(null);
   const [backfillScope, setBackfillScope] = useState<"all" | "sales" | "payments">("all");
+  const [backfillComplete, setBackfillComplete] = useState(false);
 
   useEffect(() => {
     getAccounts()
-      .then(() => setAccountingEnabled(true))
+      .then(() => {
+        setAccountingEnabled(true);
+        // Silently check if any unposted records exist
+        runBackfill({ scope: "all", dryRun: true, maxRecords: 1 })
+          .then((r) => {
+            if (r.salesPosted === 0 && r.paymentsPosted === 0) {
+              setBackfillComplete(true);
+            }
+          })
+          .catch(() => {});
+      })
       .catch((err) => {
         if (err?.response?.status === 404 || err?.response?.status === 403) {
           setAccountingEnabled(false);
@@ -78,6 +89,7 @@ export default function AccountingPage() {
       const result = await runBackfill({ scope: backfillScope, dryRun: false, maxRecords: 500 });
       setRunResult(result);
       setBackfillStep("done");
+      if (result.remainingUnposted === 0) setBackfillComplete(true);
       if (result.errors.length === 0) {
         toast.success(`Posted ${result.salesPosted} sales and ${result.paymentsPosted} payments to GL`);
       } else {
@@ -129,19 +141,24 @@ export default function AccountingPage() {
         ) : (
           <>
             {/* GL Backfill Panel */}
-            <div className="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
-              <div className="flex items-start gap-3 p-4 bg-amber-50 border-b border-amber-200">
-                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className={`bg-white rounded-xl shadow-sm overflow-hidden border ${backfillComplete ? "border-gray-200 opacity-60 pointer-events-none" : "border-amber-200"}`}>
+              <div className={`flex items-start gap-3 p-4 border-b ${backfillComplete ? "bg-gray-50 border-gray-200" : "bg-amber-50 border-amber-200"}`}>
+                {backfillComplete
+                  ? <CheckCircle2 className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                  : <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-amber-900">Historical Transactions Not in GL</p>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    Sales, customer payments, and cash collected before accounting was enabled have no journal entries.
-                    Post them to the General Ledger to get accurate financial reports.
+                  <p className={`text-sm font-semibold ${backfillComplete ? "text-gray-400" : "text-amber-900"}`}>
+                    {backfillComplete ? "Historical Transactions Posted to GL" : "Historical Transactions Not in GL"}
+                  </p>
+                  <p className={`text-xs mt-0.5 ${backfillComplete ? "text-gray-400" : "text-amber-700"}`}>
+                    {backfillComplete
+                      ? "All historical sales and payments have been posted. Nothing to do."
+                      : "Sales, customer payments, and cash collected before accounting was enabled have no journal entries. Post them to the General Ledger to get accurate financial reports."}
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 space-y-4">
+              <div className={`p-4 space-y-4 ${backfillComplete ? "hidden" : ""}`}>
                 {/* Scope selector */}
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-xs font-medium text-gray-600">Post:</span>
