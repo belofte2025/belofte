@@ -74,7 +74,7 @@ type SidebarProps = { open: boolean; setOpen: (v: boolean) => void };
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-3 pt-5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 select-none first:pt-2">
+    <p className="px-3 pt-5 pb-1 text-xs font-semibold uppercase tracking-widest text-gray-400 select-none first:pt-2">
       {children}
     </p>
   );
@@ -288,10 +288,10 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
         {/* Developer credit */}
         <div className="px-3 py-2 flex-shrink-0">
-          <p className="text-[10px] text-gray-400 text-center leading-snug">
+          <p className="text-xs text-gray-400 text-center leading-snug">
             Developed by <span className="font-medium text-gray-500">EYO Solutions Ghana</span>
           </p>
-          <p className="text-[10px] text-gray-400 text-center">0246462398</p>
+          <p className="text-xs text-gray-400 text-center">0246462398</p>
         </div>
 
       </aside>
