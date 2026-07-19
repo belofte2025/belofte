@@ -2,11 +2,179 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft, Printer, Truck } from "lucide-react";
+import { ArrowLeft, Printer, Truck, FileDown, FileSpreadsheet } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { getInvoice, updateInvoiceStatus, Invoice } from "@/services/invoiceService";
 import { formatCurrency } from "@/utils/format";
 import toast from "react-hot-toast";
+
+async function exportPDF(invoice: Invoice) {
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const cyan: [number, number, number] = [0, 153, 214];
+  const dark: [number, number, number] = [17, 24, 39];
+  const gray: [number, number, number] = [107, 114, 128];
+
+  // Header stripe
+  doc.setFillColor(...cyan);
+  doc.rect(0, 0, pageW, 18, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(255, 255, 255);
+  doc.text("PETROS", 14, 12);
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text("Tax Invoice", 14, 17);
+
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.text("INVOICE", pageW - 14, 12, { align: "right" });
+
+  // Invoice meta
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...dark);
+  doc.text(invoice.invoiceNumber, pageW - 14, 20, { align: "right" });
+  doc.text(`Status: ${invoice.status}`, pageW - 14, 25, { align: "right" });
+
+  // Bill to
+  doc.setFontSize(8);
+  doc.setTextColor(...gray);
+  doc.text("BILL TO", 14, 28);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...dark);
+  doc.text(invoice.Customer?.customerName ?? "—", 14, 33);
+  if (invoice.Customer?.phone) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...gray);
+    doc.text(invoice.Customer.phone, 14, 37);
+  }
+
+  // Dates
+  doc.setFontSize(8);
+  doc.setTextColor(...gray);
+  doc.text("ISSUE DATE", pageW - 60, 28);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...dark);
+  doc.text(invoice.issueDate, pageW - 60, 33);
+  if (invoice.dueDate) {
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...gray);
+    doc.text("DUE DATE", pageW - 60, 38);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...dark);
+    doc.text(invoice.dueDate, pageW - 60, 43);
+  }
+
+  // Line items table
+  autoTable(doc, {
+    startY: 50,
+    head: [["Item Description", "Qty", "Unit Price", "Total"]],
+    body: (invoice.Items ?? []).map((item) => [
+      item.itemName,
+      item.quantity.toString(),
+      formatCurrency(item.unitPrice),
+      formatCurrency(item.total),
+    ]),
+    headStyles: { fillColor: cyan, textColor: 255, fontSize: 9, fontStyle: "bold" },
+    bodyStyles: { fontSize: 9, textColor: dark },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
+    columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+    margin: { left: 14, right: 14 },
+  });
+
+  // Totals
+  const finalY = (doc as any).lastAutoTable.finalY + 6;
+  const col1 = pageW - 70;
+  const col2 = pageW - 14;
+
+  const addRow = (label: string, value: string, bold = false, color = dark) => {
+    const y = (doc as any)._totalsY;
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...color);
+    doc.text(label, col1, y);
+    doc.text(value, col2, y, { align: "right" });
+    (doc as any)._totalsY += 6;
+  };
+
+  (doc as any)._totalsY = finalY;
+  addRow("Subtotal", formatCurrency(invoice.subtotal));
+  if (invoice.discountValue > 0) addRow("Discount", `- ${formatCurrency(invoice.discountValue)}`);
+  doc.setDrawColor(...dark);
+  doc.setLineWidth(0.4);
+  const lineY = (doc as any)._totalsY - 1;
+  doc.line(col1, lineY, col2, lineY);
+  (doc as any)._totalsY += 1;
+  addRow("Total", formatCurrency(invoice.totalAmount), true);
+  addRow("Amount Paid", formatCurrency(invoice.paidAmount));
+  const balance = invoice.totalAmount - invoice.paidAmount;
+  addRow("Balance Due", formatCurrency(balance), true, balance > 0 ? [220, 38, 38] : [22, 163, 74]);
+
+  // Notes
+  if (invoice.notes) {
+    const notesY = (doc as any)._totalsY + 6;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...gray);
+    doc.text("NOTES", 14, notesY);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...dark);
+    doc.text(invoice.notes, 14, notesY + 5, { maxWidth: pageW - 28 });
+  }
+
+  // Footer
+  const footerY = doc.internal.pageSize.getHeight() - 8;
+  doc.setFontSize(7);
+  doc.setTextColor(...gray);
+  doc.text("Developed by EYO Solutions Ghana · 0246462398", pageW / 2, footerY, { align: "center" });
+
+  doc.save(`${invoice.invoiceNumber}.pdf`);
+}
+
+async function exportExcel(invoice: Invoice) {
+  const XLSX = await import("xlsx");
+  const wb = XLSX.utils.book_new();
+
+  const rows: (string | number)[][] = [
+    ["PETROS — Tax Invoice"],
+    [],
+    ["Invoice Number", invoice.invoiceNumber],
+    ["Status", invoice.status],
+    ["Issue Date", invoice.issueDate],
+    ...(invoice.dueDate ? [["Due Date", invoice.dueDate]] : []),
+    ["Customer", invoice.Customer?.customerName ?? "—"],
+    ...(invoice.Customer?.phone ? [["Customer Phone", invoice.Customer.phone]] : []),
+    [],
+    ["Item Description", "Quantity", "Unit Price", "Total"],
+    ...(invoice.Items ?? []).map((item) => [item.itemName, item.quantity, item.unitPrice, item.total]),
+    [],
+    ["Subtotal", "", "", invoice.subtotal],
+    ...(invoice.discountValue > 0 ? [["Discount", "", "", -invoice.discountValue]] : []),
+    ["Total", "", "", invoice.totalAmount],
+    ["Amount Paid", "", "", invoice.paidAmount],
+    ["Balance Due", "", "", invoice.totalAmount - invoice.paidAmount],
+    [],
+    ...(invoice.notes ? [["Notes", invoice.notes]] : []),
+    [],
+    ["Developed by EYO Solutions Ghana · 0246462398"],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{ wch: 30 }, { wch: 12 }, { wch: 14 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, ws, "Invoice");
+  XLSX.writeFile(wb, `${invoice.invoiceNumber}.xlsx`);
+}
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "badge-gray",
@@ -116,6 +284,20 @@ export default function InvoiceDetailPage() {
             >
               <Truck className="w-4 h-4" />
               <span className="hidden sm:inline">Generate Waybill</span>
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => exportPDF(invoice).catch(() => toast.error("PDF export failed"))}
+            >
+              <FileDown className="w-4 h-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => exportExcel(invoice).catch(() => toast.error("Excel export failed"))}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span className="hidden sm:inline">Excel</span>
             </button>
             <button className="btn btn-secondary" onClick={() => window.print()}>
               <Printer className="w-4 h-4" />
