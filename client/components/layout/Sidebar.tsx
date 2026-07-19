@@ -8,7 +8,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useState } from "react";
 import Image from "next/image";
 import {
-  Home, Users, X, ShoppingCart, LogOut, ChevronDown, BarChart3,
+  Home, Users, X, ShoppingCart, ChevronDown, BarChart3,
   Container, Package, TrendingUp, TrendingDown, Factory,
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
@@ -145,7 +145,7 @@ function CollapsibleGroup({
 
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { hasPermission } = usePermissions();
   const [salesSubOpen, setSalesSubOpen] = useState(pathname.startsWith("/reports/sales"));
 
@@ -296,27 +296,6 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
           <p className="text-[10px] text-gray-400 text-center">0246462398</p>
         </div>
 
-        {/* User footer */}
-        <div className="border-t border-gray-200 bg-white p-3 flex-shrink-0 space-y-1">
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-md">
-            <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: "#00AEEF" }}>
-              <span className="text-white font-semibold text-xs">
-                {user?.email?.charAt(0).toUpperCase() || "U"}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-gray-900 truncate leading-snug">{user?.userName || "User"}</p>
-              <p className="text-[10px] text-gray-400 truncate leading-snug">{user?.role}</p>
-            </div>
-          </div>
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-500 rounded-md hover:bg-red-50 hover:text-red-600 transition-colors group"
-          >
-            <LogOut className="h-4 w-4 group-hover:text-red-500 transition-colors" />
-            Sign out
-          </button>
-        </div>
       </aside>
     </>
   );
