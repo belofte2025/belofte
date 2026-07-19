@@ -2,14 +2,9 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft, Plus, Search, RefreshCw, X, BookOpen } from "lucide-react";
+import { ArrowLeft, Plus, Search, RefreshCw, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  getAccounts,
-  createAccount,
-  seedDefaultAccounts,
-  Account,
-} from "@/services/accountingService";
+import { getAccounts, seedDefaultAccounts, Account } from "@/services/accountingService";
 import toast from "react-hot-toast";
 
 const typeColors: Record<string, string> = {
@@ -21,34 +16,11 @@ const typeColors: Record<string, string> = {
   EXPENSE: "badge-gray",
 };
 
-const ACCOUNT_TYPES = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "COGS", "EXPENSE"];
-
-interface AccountForm {
-  code: string;
-  name: string;
-  type: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "COGS" | "EXPENSE";
-  normalBalance: "DEBIT" | "CREDIT";
-  description: string;
-  isSystemAccount: boolean;
-}
-
-const defaultForm: AccountForm = {
-  code: "",
-  name: "",
-  type: "ASSET",
-  normalBalance: "DEBIT",
-  description: "",
-  isSystemAccount: false,
-};
-
 export default function ChartOfAccountsPage() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState<AccountForm>(defaultForm);
-  const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [confirmSeed, setConfirmSeed] = useState(false);
 
@@ -85,26 +57,6 @@ export default function ChartOfAccountsPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.code || !form.name) {
-      toast.error("Code and Name are required");
-      return;
-    }
-    setSaving(true);
-    try {
-      await createAccount(form);
-      toast.success("Account created");
-      setShowModal(false);
-      setForm(defaultForm);
-      fetchAccounts();
-    } catch {
-      toast.error("Failed to create account");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-4">
@@ -127,7 +79,7 @@ export default function ChartOfAccountsPage() {
               <RefreshCw className={`w-4 h-4 ${seeding ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Seed Default COA</span>
             </button>
-            <button onClick={() => setShowModal(true)} className="btn btn-primary">
+            <button onClick={() => router.push("/accounting/chart-of-accounts/new")} className="btn btn-primary">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Add Account</span>
             </button>
@@ -227,107 +179,6 @@ export default function ChartOfAccountsPage() {
           </>
         )}
       </div>
-
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-900">Add Account</h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="icon-btn text-gray-400 hover:text-gray-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Code *</label>
-                  <input
-                    className="input"
-                    value={form.code}
-                    onChange={(e) => setForm({ ...form, code: e.target.value })}
-                    placeholder="e.g. 1000"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Type *</label>
-                  <select
-                    className="input"
-                    value={form.type}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        type: e.target.value as AccountForm["type"],
-                        normalBalance: ["ASSET", "COGS", "EXPENSE"].includes(e.target.value)
-                          ? "DEBIT"
-                          : "CREDIT",
-                      })
-                    }
-                  >
-                    {ACCOUNT_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Name *</label>
-                <input
-                  className="input"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Account name"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Normal Balance</label>
-                <select
-                  className="input"
-                  value={form.normalBalance}
-                  onChange={(e) => setForm({ ...form, normalBalance: e.target.value as "DEBIT" | "CREDIT" })}
-                >
-                  <option value="DEBIT">Debit</option>
-                  <option value="CREDIT">Credit</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-                <input
-                  className="input"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Optional description"
-                />
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.isSystemAccount}
-                  onChange={(e) => setForm({ ...form, isSystemAccount: e.target.checked })}
-                  className="rounded"
-                />
-                <span className="text-xs text-gray-700">System account</span>
-              </label>
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="btn btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="btn btn-primary flex-1">
-                  {saving ? "Saving..." : "Create Account"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {confirmSeed && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">

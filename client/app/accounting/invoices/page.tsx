@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Plus, X, Trash2, FileText } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getInvoices, createInvoice, Invoice } from "@/services/invoiceService";
-import { getSupplierItemsWithSales } from "@/services/supplierService";
+import { getInvoices, Invoice } from "@/services/invoiceService";
 import { formatCurrency } from "@/utils/format";
-import api from "@/lib/api";
 import toast from "react-hot-toast";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -21,22 +19,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUSES = ["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"];
 
-interface LineItem {
-  itemName: string;
-  quantity: string;
-  unitPrice: string;
-}
-
-const emptyItem = (): LineItem => ({ itemName: "", quantity: "", unitPrice: "" });
-
-const defaultForm = () => ({
-  customerId: "",
-  issueDate: new Date().toISOString().split("T")[0],
-  dueDate: "",
-  notes: "",
-  discountValue: "",
-});
-
 export default function InvoicesPage() {
   const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -44,12 +26,6 @@ export default function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [customers, setCustomers] = useState<{ id: string; customerName: string }[]>([]);
-  const [form, setForm] = useState(defaultForm());
-  const [items, setItems] = useState<LineItem[]>([emptyItem()]);
-  const [saving, setSaving] = useState(false);
-  const [allItems, setAllItems] = useState<{ itemName: string; unitPrice: number }[]>([]);
 
   const fetchInvoices = () => {
     setLoading(true);
@@ -67,92 +43,16 @@ export default function InvoicesPage() {
     fetchInvoices();
   }, [statusFilter, startDate, endDate]);
 
-  useEffect(() => {
-    api
-      .get("/customers/list")
-      .then((res) => setCustomers(res.data))
-      .catch(() => {});
-    getSupplierItemsWithSales()
-      .then((data) => setAllItems(data.map((d: any) => ({ itemName: d.itemName, unitPrice: d.unitPrice }))))
-      .catch(() => {});
-  }, []);
-
   const totalValue = invoices.reduce((s, i) => s + i.totalAmount, 0);
   const totalPaid = invoices.reduce((s, i) => s + i.paidAmount, 0);
   const totalOutstanding = totalValue - totalPaid;
-
-  const updateItem = (index: number, field: keyof LineItem, value: string) => {
-    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, [field]: value } : it)));
-  };
-
-  const handleItemNameChange = (index: number, value: string) => {
-    const matched = allItems.find((item) => item.itemName === value);
-    setItems((prev) =>
-      prev.map((it, i) =>
-        i === index
-          ? { ...it, itemName: value, unitPrice: matched ? String(matched.unitPrice) : it.unitPrice }
-          : it
-      )
-    );
-  };
-
-  const removeItem = (index: number) => {
-    if (items.length > 1) setItems((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const subtotal = items.reduce(
-    (s, it) => s + (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0),
-    0
-  );
-  const discount = parseFloat(form.discountValue) || 0;
-  const total = subtotal - discount;
-
-  const closeModal = () => {
-    setShowModal(false);
-    setForm(defaultForm());
-    setItems([emptyItem()]);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.customerId) {
-      toast.error("Select a customer");
-      return;
-    }
-    if (items.some((it) => !it.itemName || !it.quantity || !it.unitPrice)) {
-      toast.error("Fill in all item fields");
-      return;
-    }
-    setSaving(true);
-    try {
-      await createInvoice({
-        customerId: form.customerId,
-        issueDate: form.issueDate,
-        dueDate: form.dueDate || undefined,
-        notes: form.notes || undefined,
-        discountValue: discount,
-        items: items.map((it) => ({
-          itemName: it.itemName,
-          quantity: parseFloat(it.quantity),
-          unitPrice: parseFloat(it.unitPrice),
-        })),
-      });
-      toast.success("Invoice created");
-      closeModal();
-      fetchInvoices();
-    } catch {
-      toast.error("Failed to create invoice");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <DashboardLayout>
       <div className="space-y-4">
         <div className="page-header">
           <h1 className="page-title">Invoices</h1>
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">
+          <button onClick={() => router.push("/accounting/invoices/new")} className="btn btn-primary">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Invoice</span>
           </button>
@@ -187,24 +87,18 @@ export default function InvoicesPage() {
             >
               <option value="">All Statuses</option>
               {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
             <input
-              type="date"
-              value={startDate}
+              type="date" value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="input"
-              style={{ maxWidth: 160 }}
+              className="input" style={{ maxWidth: 160 }}
             />
             <input
-              type="date"
-              value={endDate}
+              type="date" value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="input"
-              style={{ maxWidth: 160 }}
+              className="input" style={{ maxWidth: 160 }}
             />
           </div>
         </div>
@@ -234,9 +128,7 @@ export default function InvoicesPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{inv.invoiceNumber}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {inv.Customer?.customerName ?? "—"}
-                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">{inv.Customer?.customerName ?? "—"}</p>
                     </div>
                     <span className={`badge ${STATUS_COLORS[inv.status] ?? "badge-gray"} flex-shrink-0`}>
                       {inv.status}
@@ -244,9 +136,7 @@ export default function InvoicesPage() {
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-xs text-gray-500">{inv.issueDate}</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {formatCurrency(inv.totalAmount)}
-                    </span>
+                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(inv.totalAmount)}</span>
                   </div>
                 </div>
               ))}
@@ -293,183 +183,6 @@ export default function InvoicesPage() {
           </>
         )}
       </div>
-
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-900">Create Invoice</h2>
-              <button onClick={closeModal} className="icon-btn text-gray-400 hover:text-gray-700">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Customer *</label>
-                <select
-                  className="input"
-                  value={form.customerId}
-                  onChange={(e) => setForm({ ...form, customerId: e.target.value })}
-                  required
-                >
-                  <option value="">Select customer</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.customerName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Issue Date *</label>
-                  <input
-                    type="date"
-                    className="input"
-                    value={form.issueDate}
-                    onChange={(e) => setForm({ ...form, issueDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
-                  <input
-                    type="date"
-                    className="input"
-                    value={form.dueDate}
-                    onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Discount (₵)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="input"
-                    value={form.discountValue}
-                    onChange={(e) => setForm({ ...form, discountValue: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-gray-700">Line Items *</label>
-                  <button
-                    type="button"
-                    onClick={() => setItems((prev) => [...prev, emptyItem()])}
-                    className="btn btn-secondary"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Add Item
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-xs font-medium text-gray-500 px-1">
-                    <span className="col-span-5">Item Name</span>
-                    <span className="col-span-2">Qty</span>
-                    <span className="col-span-3">Unit Price</span>
-                    <span className="col-span-1 text-right">Total</span>
-                  </div>
-                  {items.map((it, i) => (
-                    <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-5">
-                        <input
-                          type="text"
-                          list={`invoice-items-${i}`}
-                          className="input"
-                          placeholder="Item name"
-                          value={it.itemName}
-                          onChange={(e) => handleItemNameChange(i, e.target.value)}
-                        />
-                        <datalist id={`invoice-items-${i}`}>
-                          {allItems.map((item, idx) => (
-                            <option key={idx} value={item.itemName} />
-                          ))}
-                        </datalist>
-                      </div>
-                      <div className="col-span-2">
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          className="input"
-                          placeholder="Qty"
-                          value={it.quantity}
-                          onChange={(e) => updateItem(i, "quantity", e.target.value)}
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          className="input"
-                          placeholder="Price"
-                          value={it.unitPrice}
-                          onChange={(e) => updateItem(i, "unitPrice", e.target.value)}
-                        />
-                      </div>
-                      <div className="col-span-1 text-xs text-gray-600 text-right">
-                        {formatCurrency(
-                          (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0)
-                        )}
-                      </div>
-                      <div className="col-span-1">
-                        <button
-                          type="button"
-                          onClick={() => removeItem(i)}
-                          className="icon-btn text-gray-400 hover:text-red-500"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  className="input"
-                  rows={2}
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Optional notes"
-                />
-              </div>
-
-              <div className="border-t border-gray-100 pt-3 space-y-1">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal</span>
-                  <span>{formatCurrency(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Discount</span>
-                  <span>- {formatCurrency(discount)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold text-gray-900 pt-1 border-t border-gray-100">
-                  <span>Total</span>
-                  <span>{formatCurrency(total)}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={closeModal} className="btn btn-secondary flex-1">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="btn btn-primary flex-1">
-                  {saving ? "Saving..." : "Create Invoice"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 }
