@@ -11,6 +11,7 @@ import {
   TrialBalanceLine,
   IncomeStatement,
   BalanceSheet,
+  ReportRow,
 } from "@/services/accountingService";
 import { formatCurrency } from "@/utils/format";
 import toast from "react-hot-toast";
@@ -47,7 +48,7 @@ export default function ReportsPage() {
     setTbLoading(true);
     try {
       const data = await getTrialBalance(tbAsOf);
-      setTbData(data.accounts);
+      setTbData(data.rows ?? []);
     } catch {
       toast.error("Failed to load trial balance");
     } finally {
@@ -245,14 +246,14 @@ export default function ReportsPage() {
               <EmptyPrompt message="Select a date range and click Generate" />
             ) : (
               <div className="card space-y-4">
-                <ISSection title="Revenue" rows={isData.revenue} />
+                <ISSection title="Revenue" rows={isData.revenue ?? []} />
                 <div className="flex justify-between py-2 border-t border-gray-200">
                   <span className="text-sm font-semibold text-gray-700">Total Revenue</span>
                   <span className="text-sm font-bold text-green-600">
                     {formatCurrency(isData.totalRevenue)}
                   </span>
                 </div>
-                <ISSection title="Cost of Goods Sold" rows={isData.cogs} />
+                <ISSection title="Cost of Goods Sold" rows={isData.cogs ?? []} />
                 <div className="flex justify-between py-2 border-t border-gray-200">
                   <span className="text-sm font-semibold text-gray-700">Gross Profit</span>
                   <span
@@ -261,7 +262,7 @@ export default function ReportsPage() {
                     {formatCurrency(isData.grossProfit)}
                   </span>
                 </div>
-                <ISSection title="Expenses" rows={isData.expenses} />
+                <ISSection title="Expenses" rows={isData.expenses ?? []} />
                 <div className="flex justify-between py-3 border-t-2 border-gray-300 bg-gray-50 px-3 rounded-xl">
                   <span className="text-sm font-bold text-gray-900">Net Income</span>
                   <span
@@ -303,9 +304,9 @@ export default function ReportsPage() {
               <EmptyPrompt message="Select a date and click Generate" />
             ) : (
               <div className="card space-y-4">
-                <BSSection title="Assets" rows={bsData.assets} total={bsData.totalAssets} totalLabel="Total Assets" totalColor="text-blue-600" />
-                <BSSection title="Liabilities" rows={bsData.liabilities} total={bsData.totalLiabilities} totalLabel="Total Liabilities" totalColor="text-red-600" />
-                <BSSection title="Equity" rows={bsData.equity} total={bsData.totalEquity} totalLabel="Total Equity" totalColor="text-purple-600" />
+                <BSSection title="Assets" rows={bsData.assets ?? []} total={bsData.totalAssets} totalLabel="Total Assets" totalColor="text-blue-600" />
+                <BSSection title="Liabilities" rows={bsData.liabilities ?? []} total={bsData.totalLiabilities} totalLabel="Total Liabilities" totalColor="text-red-600" />
+                <BSSection title="Equity" rows={bsData.equity ?? []} total={bsData.totalEquity} totalLabel="Total Equity" totalColor="text-purple-600" />
                 <div className="flex justify-between py-3 border-t-2 border-gray-300 bg-gray-50 px-3 rounded-xl">
                   <span className="text-sm font-bold text-gray-900">
                     Total Liabilities + Equity
@@ -343,13 +344,7 @@ function EmptyPrompt({ message }: { message: string }) {
   );
 }
 
-function ISSection({
-  title,
-  rows,
-}: {
-  title: string;
-  rows: { accountName: string; amount: number }[];
-}) {
+function ISSection({ title, rows }: { title: string; rows: ReportRow[] }) {
   return (
     <div>
       <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</h3>
@@ -359,8 +354,8 @@ function ISSection({
         <div className="space-y-1">
           {rows.map((row, i) => (
             <div key={i} className="flex justify-between text-sm px-2">
-              <span className="text-gray-700">{row.accountName}</span>
-              <span className="text-gray-900 font-medium">{formatCurrency(row.amount)}</span>
+              <span className="text-gray-700">{row.code} — {row.name}</span>
+              <span className="text-gray-900 font-medium">{formatCurrency(row.balance)}</span>
             </div>
           ))}
         </div>
@@ -377,7 +372,7 @@ function BSSection({
   totalColor,
 }: {
   title: string;
-  rows: { accountName: string; amount: number }[];
+  rows: ReportRow[];
   total: number;
   totalLabel: string;
   totalColor: string;
@@ -391,8 +386,8 @@ function BSSection({
         <div className="space-y-1 mb-2">
           {rows.map((row, i) => (
             <div key={i} className="flex justify-between text-sm px-2">
-              <span className="text-gray-700">{row.accountName}</span>
-              <span className="text-gray-900 font-medium">{formatCurrency(row.amount)}</span>
+              <span className="text-gray-700">{row.code} — {row.name}</span>
+              <span className="text-gray-900 font-medium">{formatCurrency(row.balance)}</span>
             </div>
           ))}
         </div>

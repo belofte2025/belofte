@@ -153,21 +153,29 @@ export interface TrialBalanceLine {
 
 export const getTrialBalance = async (
   asOf?: string
-): Promise<{ accounts: TrialBalanceLine[] }> => {
+): Promise<{ rows: TrialBalanceLine[] }> => {
   const params = asOf ? `?asOf=${asOf}` : "";
   const res = await api.get(`/accounting/reports/trial-balance${params}`);
   return res.data;
 };
 
+export interface ReportRow {
+  code: string;
+  name: string;
+  balance: number;
+}
+
 export interface IncomeStatement {
-  revenue: { accountName: string; amount: number }[];
-  cogs: { accountName: string; amount: number }[];
-  expenses: { accountName: string; amount: number }[];
+  revenue: ReportRow[];
+  cogs: ReportRow[];
+  expenses: ReportRow[];
   totalRevenue: number;
   totalCogs: number;
   grossProfit: number;
   totalExpenses: number;
   netIncome: number;
+  hasUnpostedSales?: boolean;
+  unpostedSalesCount?: number;
 }
 
 export const getIncomeStatement = async (
@@ -181,9 +189,9 @@ export const getIncomeStatement = async (
 };
 
 export interface BalanceSheet {
-  assets: { accountName: string; amount: number }[];
-  liabilities: { accountName: string; amount: number }[];
-  equity: { accountName: string; amount: number }[];
+  assets: ReportRow[];
+  liabilities: ReportRow[];
+  equity: ReportRow[];
   totalAssets: number;
   totalLiabilities: number;
   totalEquity: number;
