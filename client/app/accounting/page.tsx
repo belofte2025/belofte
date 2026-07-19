@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import Link from "next/link";
 import {
   BookOpen, FileText, ArrowLeftRight, BarChart3, AlertCircle,
-  ChevronRight, Receipt, Truck, RefreshCw, CheckCircle2, AlertTriangle,
+  ChevronRight, Receipt, Truck, RefreshCw, CheckCircle2, AlertTriangle, ExternalLink,
 } from "lucide-react";
 import { getAccounts, runBackfill, BackfillResult } from "@/services/accountingService";
 import toast from "react-hot-toast";
@@ -27,6 +27,7 @@ export default function AccountingPage() {
   // Backfill: auto-checked on mount
   const [checking, setChecking] = useState(false);
   const [pending, setPending] = useState<{ sales: number; payments: number } | null>(null);
+  const [alreadyPosted, setAlreadyPosted] = useState(0);
   const [posting, setPosting] = useState(false);
   const [posted, setPosted] = useState<BackfillResult | null>(null);
   const [allDone, setAllDone] = useState(false);
@@ -35,6 +36,7 @@ export default function AccountingPage() {
     setChecking(true);
     try {
       const r = await runBackfill({ scope: "all", dryRun: true, maxRecords: 500 });
+      setAlreadyPosted(r.skipped);
       if (r.salesPosted === 0 && r.paymentsPosted === 0) {
         setAllDone(true);
         setPending(null);
@@ -154,14 +156,28 @@ export default function AccountingPage() {
                     )}
 
                     {!checking && pending && (
-                      <div className="mt-3 flex flex-wrap gap-3">
-                        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                          <span className="text-lg font-black text-amber-700">{pending.sales}</span>
-                          <span className="text-xs text-amber-600 font-medium">sales<br/>not in accounts</span>
+                      <div className="mt-3 space-y-3">
+                        <div className="flex flex-wrap gap-3">
+                          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            <span className="text-lg font-black text-amber-700">{pending.sales}</span>
+                            <span className="text-xs text-amber-600 font-medium">sales<br/>not yet in accounts</span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            <span className="text-lg font-black text-amber-700">{pending.payments}</span>
+                            <span className="text-xs text-amber-600 font-medium">payments<br/>not yet in accounts</span>
+                          </div>
+                          {alreadyPosted > 0 && (
+                            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              <span className="text-xs text-green-700 font-medium">{alreadyPosted} already<br/>in accounts</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                          <span className="text-lg font-black text-amber-700">{pending.payments}</span>
-                          <span className="text-xs text-amber-600 font-medium">customer payments<br/>not in accounts</span>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                          <span>Already-posted entries cannot be duplicated.</span>
+                          <Link href="/accounting/journal?source=SALE" className="inline-flex items-center gap-0.5 text-blue-600 hover:underline font-medium">
+                            View journal <ExternalLink className="w-3 h-3" />
+                          </Link>
                         </div>
                       </div>
                     )}
@@ -178,6 +194,9 @@ export default function AccountingPage() {
                               {posted.remainingUnposted} more records remain — click again to continue.
                             </span>
                           )}
+                          <Link href="/accounting/journal" className="inline-flex items-center gap-1 text-xs mt-1 text-green-700 hover:underline font-medium">
+                            View all posted entries <ExternalLink className="w-3 h-3" />
+                          </Link>
                         </div>
                       </div>
                     )}
