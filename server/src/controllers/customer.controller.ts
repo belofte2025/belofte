@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 import * as XLSX from "xlsx";
 import type { Customer, CustomerPayment } from "@prisma/client";
+import notificationService from "../services/notification.service";
 
 export const checkCustomerName = async (req: Request, res: Response) => {
   try {
@@ -311,15 +312,30 @@ export const createCustomerPayment = async (req: Request, res: Response) => {
       data: paymentData,
     });
 
-    // Update customer balance
-    await prisma.customer.update({
+    // Update customer balance and fetch updated customer for notification
+    const updatedCustomer = await prisma.customer.update({
       where: { id: customerId },
-      data: {
-        balance: {
-          decrement: parseFloat(amount),
-        },
-      },
+      data: { balance: { decrement: parseFloat(amount) } },
+      select: { customerName: true, phone: true, balance: true },
     });
+
+    // Send notification (fire-and-forget, non-fatal)
+    try {
+      if (companyId && updatedCustomer) {
+        const msg = notificationService.paymentMessage(
+          updatedCustomer.customerName,
+          parseFloat(amount),
+          updatedCustomer.balance
+        );
+        notificationService.send({
+          companyId,
+          customerId,
+          customerName: updatedCustomer.customerName,
+          phone: updatedCustomer.phone,
+          message: msg,
+        }).catch(() => {});
+      }
+    } catch { /* non-fatal */ }
 
     res.status(201).json(payment);
     return;

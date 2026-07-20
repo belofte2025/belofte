@@ -85,8 +85,10 @@ model Company {
   address          String?
   phone            String?
   createdAt        DateTime         @default(now())
-  companyName      String
-  enableAccounting Boolean          @default(false)
+  companyName             String
+  enableAccounting        Boolean          @default(false)
+  notificationsEnabled    Boolean          @default(false)
+  notificationChannel     String           @default("SMS")
   Account          Account[]
   Container        Container[]
   Customer         Customer[]

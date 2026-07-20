@@ -22,6 +22,7 @@ import reportRoutes from "./routes/report.routes";
 import uploadsRoutes from "./routes/uploads.routes";
 import smsRoutes from "./routes/sms.routes";
 import accountingRoutes from "./routes/accounting.routes";
+import settingsRoutes from "./routes/settings.routes";
 
 dotenv.config();
 
@@ -119,6 +120,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/audit", auditRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/accounting', accountingRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health check
 app.get("/api/health", ((_, res) => {

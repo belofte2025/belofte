@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 import { logUpdate, EntityType } from "../utils/auditLogger";
 import { postSaleJournal } from "../services/accounting/journalEngine";
+import notificationService from "../services/notification.service";
 
 export const recordSale = async (req: Request, res: Response) => {
   const { saleType, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
@@ -256,6 +257,25 @@ export const recordSale = async (req: Request, res: Response) => {
     } catch (journalErr) {
       console.error("Journal entry failed (non-fatal):", journalErr);
     }
+
+    // Send notification (fire-and-forget, non-fatal)
+    try {
+      const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { customerName: true, phone: true, balance: true },
+      });
+      if (customer) {
+        const balance = saleType === "credit" ? customer.balance + totalAmount : undefined;
+        const msg = notificationService.saleMessage(customer.customerName, items.length, totalAmount, balance);
+        notificationService.send({
+          companyId,
+          customerId,
+          customerName: customer.customerName,
+          phone: customer.phone,
+          message: msg,
+        }).catch(() => {});
+      }
+    } catch { /* non-fatal */ }
 
     res.status(201).json(sale);
   } catch (err) {
