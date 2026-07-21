@@ -406,18 +406,39 @@ export const getSaleById = async (req: Request, res: Response) => {
 };
 export const updateSale = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { saleType, items, saleDate } = req.body;
+  const { saleType, items, saleDate, customerId: newCustomerId } = req.body;
   const userId = req.user?.id;
   const companyId = req.user?.companyId;
 
   try {
     const existing = await prisma.sale.findUnique({
       where: { id },
-      select: { companyId: true, sourceType: true, sourceId: true },
+      select: {
+        companyId: true,
+        sourceType: true,
+        sourceId: true,
+        customerId: true,
+        saleType: true,
+        discountType: true,
+        discountValue: true,
+      },
     });
     if (!existing || existing.companyId !== companyId) {
       res.status(404).json({ error: "Sale not found" });
       return;
+    }
+
+    // Validate new customer belongs to same company (if changing)
+    const targetCustomerId = newCustomerId || existing.customerId;
+    if (newCustomerId && newCustomerId !== existing.customerId) {
+      const customer = await prisma.customer.findUnique({
+        where: { id: newCustomerId },
+        select: { companyId: true },
+      });
+      if (!customer || customer.companyId !== companyId) {
+        res.status(400).json({ error: "Customer not found in this company" });
+        return;
+      }
     }
 
     // Re-look up cost prices so COGS stays accurate after edit
@@ -440,17 +461,30 @@ export const updateSale = async (req: Request, res: Response) => {
       }
     } catch { /* non-fatal — costPrice stays 0 */ }
 
+    // Recalculate totals from new items (preserving any existing discount)
+    const subtotal = items.reduce(
+      (sum: number, i: { quantity: number; unitPrice: number }) => sum + i.quantity * i.unitPrice,
+      0
+    );
+    const discountValue = existing.discountValue ?? 0;
+    let discountAmount = 0;
+    if (existing.discountType === "percentage" && discountValue > 0) {
+      discountAmount = (subtotal * discountValue) / 100;
+    } else if (existing.discountType === "amount" && discountValue > 0) {
+      discountAmount = discountValue;
+    }
+    const totalAmount = Math.max(0, subtotal - discountAmount);
+
     const updateData: any = {
       saleType,
+      customerId: targetCustomerId,
+      subtotal,
+      totalAmount,
       SaleItem: {
         deleteMany: {},
         createMany: {
           data: items.map(
-            (item: {
-              itemName: string;
-              quantity: number;
-              unitPrice: number;
-            }) => ({
+            (item: { itemName: string; quantity: number; unitPrice: number }) => ({
               itemName: item.itemName,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
@@ -461,33 +495,23 @@ export const updateSale = async (req: Request, res: Response) => {
       },
     };
 
-    // If a sale date is provided, update createdAt
     if (saleDate) {
       updateData.createdAt = new Date(saleDate);
     }
 
-    await prisma.sale.update({
-      where: { id },
-      data: updateData,
-    });
+    await prisma.sale.update({ where: { id }, data: updateData });
 
-    // Log the update to audit trail
     if (userId) {
-      const changes = [];
-      if (saleType) changes.push(`Type: ${saleType}`);
+      const changes: string[] = [];
+      if (saleType && saleType !== existing.saleType) changes.push(`Type: ${existing.saleType} → ${saleType}`);
+      if (newCustomerId && newCustomerId !== existing.customerId) changes.push(`Customer changed`);
       if (saleDate) changes.push(`Date: ${saleDate}`);
-      if (items) changes.push(`Items: ${items.length} items`);
+      if (items) changes.push(`Items: ${items.length} items, Total: GHS ${totalAmount.toFixed(2)}`);
 
-      await logUpdate(
-        userId,
-        EntityType.SALE,
-        id,
-        id,
-        `Updated sale - ${changes.join(', ')}`
-      );
+      await logUpdate(userId, EntityType.SALE, id, id, `Updated sale - ${changes.join(", ")}`);
     }
 
-    res.json({ message: "Sale updated successfully" });
+    res.json({ message: "Sale updated successfully", totalAmount });
   } catch (error) {
     console.error("Error updating sale:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -544,14 +568,14 @@ export const listSales = async (req: Request, res: Response) => {
       orderBy: { createdAt: "desc" },
     });
 
-    // FIXED: Return customer object instead of just customerName string
     const response = sales.map((sale) => ({
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      customer: sale.Customer ? {
-        customerName: sale.Customer.customerName,
-      } : null,
+      customerId: sale.customerId,
+      customer: sale.Customer
+        ? { customerName: sale.Customer.customerName }
+        : null,
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
       items: sale.SaleItem.map((i) => ({
@@ -650,14 +674,12 @@ export const searchSalesByItem = async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    // Format response to match frontend expectations
     const response = sales.map((sale) => ({
       id: sale.id,
       saleType: sale.saleType,
       sourceType: sale.sourceType,
-      customer: sale.Customer ? {
-        customerName: sale.Customer.customerName,
-      } : null,
+      customerId: sale.customerId,
+      customer: sale.Customer ? { customerName: sale.Customer.customerName } : null,
       totalAmount: sale.totalAmount,
       createdAt: sale.createdAt,
       items: sale.SaleItem.map((i) => ({

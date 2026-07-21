@@ -3,27 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
-  ArrowLeft,
-  Search,
-  Calendar,
-  Eye,
-  Edit,
-  X,
-  CheckSquare,
-  Square,
-  History,
-  Receipt,
+  ArrowLeft, Search, Calendar, Eye, Edit, X,
+  CheckSquare, Square, History, Receipt, AlertTriangle, Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
-import {
-  listSales,
-  searchSalesByItem,
-  updateSale,
-  bulkUpdateSales,
-} from "@/services/salesService";
+import { listSales, searchSalesByItem, updateSale, bulkUpdateSales } from "@/services/salesService";
+import { getAllCustomers } from "@/services/customerService";
 import toast from "react-hot-toast";
 import { Dialog } from "@headlessui/react";
+import Select from "react-select";
 import BulkEditModal from "@/components/sales/BulkEditModal";
 import EditHistoryModal from "@/components/sales/EditHistoryModal";
 import ValidationWarningModal from "@/components/sales/ValidationWarningModal";
@@ -38,12 +27,17 @@ interface Sale {
   id: string;
   saleType: string;
   sourceType?: string;
-  customer: {
-    customerName: string;
-  } | null;
+  customerId: string;
+  customer: { customerName: string } | null;
   totalAmount: number;
   createdAt: string;
   items?: SaleItem[];
+}
+
+interface CustomerOption {
+  value: string;
+  label: string;
+  phone?: string;
 }
 
 interface ValidationWarning {
@@ -59,16 +53,10 @@ export default function EditSalesPage() {
   const [loading, setLoading] = useState(false);
   const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(new Set());
 
-  // Filter state
   const [filters, setFilters] = useState({
-    itemName: "",
-    customerName: "",
-    startDate: "",
-    endDate: "",
-    saleType: "",
+    itemName: "", customerName: "", startDate: "", endDate: "", saleType: "",
   });
 
-  // Modal state
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [showEditHistoryModal, setShowEditHistoryModal] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
@@ -76,21 +64,25 @@ export default function EditSalesPage() {
   const [pendingBulkUpdate, setPendingBulkUpdate] = useState<any>(null);
   const [historyEntityId, setHistoryEntityId] = useState<string>("");
 
-  // Single edit modal state (reused from saleslist)
+  // Single edit modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [editForm, setEditForm] = useState<{
     saleType: string;
     saleDate: string;
+    customerId: string;
     items: SaleItem[];
-  }>({ saleType: "", saleDate: "", items: [] });
+  }>({ saleType: "", saleDate: "", customerId: "", items: [] });
+  const [saving, setSaving] = useState(false);
+
+  // Customer dropdown
+  const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
   const loadSales = useCallback(async () => {
     setLoading(true);
     try {
       let result: Sale[];
-
-      // If item name is provided, use search endpoint
       if (filters.itemName.trim()) {
         result = await searchSalesByItem({
           itemName: filters.itemName,
@@ -99,130 +91,74 @@ export default function EditSalesPage() {
           saleType: filters.saleType || undefined,
         });
       } else {
-        // Otherwise use regular list endpoint
         result = await listSales({
           startDate: filters.startDate || undefined,
           endDate: filters.endDate || undefined,
         });
-
-        // Client-side filter by sale type if specified
         if (filters.saleType) {
-          result = result.filter((sale) => sale.saleType === filters.saleType);
+          result = result.filter((s) => s.saleType === filters.saleType);
         }
       }
-
-      // Client-side filter by customer name
       if (filters.customerName.trim()) {
-        result = result.filter((sale) =>
-          (sale.customer?.customerName || "")
-            .toLowerCase()
-            .includes(filters.customerName.toLowerCase())
+        result = result.filter((s) =>
+          (s.customer?.customerName || "").toLowerCase().includes(filters.customerName.toLowerCase())
         );
       }
-
       setSales(result);
       setFilteredSales(result);
-    } catch (err) {
-      console.error("Error loading sales:", err);
-      toast.error("Failed to load sales. Please try again.");
+    } catch {
+      toast.error("Failed to load sales.");
     } finally {
       setLoading(false);
     }
   }, [filters]);
 
-  const handleSearch = () => {
-    setSelectedSaleIds(new Set()); // Clear selections on new search
-    loadSales();
-  };
+  const handleSearch = () => { setSelectedSaleIds(new Set()); loadSales(); };
 
   const clearFilters = () => {
-    setFilters({
-      itemName: "",
-      customerName: "",
-      startDate: "",
-      endDate: "",
-      saleType: "",
-    });
+    setFilters({ itemName: "", customerName: "", startDate: "", endDate: "", saleType: "" });
     setSelectedSaleIds(new Set());
   };
 
-  // Selection handlers
   const handleSelectAll = () => {
-    if (selectedSaleIds.size === filteredSales.length) {
-      setSelectedSaleIds(new Set());
-    } else {
-      setSelectedSaleIds(new Set(filteredSales.map((s) => s.id)));
-    }
+    setSelectedSaleIds(
+      selectedSaleIds.size === filteredSales.length ? new Set() : new Set(filteredSales.map((s) => s.id))
+    );
   };
 
   const handleSelectSale = (id: string) => {
-    const newSelection = new Set(selectedSaleIds);
-    if (newSelection.has(id)) {
-      newSelection.delete(id);
-    } else {
-      newSelection.add(id);
-    }
-    setSelectedSaleIds(newSelection);
+    const next = new Set(selectedSaleIds);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setSelectedSaleIds(next);
   };
 
   const isAllSelected = filteredSales.length > 0 && selectedSaleIds.size === filteredSales.length;
 
-  // Validation logic
   const validateChanges = (saleIds: string[], updates: any): ValidationWarning | null => {
-    // High severity: Bulk editing >10 sales
     if (saleIds.length > 10) {
-      return {
-        type: "bulk_size",
-        message: `You are about to edit ${saleIds.length} sales. This action will affect multiple records and cannot be undone.`,
-        severity: "high",
-      };
+      return { type: "bulk_size", message: `You are about to edit ${saleIds.length} sales.`, severity: "high" };
     }
-
-    // Medium severity: Sale type change
     if (updates.saleType) {
-      const affectedSales = sales.filter((s) => saleIds.includes(s.id));
-      const typesChanging = affectedSales.some((s) => s.saleType !== updates.saleType);
-      if (typesChanging) {
-        return {
-          type: "sale_type_change",
-          message:
-            "Changing sale type may affect customer debt calculations. Please verify balances after saving.",
-          severity: "medium",
-        };
-      }
+      const typesChanging = sales.filter((s) => saleIds.includes(s.id)).some((s) => s.saleType !== updates.saleType);
+      if (typesChanging)
+        return { type: "sale_type_change", message: "Changing sale type affects customer balance calculations.", severity: "medium" };
     }
-
-    // Medium severity: Date change >30 days in past
     if (updates.saleDate) {
-      const updateDate = new Date(updates.saleDate);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      if (updateDate < thirtyDaysAgo) {
-        return {
-          type: "date_change",
-          message:
-            "You are changing the sale date to more than 30 days ago. This may affect historical reports.",
-          severity: "medium",
-        };
-      }
+      const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      if (new Date(updates.saleDate) < thirtyDaysAgo)
+        return { type: "date_change", message: "Changing date to more than 30 days ago may affect reports.", severity: "medium" };
     }
-
     return null;
   };
 
-  // Bulk edit handler
   const handleBulkEdit = () => {
-    if (selectedSaleIds.size === 0) {
-      toast.error("Please select at least one sale");
-      return;
-    }
+    if (selectedSaleIds.size === 0) { toast.error("Select at least one sale"); return; }
     setShowBulkEditModal(true);
   };
 
   const handleBulkEditConfirm = async (updates: any) => {
     const saleIds = Array.from(selectedSaleIds);
     const warning = validateChanges(saleIds, updates);
-
     if (warning) {
       setCurrentValidationWarning(warning);
       setPendingBulkUpdate({ saleIds, updates });
@@ -230,8 +166,6 @@ export default function EditSalesPage() {
       setShowValidationModal(true);
       return;
     }
-
-    // No warning, proceed directly
     await executeBulkUpdate(saleIds, updates);
   };
 
@@ -247,49 +181,80 @@ export default function EditSalesPage() {
   const executeBulkUpdate = async (saleIds: string[], updates: any) => {
     try {
       await bulkUpdateSales(saleIds, updates);
-      toast.success(`Successfully updated ${saleIds.length} sales`);
+      toast.success(`Updated ${saleIds.length} sales`);
       setSelectedSaleIds(new Set());
       setShowBulkEditModal(false);
       loadSales();
-    } catch (err) {
-      console.error("Bulk update failed:", err);
-      toast.error("Failed to update sales. Please try again.");
+    } catch {
+      toast.error("Failed to update sales.");
     }
   };
 
-  // Single edit handlers (reused from saleslist)
-  const handleOpenEditModal = (sale: Sale) => {
+  // Open edit modal — also load customer list
+  const handleOpenEditModal = async (sale: Sale) => {
     setEditingSale(sale);
     setEditForm({
       saleType: sale.saleType,
       saleDate: new Date(sale.createdAt).toISOString().split("T")[0],
-      items: (sale.items || []).map((item) => ({ ...item })),
+      customerId: sale.customerId || "",
+      items: (sale.items || []).map((i) => ({ ...i })),
     });
     setShowEditModal(true);
+
+    setLoadingCustomers(true);
+    try {
+      const customers = await getAllCustomers();
+      setCustomerOptions(customers.map((c: any) => ({
+        value: c.id,
+        label: `${c.customerName || c.name}${c.phone ? ` — ${c.phone}` : ""}`,
+        phone: c.phone,
+      })));
+    } catch {
+      toast.error("Could not load customers");
+    } finally {
+      setLoadingCustomers(false);
+    }
   };
 
   const handleEditSale = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingSale) return;
+    if (editForm.items.length === 0) { toast.error("Sale must have at least one item"); return; }
+    if (!editForm.customerId) { toast.error("Please select a customer"); return; }
 
-    if (editForm.items.length === 0) {
-      toast.error("Sale must have at least one item");
-      return;
+    const customerChanged = editForm.customerId !== editingSale.customerId;
+    const typeChanged = editForm.saleType !== editingSale.saleType;
+
+    // Warn if credit sale and customer changed or type changed to cash (affects ledger)
+    const isOrWasCreditSale = editingSale.saleType === "credit" || editForm.saleType === "credit";
+    if (isOrWasCreditSale && (customerChanged || typeChanged)) {
+      const msgs: string[] = [];
+      if (customerChanged) msgs.push("the customer changes (sale moves to new customer's ledger)");
+      if (typeChanged && editingSale.saleType === "credit") msgs.push("type changes from credit to cash (sale removed from customer's outstanding balance)");
+      if (typeChanged && editForm.saleType === "credit") msgs.push("type changes to credit (sale added to customer's outstanding balance)");
+
+      const confirmed = window.confirm(
+        `Ledger impact: ${msgs.join("; ")}.\n\nThe customer statement will update automatically. Proceed?`
+      );
+      if (!confirmed) return;
     }
 
+    setSaving(true);
     try {
       await updateSale(editingSale.id, {
         saleType: editForm.saleType,
         saleDate: editForm.saleDate,
+        customerId: editForm.customerId,
         items: editForm.items,
       });
       toast.success("Sale updated successfully");
       setShowEditModal(false);
       setEditingSale(null);
       loadSales();
-    } catch (err) {
-      console.error("Error updating sale:", err);
+    } catch {
       toast.error("Failed to update sale");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -301,464 +266,354 @@ export default function EditSalesPage() {
   };
 
   const removeEditItem = (index: number) => {
-    setEditForm((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
+    setEditForm((prev) => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
   };
 
   const addEditItem = () => {
-    setEditForm((prev) => ({
-      ...prev,
-      items: [...prev.items, { itemName: "", quantity: 1, unitPrice: 0 }],
-    }));
+    setEditForm((prev) => ({ ...prev, items: [...prev.items, { itemName: "", quantity: 1, unitPrice: 0 }] }));
   };
 
-  const calculateEditTotal = () => {
-    return editForm.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  };
+  const calculateEditTotal = () =>
+    editForm.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
 
-  // View history handler
   const handleViewHistory = (saleId: string) => {
     setHistoryEntityId(saleId);
     setShowEditHistoryModal(true);
   };
 
-  const formatDateTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    return (
-      date.toLocaleDateString() +
-      " " +
-      date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    );
+  const formatDateTime = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const getSaleTypeColor = (type: string) => {
-    return type?.toLowerCase() === "cash"
-      ? "bg-green-100 text-green-800"
-      : "bg-blue-100 text-blue-800";
-  };
+  const getSaleTypeColor = (type: string) =>
+    type?.toLowerCase() === "cash" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800";
+
+  // Detect changes in the modal for visual cues
+  const customerChanged = editingSale && editForm.customerId && editForm.customerId !== editingSale.customerId;
+  const typeChanged = editingSale && editForm.saleType !== editingSale.saleType;
+  const newTotal = calculateEditTotal();
+  const totalChanged = editingSale && Math.abs(newTotal - editingSale.totalAmount) > 0.001;
 
   return (
     <DashboardLayout>
       <div className="space-y-4">
-          {/* Header */}
-          <div className="page-header">
-            <button
-              onClick={() => router.back()}
-              className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div className="flex items-center justify-between flex-1">
-              <div>
-                <h1 className="page-title">Edit Sales</h1>
-                <p className="mt-1 text-gray-600">
-                  Search, select, and edit multiple sales at once
-                </p>
-              </div>
-              {selectedSaleIds.size > 0 && (
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1.5 bg-blue-100 text-blue-800 font-medium rounded-full text-sm">
-                    {selectedSaleIds.size} selected
-                  </span>
-                  <button
-                    onClick={handleBulkEdit}
-                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                  >
-                    Edit Selected
-                  </button>
-                  <button
-                    onClick={() => setSelectedSaleIds(new Set())}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Clear Selection
-                  </button>
-                </div>
-              )}
+        <div className="page-header">
+          <button onClick={() => router.back()} className="icon-btn text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="flex items-center justify-between flex-1">
+            <div>
+              <h1 className="page-title">Edit Sales</h1>
+              <p className="mt-1 text-gray-600">Search, select, and edit sales</p>
             </div>
+            {selectedSaleIds.size > 0 && (
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1.5 bg-blue-100 text-blue-800 font-medium rounded-full text-sm">
+                  {selectedSaleIds.size} selected
+                </span>
+                <button onClick={handleBulkEdit} className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                  Edit Selected
+                </button>
+                <button onClick={() => setSelectedSaleIds(new Set())} className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Search and Filters */}
-          <div className="bg-white shadow-sm border border-gray-200 p-6 mb-6">
-            {/* Item Name Search */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search by Item Name
+        {/* Filters */}
+        <div className="bg-white shadow-sm border border-gray-200 p-6">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search by Item Name</label>
+            <input
+              type="text" value={filters.itemName}
+              onChange={(e) => setFilters((p) => ({ ...p, itemName: e.target.value }))}
+              placeholder="Enter item name…"
+              className="w-full px-4 py-3 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search by Customer Name</label>
+            <input
+              type="text" value={filters.customerName}
+              onChange={(e) => setFilters((p) => ({ ...p, customerName: e.target.value }))}
+              placeholder="Enter customer name…"
+              className="w-full px-4 py-3 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4" /> Start Date
               </label>
-              <input
-                type="text"
-                value={filters.itemName}
-                onChange={(e) => setFilters((prev) => ({ ...prev, itemName: e.target.value }))}
-                placeholder="Enter item name..."
-                className="w-full px-4 py-3 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              <input type="date" value={filters.startDate}
+                onChange={(e) => setFilters((p) => ({ ...p, startDate: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            {/* Customer Name Search */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search by Customer Name
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4" /> End Date
               </label>
-              <input
-                type="text"
-                value={filters.customerName}
-                onChange={(e) => setFilters((prev) => ({ ...prev, customerName: e.target.value }))}
-                placeholder="Enter customer name..."
-                className="w-full px-4 py-3 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              <input type="date" value={filters.endDate}
+                onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            {/* Date Range and Sale Type */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Start Date
-                  </div>
-                </label>
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    End Date
-                  </div>
-                </label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sale Type</label>
-                <select
-                  value={filters.saleType}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, saleType: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Types</option>
-                  <option value="cash">Cash</option>
-                  <option value="credit">Credit</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handleSearch}
-                disabled={loading}
-                className="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sale Type</label>
+              <select value={filters.saleType}
+                onChange={(e) => setFilters((p) => ({ ...p, saleType: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <Search className="w-4 h-4 inline-block mr-2" />
-                {loading ? "Searching..." : "Search"}
-              </button>
-              {(filters.itemName ||
-                filters.customerName ||
-                filters.startDate ||
-                filters.endDate ||
-                filters.saleType) && (
-                <button
-                  onClick={clearFilters}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                >
-                  Clear All Filters
-                </button>
-              )}
+                <option value="">All Types</option>
+                <option value="cash">Cash</option>
+                <option value="credit">Credit</option>
+              </select>
             </div>
           </div>
+          <div className="flex items-center justify-between">
+            <button onClick={handleSearch} disabled={loading}
+              className="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+            >
+              <Search className="w-4 h-4 inline-block mr-2" />
+              {loading ? "Searching…" : "Search"}
+            </button>
+            {(filters.itemName || filters.customerName || filters.startDate || filters.endDate || filters.saleType) && (
+              <button onClick={clearFilters} className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+                Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
 
-          {/* Sales List */}
-          {loading ? (
-            <div className="bg-white shadow-sm border border-gray-200 p-16">
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-gray-600">Loading sales...</span>
-              </div>
+        {/* Sales List */}
+        {loading ? (
+          <div className="bg-white shadow-sm border border-gray-200 p-16 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <span className="ml-3 text-gray-600">Loading…</span>
+          </div>
+        ) : filteredSales.length === 0 ? (
+          <div className="bg-white shadow-sm border border-gray-200 p-16 text-center">
+            <Receipt className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Sales Found</h3>
+            <p className="text-gray-600">Use the filters above and click Search</p>
+          </div>
+        ) : (
+          <div className="space-y-2 mb-4">
+            <div className="bg-gray-100 border border-gray-200 p-3 flex items-center justify-between">
+              <button onClick={handleSelectAll} className="flex items-center gap-3 text-sm font-medium text-gray-700 hover:text-gray-900">
+                {isAllSelected ? <CheckSquare className="w-5 h-5 text-blue-600" /> : <Square className="w-5 h-5 text-gray-400" />}
+                <span>{isAllSelected ? "Deselect All" : "Select All"}</span>
+              </button>
+              <span className="text-sm text-gray-600">{filteredSales.length} sale(s)</span>
             </div>
-          ) : filteredSales.length === 0 ? (
-            <div className="bg-white shadow-sm border border-gray-200 p-16">
-              <div className="text-center">
-                <Receipt className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Sales Found</h3>
-                <p className="text-gray-600">
-                  Try adjusting your search filters or search for different criteria
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2 mb-4">
-              {/* Select All Row */}
-              <div className="bg-gray-100 border border-gray-200 p-3 flex items-center justify-between">
-                <button
-                  onClick={handleSelectAll}
-                  className="flex items-center gap-3 text-sm font-medium text-gray-700 hover:text-gray-900"
+            <div className="grid grid-cols-1 gap-4">
+              {filteredSales.map((sale) => (
+                <div
+                  key={sale.id}
+                  className={`bg-white shadow-sm border-2 p-4 hover:shadow-md transition-all ${selectedSaleIds.has(sale.id) ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}
                 >
-                  {isAllSelected ? (
-                    <CheckSquare className="w-5 h-5 text-blue-600" />
-                  ) : (
-                    <Square className="w-5 h-5 text-gray-400" />
-                  )}
-                  <span>{isAllSelected ? "Deselect All" : "Select All"}</span>
-                </button>
-                <span className="text-sm text-gray-600">{filteredSales.length} sale(s) found</span>
-              </div>
-
-              {/* Sales Cards */}
-              <div className="grid grid-cols-1 gap-4">
-                {filteredSales.map((sale) => (
-                  <div
-                    key={sale.id}
-                    className={`bg-white shadow-sm border-2 p-4 hover:shadow-md transition-all duration-200 ${
-                      selectedSaleIds.has(sale.id) ? "border-blue-500 bg-blue-50" : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Checkbox */}
-                      <button
-                        onClick={() => handleSelectSale(sale.id)}
-                        className="pt-1"
-                      >
-                        {selectedSaleIds.has(sale.id) ? (
-                          <CheckSquare className="w-6 h-6 text-blue-600" />
-                        ) : (
-                          <Square className="w-6 h-6 text-gray-400 hover:text-gray-600" />
-                        )}
-                      </button>
-
-                      {/* Sale Content */}
-                      <div className="flex-1">
-                        {/* Header Row */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`px-2 py-0.5 text-xs font-medium ${getSaleTypeColor(
-                                sale.saleType
-                              )}`}
-                            >
-                              {sale.saleType?.toUpperCase() || "SALE"}
-                            </span>
-                            <span className="text-sm text-gray-500">#{sale.id.slice(-8)}</span>
-                            <span className="text-sm text-gray-400">{formatDateTime(sale.createdAt)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => router.push(`/sales/${sale.id}`)}
-                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                              title="View"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleOpenEditModal(sale)}
-                              className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleViewHistory(sale.id)}
-                              className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-colors"
-                              title="View History"
-                            >
-                              <History className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Customer */}
-                        <div className="mb-3">
-                          <span className="text-sm font-medium text-gray-900">
-                            {sale.customer?.customerName || "Unknown Customer"}
+                  <div className="flex items-start gap-4">
+                    <button onClick={() => handleSelectSale(sale.id)} className="pt-1">
+                      {selectedSaleIds.has(sale.id)
+                        ? <CheckSquare className="w-6 h-6 text-blue-600" />
+                        : <Square className="w-6 h-6 text-gray-400 hover:text-gray-600" />}
+                    </button>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2 py-0.5 text-xs font-medium ${getSaleTypeColor(sale.saleType)}`}>
+                            {sale.saleType?.toUpperCase()}
                           </span>
+                          <span className="text-sm text-gray-500">#{sale.id.slice(-8)}</span>
+                          <span className="text-sm text-gray-400">{formatDateTime(sale.createdAt)}</span>
                         </div>
-
-                        {/* Items Table */}
-                        <div className="border border-gray-200 mb-3">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50 text-left">
-                              <tr>
-                                <th className="px-3 py-2 text-xs font-medium text-gray-500">Item</th>
-                                <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">Qty</th>
-                                <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">Price</th>
-                                <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">
-                                  Subtotal
-                                </th>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => router.push(`/sales/${sale.id}`)}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="View">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleOpenEditModal(sale)}
+                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors" title="Edit">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleViewHistory(sale.id)}
+                            className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-colors" title="History">
+                            <History className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mb-3 flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-sm font-medium text-gray-900">
+                          {sale.customer?.customerName || "Unknown Customer"}
+                        </span>
+                      </div>
+                      <div className="border border-gray-200 mb-3">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 text-left">
+                            <tr>
+                              <th className="px-3 py-2 text-xs font-medium text-gray-500">Item</th>
+                              <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">Qty</th>
+                              <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">Price</th>
+                              <th className="px-3 py-2 text-xs font-medium text-gray-500 text-right">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {(sale.items || []).map((item, idx) => (
+                              <tr key={idx}>
+                                <td className="px-3 py-2 text-gray-900">{item.itemName}</td>
+                                <td className="px-3 py-2 text-gray-600 text-right">{item.quantity}</td>
+                                <td className="px-3 py-2 text-gray-600 text-right">{formatCurrency(item.unitPrice)}</td>
+                                <td className="px-3 py-2 text-gray-900 font-medium text-right">{formatCurrency(item.quantity * item.unitPrice)}</td>
                               </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                              {(sale.items || []).map((item, idx) => (
-                                <tr key={idx}>
-                                  <td className="px-3 py-2 text-gray-900">{item.itemName}</td>
-                                  <td className="px-3 py-2 text-gray-600 text-right">{item.quantity}</td>
-                                  <td className="px-3 py-2 text-gray-600 text-right">
-                                    {formatCurrency(item.unitPrice)}
-                                  </td>
-                                  <td className="px-3 py-2 text-gray-900 font-medium text-right">
-                                    {formatCurrency(item.quantity * item.unitPrice)}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {/* Total */}
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                          <span className="text-sm text-gray-500">{(sale.items || []).length} item(s)</span>
-                          <div className="text-right">
-                            <span className="text-sm text-gray-500 mr-2">Total:</span>
-                            <span className="text-lg font-bold text-gray-900">
-                              {formatCurrency(sale.totalAmount)}
-                            </span>
-                          </div>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <span className="text-sm text-gray-500">{(sale.items || []).length} item(s)</span>
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500 mr-2">Total:</span>
+                          <span className="text-lg font-bold text-gray-900">{formatCurrency(sale.totalAmount)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
       </div>
 
       {/* Modals */}
-      <BulkEditModal
-        open={showBulkEditModal}
-        onClose={() => setShowBulkEditModal(false)}
-        selectedSales={filteredSales.filter((s) => selectedSaleIds.has(s.id))}
-        onConfirm={handleBulkEditConfirm}
-      />
+      <BulkEditModal open={showBulkEditModal} onClose={() => setShowBulkEditModal(false)}
+        selectedSales={filteredSales.filter((s) => selectedSaleIds.has(s.id))} onConfirm={handleBulkEditConfirm} />
+      <EditHistoryModal open={showEditHistoryModal} onClose={() => setShowEditHistoryModal(false)} saleId={historyEntityId} />
+      <ValidationWarningModal open={showValidationModal}
+        onClose={() => { setShowValidationModal(false); setCurrentValidationWarning(null); setPendingBulkUpdate(null); }}
+        warning={currentValidationWarning} onConfirm={handleValidationConfirm} />
 
-      <EditHistoryModal
-        open={showEditHistoryModal}
-        onClose={() => setShowEditHistoryModal(false)}
-        saleId={historyEntityId}
-      />
-
-      <ValidationWarningModal
-        open={showValidationModal}
-        onClose={() => {
-          setShowValidationModal(false);
-          setCurrentValidationWarning(null);
-          setPendingBulkUpdate(null);
-        }}
-        warning={currentValidationWarning}
-        onConfirm={handleValidationConfirm}
-      />
-
-      {/* Single Edit Modal (reused from saleslist) */}
+      {/* Single Edit Modal */}
       <Dialog open={showEditModal} onClose={() => {}} className="relative z-50">
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="w-full max-w-2xl bg-white p-6 shadow-2xl border border-gray-200 max-h-[90vh] overflow-y-auto">
-            <Dialog.Title className="text-xl font-bold text-gray-900 mb-6">Edit Sale</Dialog.Title>
+            <Dialog.Title className="text-xl font-bold text-gray-900 mb-5">Edit Sale</Dialog.Title>
 
-            <form onSubmit={handleEditSale} className="space-y-6">
-              {/* Customer Info - Read Only */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200">
-                  <span className="text-gray-600">{editingSale?.customer?.customerName || "Unknown Customer"}</span>
+            {/* Ledger impact banner */}
+            {(customerChanged || (typeChanged && (editingSale?.saleType === "credit" || editForm.saleType === "credit"))) && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-700">
+                  <span className="font-semibold">Ledger impact: </span>
+                  {customerChanged && <span>Customer change moves this sale to the new customer's outstanding balance. </span>}
+                  {typeChanged && editingSale?.saleType === "credit" && <span>Changing from credit to cash removes this from the customer's outstanding balance. </span>}
+                  {typeChanged && editForm.saleType === "credit" && <span>Changing to credit adds this amount to the customer's outstanding balance. </span>}
+                  The customer statement recalculates automatically.
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Customer cannot be changed</p>
+              </div>
+            )}
+
+            <form onSubmit={handleEditSale} className="space-y-5">
+              {/* Customer */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  <Users className="w-4 h-4" /> Customer
+                  {editingSale?.saleType === "credit" && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Affects ledger</span>
+                  )}
+                </label>
+                <Select
+                  options={customerOptions}
+                  isLoading={loadingCustomers}
+                  value={customerOptions.find((o) => o.value === editForm.customerId) || null}
+                  onChange={(opt) => setEditForm((p) => ({ ...p, customerId: opt?.value || "" }))}
+                  placeholder="Search customer…"
+                  classNamePrefix="react-select"
+                  isClearable={false}
+                />
+                {customerChanged && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Changing from: <strong>{editingSale?.customer?.customerName}</strong>
+                  </p>
+                )}
               </div>
 
               {/* Sale Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sale Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Sale Type</label>
                 <select
                   value={editForm.saleType}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, saleType: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => setEditForm((p) => ({ ...p, saleType: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg"
                 >
                   <option value="cash">Cash</option>
                   <option value="credit">Credit</option>
                 </select>
+                {typeChanged && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Changing from <strong>{editingSale?.saleType}</strong> → <strong>{editForm.saleType}</strong>
+                  </p>
+                )}
               </div>
 
               {/* Sale Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Sale Date
-                  </div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  <Calendar className="w-4 h-4" /> Sale Date
                 </label>
                 <input
-                  type="date"
-                  value={editForm.saleDate}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, saleDate: e.target.value }))}
+                  type="date" value={editForm.saleDate}
+                  onChange={(e) => setEditForm((p) => ({ ...p, saleDate: e.target.value }))}
                   max={new Date().toISOString().split("T")[0]}
-                  className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 border border-gray-300 focus:ring-2 focus:ring-blue-500 rounded-lg"
                 />
               </div>
 
               {/* Items */}
               <div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">Items</label>
-                  <button
-                    type="button"
-                    onClick={addEditItem}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
-                  >
-                    Add Item
+                  <button type="button" onClick={addEditItem}
+                    className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1 rounded transition-colors">
+                    + Add Item
                   </button>
                 </div>
-
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {editForm.items.map((item, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-gray-50">
+                    <div key={index} className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg">
                       <div className="flex-1">
-                        <input
-                          type="text"
-                          value={item.itemName}
+                        <input type="text" value={item.itemName}
                           onChange={(e) => updateEditItem(index, "itemName", e.target.value)}
                           placeholder="Item name"
-                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 rounded"
                         />
                       </div>
-                      <div className="w-24">
-                        <input
-                          type="number"
-                          value={item.quantity}
+                      <div className="w-20">
+                        <input type="number" value={item.quantity}
                           onChange={(e) => updateEditItem(index, "quantity", parseInt(e.target.value) || 0)}
-                          placeholder="Qty"
-                          min="1"
-                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Qty" min="1"
+                          className="w-full px-2 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 rounded text-center"
                         />
                       </div>
-                      <div className="w-32">
-                        <input
-                          type="number"
-                          value={item.unitPrice}
+                      <div className="w-28">
+                        <input type="number" value={item.unitPrice}
                           onChange={(e) => updateEditItem(index, "unitPrice", parseFloat(e.target.value) || 0)}
-                          placeholder="Price"
-                          min="0"
-                          step="0.01"
-                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Price" min="0" step="0.01"
+                          className="w-full px-2 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 rounded text-right"
                         />
                       </div>
                       <div className="w-24 text-right text-sm font-medium text-gray-700">
                         {formatCurrency(item.quantity * item.unitPrice)}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeEditItem(index)}
-                        className="p-2 text-red-500 hover:bg-red-50 transition-colors"
+                      <button type="button" onClick={() => removeEditItem(index)}
                         disabled={editForm.items.length === 1}
-                      >
+                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded disabled:opacity-30">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
@@ -766,31 +621,40 @@ export default function EditSalesPage() {
                 </div>
 
                 {/* Total */}
-                <div className="mt-4 flex items-center justify-between p-3 bg-green-50">
-                  <span className="font-medium text-gray-700">Total Amount</span>
-                  <span className="text-xl font-bold text-green-600">
-                    {formatCurrency(calculateEditTotal())}
+                <div className="mt-3 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">New Total</span>
+                    {totalChanged && (
+                      <span className="ml-2 text-xs text-gray-400 line-through">
+                        was {formatCurrency(editingSale?.totalAmount || 0)}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-xl font-bold ${totalChanged ? "text-amber-600" : "text-gray-900"}`}>
+                    {formatCurrency(newTotal)}
                   </span>
                 </div>
+
+                {totalChanged && editForm.saleType === "credit" && (
+                  <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Total changed — the customer's outstanding balance in the ledger will reflect the new amount.
+                  </p>
+                )}
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingSale(null);
-                  }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              <div className="flex items-center justify-end gap-3 pt-3 border-t">
+                <button type="button"
+                  onClick={() => { setShowEditModal(false); setEditingSale(null); }}
+                  className="px-4 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                <button type="submit" disabled={saving}
+                  className="px-4 py-2.5 text-white rounded-lg transition-colors disabled:opacity-50"
+                  style={{ background: "#0099d6" }}
                 >
-                  Save Changes
+                  {saving ? "Saving…" : "Save Changes"}
                 </button>
               </div>
             </form>

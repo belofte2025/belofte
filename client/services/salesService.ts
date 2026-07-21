@@ -34,7 +34,15 @@ export const getSaleById = async (id: string) => {
   return res.data;
 };
 
-export const updateSale = async (id: string, data: any) => {
+export const updateSale = async (
+  id: string,
+  data: {
+    saleType?: string;
+    saleDate?: string;
+    customerId?: string;
+    items?: Array<{ itemName: string; quantity: number; unitPrice: number }>;
+  }
+) => {
   const res = await api.put(`/sales/${id}`, data);
   return res.data;
 };
