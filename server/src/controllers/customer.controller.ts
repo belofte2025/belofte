@@ -449,15 +449,17 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
         };
       }),
 
-      // Debts (increase balance)
+      // Debts — always a debit (money the customer owes).
+      // The payment that settles a debt is a separate CustomerPayment credit entry.
       ...debts.map((d) => ({
         id: d.id,
         date: d.createdAt.toISOString().split("T")[0],
         timestamp: d.createdAt,
         type: "debt" as const,
-        description: d.description || `${d.debtType.replace("_", " ")} debt`,
-        debit: d.status !== "paid" ? d.amount : 0, // Only unpaid debts affect balance
-        credit: d.status === "paid" ? d.amount : 0, // Paid debts shown as credit
+        description: (d.description || `${d.debtType.replace("_", " ")} debt`) +
+          (d.status === "paid" ? " (settled)" : ""),
+        debit: d.amount,
+        credit: 0,
         status: d.status,
       })),
     ].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());

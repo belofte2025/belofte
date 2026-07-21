@@ -153,19 +153,19 @@ export default function CustomerStatement({ customerId }: Props) {
     (sum, entry) => sum + entry.credit,
     0
   );
+  // filteredEntries is newest-first; [0] is the most recent transaction = current balance
   const finalBalance =
-    filteredEntries.length > 0
-      ? filteredEntries[filteredEntries.length - 1].balance
-      : 0;
+    filteredEntries.length > 0 ? filteredEntries[0].balance : 0;
   const netChange = totalDebits - totalCredits;
 
   // Get transaction type badge
-  const getTypeBadge = (type: string) => {
-    const badges = {
-      credit_sale: { label: "Credit Sale", color: "bg-blue-100 text-blue-800" },
-      payment: { label: "Payment", color: "bg-green-100 text-green-800" },
-      debt: { label: "Debt", color: "bg-red-100 text-red-800" },
-      credit_note: { label: "Credit Note", color: "bg-purple-100 text-purple-800" },
+  const getTypeBadge = (type: string, description?: string) => {
+    const isDebtSettlement = type === "payment" && description?.startsWith("Debt settled:");
+    const badges: Record<string, { label: string; color: string }> = {
+      credit_sale:     { label: "Credit Sale",     color: "bg-blue-100 text-blue-800" },
+      payment:         { label: isDebtSettlement ? "Debt Settled" : "Payment", color: isDebtSettlement ? "bg-teal-100 text-teal-800" : "bg-green-100 text-green-800" },
+      debt:            { label: "Debt",             color: "bg-red-100 text-red-800" },
+      credit_note:     { label: "Credit Note",      color: "bg-purple-100 text-purple-800" },
     };
     const badge = badges[type as keyof typeof badges] || {
       label: type,
@@ -375,7 +375,7 @@ export default function CustomerStatement({ customerId }: Props) {
                         {new Date(entry.date).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {getTypeBadge(entry.type)}
+                        {getTypeBadge(entry.type, entry.description)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div

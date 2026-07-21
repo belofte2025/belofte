@@ -280,16 +280,29 @@ export const markDebtAsPaid = async (req: Request, res: Response) => {
       return;
     }
 
-    const updatedDebt = await prisma.customerDebt.update({
-      where: { id },
-      data: { status: "paid" },
-      include: { Customer: true },
-    });
-
-    await prisma.customer.update({
-      where: { id: debt.customerId },
-      data: { balance: { decrement: debt.amount } },
-    });
+    const [updatedDebt] = await prisma.$transaction([
+      // Mark the debt as paid
+      prisma.customerDebt.update({
+        where: { id },
+        data: { status: "paid" },
+        include: { Customer: true },
+      }),
+      // Create a CustomerPayment credit so the statement shows the settlement
+      prisma.customerPayment.create({
+        data: {
+          customerId: debt.customerId,
+          companyId: debt.companyId,
+          amount: debt.amount,
+          paymentType: "DEBT_SETTLEMENT",
+          note: `Debt settled: ${debt.description || debt.debtType.replace("_", " ")}`,
+        },
+      }),
+      // Decrement the customer balance
+      prisma.customer.update({
+        where: { id: debt.customerId },
+        data: { balance: { decrement: debt.amount } },
+      }),
+    ]);
 
     res.json(updatedDebt);
   } catch (error) {
