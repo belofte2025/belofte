@@ -42,7 +42,7 @@ export default function NotificationsSettingsPage() {
     }
   };
 
-  const setChannel = async (channel: "SMS" | "WHATSAPP") => {
+  const setChannel = async (channel: "SMS" | "WHATSAPP" | "BOTH") => {
     if (channel === settings.notificationChannel) return;
     const prev = settings.notificationChannel;
     setSettings((s) => ({ ...s, notificationChannel: channel }));
@@ -120,47 +120,41 @@ export default function NotificationsSettingsPage() {
                 <MessageSquare className="w-4 h-4 text-gray-500" />
                 <p className="text-sm font-semibold text-gray-900">Notification Channel</p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {(["SMS", "WHATSAPP"] as const).map((ch) => {
+              <div className="grid grid-cols-3 gap-3">
+                {(["SMS", "WHATSAPP", "BOTH"] as const).map((ch) => {
                   const active = settings.notificationChannel === ch;
+                  const icons: Record<string, string> = { SMS: "📱", WHATSAPP: "💬", BOTH: "📲" };
+                  const labels: Record<string, string> = { SMS: "SMS only", WHATSAPP: "WhatsApp only", BOTH: "Both" };
+                  const sublabels: Record<string, string> = { SMS: "Text message", WHATSAPP: "WhatsApp", BOTH: "SMS + WhatsApp" };
                   return (
                     <button
                       key={ch}
                       onClick={() => setChannel(ch)}
                       disabled={saving}
-                      className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all duration-150 disabled:opacity-50 ${
+                      className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all duration-150 disabled:opacity-50 ${
                         active
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
                       style={active ? { borderColor: "#0099d6", background: "#e0f7ff" } : {}}
                     >
-                      <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-lg font-bold ${
-                          active ? "text-blue-600" : "text-gray-400"
-                        }`}
-                        style={active ? { color: "#0099d6" } : {}}
-                      >
-                        {ch === "SMS" ? "📱" : "💬"}
-                      </div>
+                      <span className="text-2xl">{icons[ch]}</span>
                       <div>
-                        <p className={`text-sm font-semibold ${active ? "text-blue-700" : "text-gray-700"}`}
+                        <p className={`text-xs font-semibold ${active ? "text-blue-700" : "text-gray-700"}`}
                            style={active ? { color: "#007cb5" } : {}}>
-                          {ch}
+                          {labels[ch]}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {ch === "SMS" ? "Standard text message" : "WhatsApp message"}
-                        </p>
+                        <p className="text-xs text-gray-500">{sublabels[ch]}</p>
                       </div>
                       {active && (
-                        <CheckCircle2 className="w-4 h-4 ml-auto flex-shrink-0" style={{ color: "#0099d6" }} />
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: "#0099d6" }} />
                       )}
                     </button>
                   );
                 })}
               </div>
 
-              {settings.notificationChannel === "WHATSAPP" && (
+              {(settings.notificationChannel === "WHATSAPP" || settings.notificationChannel === "BOTH") && (
                 <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3">
                   <p className="text-xs text-amber-700 font-medium">WhatsApp requires configuration</p>
                   <p className="text-xs text-amber-600 mt-0.5">
@@ -173,10 +167,10 @@ export default function NotificationsSettingsPage() {
                 </div>
               )}
 
-              {settings.notificationChannel === "SMS" && (
+              {(settings.notificationChannel === "SMS" || settings.notificationChannel === "BOTH") && (
                 <div className="mt-4 rounded-lg bg-gray-50 border border-gray-200 p-3">
                   <p className="text-xs text-gray-600">
-                    Uses your configured SMS provider (Nalo or mNotify). Set{" "}
+                    SMS uses your configured provider (Nalo or mNotify). Set{" "}
                     <code className="font-mono bg-gray-100 px-1 rounded">SMS_PROVIDER</code> and credentials
                     in server environment variables.
                   </p>

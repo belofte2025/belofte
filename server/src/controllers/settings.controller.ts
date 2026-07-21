@@ -26,7 +26,7 @@ export const updateNotificationSettings = async (req: Request, res: Response) =>
 
   const update: Record<string, unknown> = {};
   if (typeof notificationsEnabled === "boolean") update.notificationsEnabled = notificationsEnabled;
-  if (notificationChannel === "SMS" || notificationChannel === "WHATSAPP") update.notificationChannel = notificationChannel;
+  if (["SMS", "WHATSAPP", "BOTH"].includes(notificationChannel)) update.notificationChannel = notificationChannel;
 
   const company = await prisma.company.update({
     where: { id: companyId },

@@ -2,7 +2,7 @@ import api from "@/lib/api";
 
 export interface NotificationSettings {
   notificationsEnabled: boolean;
-  notificationChannel: "SMS" | "WHATSAPP";
+  notificationChannel: "SMS" | "WHATSAPP" | "BOTH";
 }
 
 export const getNotificationSettings = async (): Promise<NotificationSettings> => {

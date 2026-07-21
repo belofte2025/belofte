@@ -21,13 +21,18 @@ class NotificationService {
       if (!company?.notificationsEnabled) return;
 
       const channel = (company.notificationChannel || "SMS").toUpperCase();
-      let result: { success: boolean; messageId?: string; error?: string; provider: string };
 
-      if (channel === "WHATSAPP") {
-        result = await whatsAppService.sendMessage({ to: payload.phone, message: payload.message });
-      } else {
-        result = await smsService.sendSMS({ to: payload.phone, message: payload.message });
+      const sends: Promise<{ success: boolean; messageId?: string; error?: string; provider: string }>[] = [];
+      if (channel === "SMS" || channel === "BOTH") {
+        sends.push(smsService.sendSMS({ to: payload.phone, message: payload.message }));
       }
+      if (channel === "WHATSAPP" || channel === "BOTH") {
+        sends.push(whatsAppService.sendMessage({ to: payload.phone, message: payload.message }));
+      }
+
+      const results = await Promise.allSettled(sends);
+      const succeeded = results.filter((r) => r.status === "fulfilled" && r.value.success);
+      const firstResult = results[0]?.status === "fulfilled" ? results[0].value : { success: false, provider: channel, error: "send failed" };
 
       await prisma.sMSLog.create({
         data: {
@@ -35,10 +40,10 @@ class NotificationService {
           customerId: payload.customerId,
           recipient: payload.phone,
           message: payload.message,
-          status: result.success ? "sent" : "failed",
-          provider: result.provider || channel,
-          messageId: result.messageId ?? null,
-          error: result.error ?? null,
+          status: succeeded.length > 0 ? "sent" : "failed",
+          provider: channel,
+          messageId: firstResult.messageId ?? null,
+          error: succeeded.length === 0 ? (firstResult.error ?? "All channels failed") : null,
         },
       });
     } catch (err) {
