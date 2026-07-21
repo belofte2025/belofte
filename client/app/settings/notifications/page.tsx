@@ -155,15 +155,31 @@ export default function NotificationsSettingsPage() {
               </div>
 
               {(settings.notificationChannel === "WHATSAPP" || settings.notificationChannel === "BOTH") && (
-                <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3">
-                  <p className="text-xs text-amber-700 font-medium">WhatsApp requires configuration</p>
-                  <p className="text-xs text-amber-600 mt-0.5">
-                    Set <code className="font-mono bg-amber-100 px-1 rounded">WHATSAPP_PROVIDER</code>,{" "}
-                    <code className="font-mono bg-amber-100 px-1 rounded">WHATSAPP_API_URL</code>,{" "}
-                    <code className="font-mono bg-amber-100 px-1 rounded">WHATSAPP_API_KEY</code>, and{" "}
-                    <code className="font-mono bg-amber-100 px-1 rounded">WHATSAPP_FROM</code> environment
-                    variables on the server. Supported providers: WATI, Twilio.
-                  </p>
+                <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3 space-y-2">
+                  <p className="text-xs text-amber-700 font-medium">WhatsApp requires server environment variables</p>
+                  <div className="text-xs text-amber-700 space-y-1">
+                    <p className="font-medium">Meta (WhatsApp Cloud API):</p>
+                    <p className="font-mono bg-amber-100 px-2 py-1 rounded leading-relaxed">
+                      WHATSAPP_PROVIDER=meta<br />
+                      WHATSAPP_API_KEY=&lt;permanent access token&gt;<br />
+                      WHATSAPP_FROM=&lt;Phone Number ID&gt;
+                    </p>
+                    <p className="text-amber-600 mt-1">
+                      Get your Phone Number ID and access token from{" "}
+                      <span className="font-medium">Meta Business Suite → WhatsApp → API Setup</span>.
+                    </p>
+                  </div>
+                  <div className="text-xs text-amber-700 space-y-1 pt-1 border-t border-amber-200">
+                    <p className="font-medium">Other providers (WATI / Twilio):</p>
+                    <p className="text-amber-600">
+                      Set <code className="font-mono bg-amber-100 px-1 rounded">WHATSAPP_PROVIDER</code> to{" "}
+                      <code className="font-mono bg-amber-100 px-1 rounded">wati</code> or{" "}
+                      <code className="font-mono bg-amber-100 px-1 rounded">twilio</code>, plus{" "}
+                      <code className="font-mono bg-amber-100 px-1 rounded">WHATSAPP_API_URL</code>,{" "}
+                      <code className="font-mono bg-amber-100 px-1 rounded">WHATSAPP_API_KEY</code>, and{" "}
+                      <code className="font-mono bg-amber-100 px-1 rounded">WHATSAPP_FROM</code>.
+                    </p>
+                  </div>
                 </div>
               )}
 

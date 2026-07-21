@@ -26,7 +26,10 @@ class WhatsAppService {
   }
 
   async sendMessage({ to, message }: WAMessage): Promise<WAResponse> {
-    if (!this.apiUrl || !this.apiKey) {
+    // Meta only needs apiKey + from (phone number ID); others also need apiUrl
+    const metaReady = this.provider === "meta" && this.apiKey && this.from;
+    const otherReady = this.provider !== "meta" && this.apiUrl && this.apiKey;
+    if (!metaReady && !otherReady) {
       return { success: false, error: "WhatsApp not configured", provider: this.provider };
     }
 
@@ -36,7 +39,8 @@ class WhatsAppService {
     }
 
     try {
-      if (this.provider === "wati") return await this.sendViaWati(phone, message);
+      if (this.provider === "meta")   return await this.sendViaMeta(phone, message);
+      if (this.provider === "wati")   return await this.sendViaWati(phone, message);
       if (this.provider === "twilio") return await this.sendViaTwilio(phone, message);
       return { success: false, error: "Unknown WhatsApp provider", provider: this.provider };
     } catch (err) {
@@ -54,6 +58,31 @@ class WhatsAppService {
     if (cleaned.startsWith("0")) cleaned = "233" + cleaned.substring(1);
     else if (!cleaned.startsWith("233")) cleaned = "233" + cleaned;
     return cleaned.length === 12 ? cleaned : null;
+  }
+
+  private async sendViaMeta(to: string, message: string): Promise<WAResponse> {
+    // Meta WhatsApp Cloud API
+    // WHATSAPP_FROM = Phone Number ID (numeric ID from Meta Business Suite)
+    // WHATSAPP_API_KEY = permanent access token
+    const url = `https://graph.facebook.com/v20.0/${this.from}/messages`;
+    const res = await axios.post(
+      url,
+      {
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: { preview_url: false, body: message },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      }
+    );
+    const msgId: string | undefined = res.data?.messages?.[0]?.id;
+    return { success: !!msgId, messageId: msgId, provider: "meta" };
   }
 
   private async sendViaWati(to: string, message: string): Promise<WAResponse> {
