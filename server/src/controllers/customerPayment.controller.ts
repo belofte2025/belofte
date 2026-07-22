@@ -238,8 +238,14 @@ export const getAllCustomerPayments = async (req: Request, res: Response) => {
       _count: true,
     });
 
+    // Normalize Prisma's PascalCase relation name to camelCase for the client
+    const normalizedPayments = payments.map(({ Customer, ...rest }) => ({
+      ...rest,
+      customer: Customer,
+    }));
+
     res.json({
-      payments,
+      payments: normalizedPayments,
       pagination: {
         currentPage: pageNum,
         totalPages: Math.ceil(totalCount / limitNum),
