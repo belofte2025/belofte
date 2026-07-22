@@ -121,6 +121,33 @@ export default function AllPaymentsReport() {
   const bankPayments =
     data?.payments.filter((p) => p.paymentType === "BANK").length || 0;
 
+  // Group payments by type for the method summary
+  const paymentMethodSummary = data?.payments.reduce<
+    Record<string, { count: number; total: number }>
+  >((acc, p) => {
+    const key = p.paymentType;
+    if (!acc[key]) acc[key] = { count: 0, total: 0 };
+    acc[key].count += 1;
+    acc[key].total += p.amount;
+    return acc;
+  }, {}) ?? {};
+
+  const methodLabels: Record<string, string> = {
+    CASH: "Cash",
+    BANK: "Bank Transfer",
+    MOBILE_MONEY: "Mobile Money",
+    DEBT_SETTLEMENT: "Debt Settlement",
+    CREDIT_NOTE: "Credit Note",
+  };
+
+  const methodColors: Record<string, string> = {
+    CASH: "bg-blue-50 border-blue-200 text-blue-700",
+    BANK: "bg-green-50 border-green-200 text-green-700",
+    MOBILE_MONEY: "bg-purple-50 border-purple-200 text-purple-700",
+    DEBT_SETTLEMENT: "bg-teal-50 border-teal-200 text-teal-700",
+    CREDIT_NOTE: "bg-orange-50 border-orange-200 text-orange-700",
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-4">
@@ -282,6 +309,42 @@ export default function AllPaymentsReport() {
                 <div className="p-3 bg-orange-100 rounded-full">
                   <CreditCard className="w-6 h-6 text-orange-600" />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Method Summary */}
+          {data && Object.keys(paymentMethodSummary).length > 0 && (
+            <div className="bg-white shadow-sm border border-gray-200 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">Payment Method Breakdown</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {Object.entries(paymentMethodSummary).map(([type, { count, total }]) => {
+                  const colorClass = methodColors[type] ?? "bg-gray-50 border-gray-200 text-gray-700";
+                  const label = methodLabels[type] ?? type.replace(/_/g, " ");
+                  const pct = data.summary.totalAmount > 0
+                    ? ((total / data.summary.totalAmount) * 100).toFixed(1)
+                    : "0.0";
+                  return (
+                    <div
+                      key={type}
+                      className={`rounded-lg border p-4 ${colorClass}`}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
+                      <p className="text-lg font-bold mt-1">{formatCurrency(total)}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs opacity-70">{count} transaction{count !== 1 ? "s" : ""}</p>
+                        <p className="text-xs font-semibold">{pct}%</p>
+                      </div>
+                      {/* Mini progress bar */}
+                      <div className="mt-2 h-1 w-full bg-black/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-current rounded-full opacity-40"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
