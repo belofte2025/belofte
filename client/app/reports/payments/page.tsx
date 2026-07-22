@@ -168,11 +168,6 @@ export default function AllPaymentsReport() {
     }
   };
 
-  const cashPayments =
-    data?.payments.filter((p) => p.paymentType === "CASH").length || 0;
-  const bankPayments =
-    data?.payments.filter((p) => p.paymentType === "BANK").length || 0;
-
   // Group payments by type for the method summary
   const paymentMethodSummary = data?.payments.reduce<
     Record<string, { count: number; total: number }>
@@ -348,17 +343,18 @@ export default function AllPaymentsReport() {
               </div>
 
               <div className="stat-card">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Payment Methods
-                  </p>
-                  <p className="text-lg font-bold text-gray-900">
-                    <span className="text-blue-600">{cashPayments}</span> Cash
-                    / <span className="text-green-600">{bankPayments}</span>{" "}
-                    Bank
-                  </p>
+                <div className="w-full">
+                  <p className="text-sm font-medium text-gray-600 mb-2">Payment Methods</p>
+                  <div className="space-y-1">
+                    {Object.entries(paymentMethodSummary).map(([type, { count }]) => (
+                      <div key={type} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">{methodLabels[type] ?? type.replace(/_/g, " ")}</span>
+                        <span className="font-semibold text-gray-900">{count}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="p-3 bg-orange-100 rounded-full">
+                <div className="p-3 bg-orange-100 rounded-full self-start flex-shrink-0">
                   <CreditCard className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
