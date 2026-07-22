@@ -76,8 +76,10 @@ export default function SalesReportPage() {
   const totalRevenue = Array.isArray(sales) ? sales.reduce((sum, sale) => sum + sale.totalAmount, 0) : 0;
   const totalTransactions = Array.isArray(sales) ? sales.length : 0;
   const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-  const cashSales = Array.isArray(sales) ? sales.filter(s => s.saleType.toLowerCase() === 'cash').length : 0;
-  const creditSales = Array.isArray(sales) ? sales.filter(s => s.saleType.toLowerCase() === 'credit').length : 0;
+  const cashSales = Array.isArray(sales) ? sales.filter(s => s.saleType.toLowerCase() === 'cash') : [];
+  const creditSales = Array.isArray(sales) ? sales.filter(s => s.saleType.toLowerCase() === 'credit') : [];
+  const totalCashRevenue = cashSales.reduce((sum, s) => sum + s.totalAmount, 0);
+  const totalCreditRevenue = creditSales.reduce((sum, s) => sum + s.totalAmount, 0);
 
   const exportToPDF = async () => {
     try {
@@ -119,8 +121,10 @@ export default function SalesReportPage() {
             { label: "Total Revenue", value: formatCurrency(totalRevenue) },
             { label: "Total Transactions", value: totalTransactions.toString() },
             { label: "Average Transaction", value: formatCurrency(avgTransaction) },
-            { label: "Cash Sales", value: cashSales.toString() },
-            { label: "Credit Sales", value: creditSales.toString() },
+            { label: "Cash Sales", value: `${cashSales.length} tx` },
+            { label: "Credit Sales", value: `${creditSales.length} tx` },
+            { label: "Total Cash Sales", value: formatCurrency(totalCashRevenue) },
+            { label: "Total Credit Sales", value: formatCurrency(totalCreditRevenue) },
           ],
         }
       );
@@ -177,9 +181,9 @@ export default function SalesReportPage() {
 
         {/* Summary stats */}
         {!loading && Array.isArray(sales) && sales.length > 0 && (
-          <div className="stats-grid">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="stat-card">
-              <p className="stat-label">Revenue</p>
+              <p className="stat-label">Total Revenue</p>
               <p className="stat-value text-blue-600">{formatCurrency(totalRevenue)}</p>
             </div>
             <div className="stat-card">
@@ -193,10 +197,20 @@ export default function SalesReportPage() {
             <div className="stat-card">
               <p className="stat-label">Cash / Credit</p>
               <p className="text-base font-bold mt-1">
-                <span className="text-green-600">{cashSales}</span>
+                <span className="text-green-600">{cashSales.length}</span>
                 <span className="text-gray-300 mx-1">/</span>
-                <span className="text-red-600">{creditSales}</span>
+                <span className="text-orange-500">{creditSales.length}</span>
               </p>
+            </div>
+            <div className="stat-card">
+              <p className="stat-label">Total Cash Sales</p>
+              <p className="stat-value text-green-600">{formatCurrency(totalCashRevenue)}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{cashSales.length} transaction{cashSales.length !== 1 ? "s" : ""}</p>
+            </div>
+            <div className="stat-card">
+              <p className="stat-label">Total Credit Sales</p>
+              <p className="stat-value text-orange-500">{formatCurrency(totalCreditRevenue)}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{creditSales.length} transaction{creditSales.length !== 1 ? "s" : ""}</p>
             </div>
           </div>
         )}
