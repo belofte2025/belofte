@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { getAllPayments } from "@/services/paymentService";
 import { formatCurrency } from "@/utils/format";
+import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 import toast from "react-hot-toast";
 
 type Payment = {
@@ -84,36 +85,87 @@ export default function AllPaymentsReport() {
     loadPayments();
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     if (!data || data.payments.length === 0) return;
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
 
-    // This would integrate with jsPDF in production
-    // For now, we'll create a simple data export
-    const csvData = [
-      ["#", "Date", "Customer", "Phone", "Type", "Amount", "Note"],
-      ...data.payments.map((payment, index) => [
-        index + 1 + (filters.page - 1) * filters.limit,
-        new Date(payment.createdAt).toLocaleDateString(),
-        payment.customer.customerName,
-        payment.customer.phone,
-        payment.paymentType,
-        payment.amount,
-        payment.note || "-",
-      ]),
-    ];
+      // Payment method breakdown table
+      const methodRows = Object.entries(paymentMethodSummary)
+        .map(([type, { count, total }]) => {
+          const label = methodLabels[type] ?? type.replace(/_/g, " ");
+          const pct = data.summary.totalAmount > 0
+            ? ((total / data.summary.totalAmount) * 100).toFixed(1)
+            : "0.0";
+          return `<tr>
+            <td>${label}</td>
+            <td class="text-center">${count}</td>
+            <td class="text-right font-bold">${formatCurrency(total)}</td>
+            <td class="text-right">${pct}%</td>
+          </tr>`;
+        })
+        .join("");
 
-    const csvContent = csvData.map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `payments-report-${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+      const methodTable = `
+        <h3 style="margin:0 0 6px;font-size:11px;font-weight:600;color:#374151;">Payment Method Breakdown</h3>
+        <table style="margin-bottom:16px;">
+          <thead><tr><th>Method</th><th class="text-center">Count</th><th class="text-right">Total</th><th class="text-right">Share</th></tr></thead>
+          <tbody>${methodRows}</tbody>
+        </table>`;
 
-    toast.success("CSV exported successfully!");
+      // Transactions table
+      const txRows = data.payments.map((payment, index) => `
+        <tr class="no-page-break">
+          <td>${index + 1 + (filters.page - 1) * filters.limit}</td>
+          <td>${new Date(payment.createdAt).toLocaleDateString()}</td>
+          <td>${payment.customer?.customerName ?? "-"}</td>
+          <td>${payment.customer?.phone ?? "-"}</td>
+          <td>${(methodLabels[payment.paymentType] ?? payment.paymentType).replace(/_/g, " ")}</td>
+          <td class="text-right font-bold">${formatCurrency(payment.amount)}</td>
+          <td>${payment.note || "-"}</td>
+        </tr>`).join("");
+
+      const txTable = `
+        <h3 style="margin:0 0 6px;font-size:11px;font-weight:600;color:#374151;">Payment Transactions</h3>
+        <table>
+          <thead><tr><th>#</th><th>Date</th><th>Customer</th><th>Phone</th><th>Type</th><th class="text-right">Amount</th><th>Note</th></tr></thead>
+          <tbody>${txRows}</tbody>
+        </table>`;
+
+      const dateLabel = filters.startDate || filters.endDate
+        ? `Period: ${filters.startDate || "Start"} to ${filters.endDate || "End"}`
+        : `As of ${new Date().toLocaleDateString()}`;
+
+      const html = createHTMLReportTemplate(
+        "Payments Report",
+        methodTable + txTable,
+        {
+          subtitle: dateLabel,
+          summaryStats: [
+            { label: "Total Payments", value: data.summary.totalPayments.toString() },
+            { label: "Total Amount", value: formatCurrency(data.summary.totalAmount) },
+            {
+              label: "Average Payment",
+              value: formatCurrency(
+                data.summary.totalPayments > 0
+                  ? data.summary.totalAmount / data.summary.totalPayments
+                  : 0
+              ),
+            },
+            { label: "Cash", value: formatCurrency(paymentMethodSummary["CASH"]?.total ?? 0) },
+            { label: "Bank Transfer", value: formatCurrency(paymentMethodSummary["BANK"]?.total ?? 0) },
+            { label: "Mobile Money", value: formatCurrency(paymentMethodSummary["MOBILE_MONEY"]?.total ?? 0) },
+          ],
+        }
+      );
+
+      const today = new Date().toISOString().split("T")[0];
+      const options = { ...getHTML2PDFOptions(), filename: `Payments_Report_${today}.pdf` };
+      html2pdf().set(options).from(html).save();
+      toast.success("PDF exported successfully!");
+    } catch {
+      toast.error("Failed to export PDF");
+    }
   };
 
   const cashPayments =
@@ -160,7 +212,7 @@ export default function AllPaymentsReport() {
                 className="btn btn-success"
               >
                 <Download className="w-4 h-4" />
-                Export CSV
+                Export PDF
               </button>
           </div>
 
