@@ -3,10 +3,9 @@ import { useEffect, useState, useCallback } from "react";
 import { getCustomerById } from "@/services/customerService";
 import { getSalesByCustomerId, updateSale, deleteSaleById } from "@/services/salesService";
 import { formatCurrency } from "@/utils/format";
-import { ShoppingCart, TrendingUp, Receipt, Eye, Edit, Trash2, Plus, Minus, X } from "lucide-react";
+import { ShoppingCart, TrendingUp, Receipt, Edit, Trash2, Plus, Minus, X } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
 
 type Props = {
   customerId: string;
@@ -27,7 +26,6 @@ type Sale = {
 };
 
 export default function CustomerSalesList({ customerId }: Props) {
-  const router = useRouter();
   const [sales, setSales] = useState<Sale[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -238,13 +236,6 @@ export default function CustomerSalesList({ customerId }: Props) {
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => router.push(`/reports/sales/saleslist`)}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="View in Sales Report"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
                       <button
                         onClick={() => handleOpenEditModal(sale)}
                         className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors"
