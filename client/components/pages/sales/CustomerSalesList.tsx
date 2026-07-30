@@ -239,9 +239,9 @@ export default function CustomerSalesList({ customerId }: Props) {
                     </div>
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => router.push(`/sales/${sale.id}`)}
+                        onClick={() => router.push(`/reports/sales/saleslist`)}
                         className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="View"
+                        title="View in Sales Report"
                       >
                         <Eye className="w-4 h-4" />
                       </button>

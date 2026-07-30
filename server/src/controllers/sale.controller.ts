@@ -373,7 +373,11 @@ export const getSalesByCustomerId = async (req: Request, res: Response) => {
       saleDate: sale.createdAt,
       totalAmount: sale.totalAmount,
       saleType: sale.saleType,
-      saleItems: sale.SaleItem,
+      items: sale.SaleItem.map((i) => ({
+        itemName: i.itemName,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+      })),
     }));
 
     res.json(transformedSales);

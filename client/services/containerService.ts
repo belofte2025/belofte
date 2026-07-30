@@ -128,8 +128,10 @@ export const getContainerSalesSummary = async (id: string) => {
 
   console.log("Container summary API response:", data);
 
-  if (!Array.isArray(data.items)) {
-    throw new Error("Missing or invalid 'items' array in response");
+  // Backend returns "containerItems", not "items"
+  const rawItems = data.containerItems ?? data.items ?? [];
+  if (!Array.isArray(rawItems)) {
+    throw new Error("Missing or invalid items array in response");
   }
 
   return {
@@ -138,7 +140,7 @@ export const getContainerSalesSummary = async (id: string) => {
     company: data.companyName ?? "Unknown",
     deliveryDate: data.arrivalDate,
     totalSales: data.totalSales ?? 0,
-    items: data.items.map((item: any) => ({
+    items: rawItems.map((item: any) => ({
       name: item.itemName,
       expected: item.quantity,
       remainingQty: item.remainingQty,
