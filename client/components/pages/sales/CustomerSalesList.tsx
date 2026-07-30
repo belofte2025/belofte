@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import Select from "react-select";
 import { getCustomerById } from "@/services/customerService";
 import { getSalesByCustomerId, updateSale, deleteSaleById } from "@/services/salesService";
+import { getSuppliers, getSupplierItems } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
 import { ShoppingCart, TrendingUp, Receipt, Edit, Trash2, Plus, Minus, X } from "lucide-react";
 import { Dialog } from "@headlessui/react";
@@ -38,6 +40,9 @@ export default function CustomerSalesList({ customerId }: Props) {
     items: SaleItem[];
   }>({ saleType: "", items: [] });
 
+  // Catalog for item search dropdown
+  const [catalog, setCatalog] = useState<{ itemName: string; unitPrice: number }[]>([]);
+
   const loadSales = useCallback(async () => {
     try {
       const data = await getSalesByCustomerId(customerId);
@@ -61,6 +66,19 @@ export default function CustomerSalesList({ customerId }: Props) {
 
     loadCustomer();
     loadSales();
+
+    getSuppliers().then(async (suppliers: any[]) => {
+      const results = await Promise.allSettled(
+        suppliers.map((s: any) =>
+          getSupplierItems(s.id).then((items: any[]) =>
+            (items || []).map((i: any) => ({ itemName: i.itemName, unitPrice: i.price ?? 0 }))
+          )
+        )
+      );
+      const flat = results.flatMap((r) => r.status === "fulfilled" ? r.value : []);
+      const seen = new Set<string>();
+      setCatalog(flat.filter((i) => { if (seen.has(i.itemName)) return false; seen.add(i.itemName); return true; }));
+    }).catch(() => {});
   }, [customerId, loadSales]);
 
   const handleOpenEditModal = (sale: Sale) => {
@@ -146,6 +164,8 @@ export default function CustomerSalesList({ customerId }: Props) {
   const totalSales = sales.length;
   const totalAmount = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
   const averageAmount = totalSales > 0 ? totalAmount / totalSales : 0;
+
+  const catalogOptions = catalog.map((i) => ({ value: i.itemName, label: i.itemName, unitPrice: i.unitPrice }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -362,12 +382,25 @@ export default function CustomerSalesList({ customerId }: Props) {
                   {editForm.items.map((item, index) => (
                     <div key={index} className="flex items-center gap-3 p-3 bg-gray-50">
                       <div className="flex-1">
-                        <input
-                          type="text"
-                          value={item.itemName}
-                          onChange={(e) => updateEditItem(index, "itemName", e.target.value)}
-                          placeholder="Item name"
-                          className="w-full px-3 py-2 border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <Select
+                          options={catalogOptions}
+                          value={
+                            catalogOptions.find((o) => o.value === item.itemName) ||
+                            (item.itemName ? { value: item.itemName, label: item.itemName, unitPrice: item.unitPrice } : null)
+                          }
+                          onChange={(opt) => {
+                            if (!opt) return;
+                            setEditForm((prev) => ({
+                              ...prev,
+                              items: prev.items.map((it, i) =>
+                                i === index ? { ...it, itemName: opt.value, unitPrice: opt.unitPrice } : it
+                              ),
+                            }));
+                          }}
+                          isSearchable
+                          placeholder="Search item..."
+                          classNamePrefix="rselect"
+                          styles={{ container: (base) => ({ ...base, width: "100%" }) }}
                         />
                       </div>
                       <div className="w-24">
