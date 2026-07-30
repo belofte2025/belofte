@@ -31,6 +31,21 @@ export const createContainer = async (data: any) => {
   return res.data;
 };
 
+export const markAsShipped = async (id: string) => {
+  const res = await api.put(`/containers/${id}/mark-shipped`);
+  return res.data;
+};
+
+export const markAsArrived = async (id: string) => {
+  const res = await api.put(`/containers/${id}/mark-arrived`);
+  return res.data;
+};
+
+export const receiveWithVerification = async (id: string, nameCorrections: Record<string, string>) => {
+  const res = await api.put(`/containers/${id}/receive`, { nameCorrections });
+  return res.data;
+};
+
 export const markAsReceived = async (id: string) => {
   const res = await api.put(`/containers/${id}/mark-received`);
   return res.data;

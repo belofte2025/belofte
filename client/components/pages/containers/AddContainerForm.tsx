@@ -129,7 +129,7 @@ function computeWarnings(
   return result;
 }
 
-export default function AddContainerForm() {
+export default function AddContainerForm({ initialStatus = "Received" }: { initialStatus?: string }) {
   const router = useRouter();
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [containerNo, setContainerNo] = useState("");
@@ -312,6 +312,7 @@ export default function AddContainerForm() {
       arrivalDate,
       supplierId,
       items: validItems,
+      initialStatus,
     };
 
     try {
@@ -362,8 +363,8 @@ export default function AddContainerForm() {
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
-              <h1 className="page-title">Add Container</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Create a new container with inventory items</p>
+              <h1 className="page-title">{initialStatus === "Pending" ? "Register Shipment" : "Add Container"}</h1>
+              <p className="text-xs text-gray-500 mt-0.5">{initialStatus === "Pending" ? "Pre-register a container currently in transit" : "Create a new container with inventory items"}</p>
             </div>
           </div>
         </div>

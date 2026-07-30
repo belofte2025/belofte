@@ -11,6 +11,23 @@ export const getContainerReport = async (containerId: string, companyId: string)
 
   if (!container) throw new Error("Container not found");
 
+  const PRE_WAREHOUSE = ["Pending", "Shipped", "Arrived"];
+  if (PRE_WAREHOUSE.includes(container.status)) {
+    return {
+      containerNo: container.containerNo,
+      arrivalDate: container.arrivalDate,
+      supplier: container.Supplier?.suppliername || "N/A",
+      status: container.status,
+      itemSummary: container.ContainerItem.map((item: any) => ({
+        itemName: item.itemName,
+        expected: item.quantity,
+        received: 0,
+        sold: 0,
+        remaining: 0,
+      })),
+    };
+  }
+
   // Get sales for this container to calculate sold quantities
   const sales = await prisma.sale.findMany({
     where: {
@@ -59,6 +76,7 @@ export const getSupplierReport = async (supplierId: string, companyId: string) =
       Container: {
         supplierId,
         companyId,
+        status: { in: ["Received", "Incomplete", "Done"] },
       },
     },
     include: {
@@ -303,13 +321,14 @@ export const getItemTransactionHistory = async (
     throw new Error("Supplier not found");
   }
 
-  // Fetch all container receipts for this item
+  // Fetch all container receipts for this item (only warehouse-received containers)
   const containerItems = await prisma.containerItem.findMany({
     where: {
       itemName,
       Container: {
         supplierId,
         companyId,
+        status: { in: ["Received", "Incomplete", "Done"] },
       },
     },
     include: {

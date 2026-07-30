@@ -20,11 +20,16 @@ export const recordSale = async (req: Request, res: Response) => {
     if (sourceType === "container" && sourceId) {
       const container = await prisma.container.findUnique({
         where: { id: sourceId },
-        select: { id: true },
+        select: { id: true, status: true },
       });
 
       if (!container) {
         res.status(404).json({ error: "Container not found" });
+        return;
+      }
+
+      if (["Pending", "Shipped", "Arrived"].includes(container.status)) {
+        res.status(400).json({ error: "Cannot sell from a container that has not yet arrived at the warehouse" });
         return;
       }
     }
@@ -89,13 +94,14 @@ export const recordSale = async (req: Request, res: Response) => {
           return;
         }
 
-        // Get total received from containers
+        // Get total received from containers (only warehouse-received containers count as stock)
         const containerItems = await prisma.containerItem.findMany({
           where: {
             itemName,
             Container: {
               supplierId,
               companyId,
+              status: { in: ["Received", "Incomplete", "Done"] },
             },
           },
           select: { quantity: true, containerId: true },

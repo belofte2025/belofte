@@ -3,5 +3,5 @@ export type Container = {
   number: string;
   company: string;
   deliveryDate: string;
-  status: "Pending" | "Received" | "Done";
+  status: "Pending" | "Shipped" | "Arrived" | "Received" | "Done";
 };

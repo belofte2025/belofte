@@ -3,6 +3,9 @@ import {
   getContainers,
   createContainer,
   getContainerById,
+  markContainerAsShipped,
+  markContainerAsArrived,
+  receiveContainerWithVerification,
   markContainerAsReceived,
   markContainerAsIncomplete,
   markContainerAsDone,
@@ -131,6 +134,9 @@ router.get("/:id", getContainerById);
  *       200:
  *         description: Container marked as received
  */
+router.put("/:id/mark-shipped", requirePermission("containers.edit"), markContainerAsShipped);
+router.put("/:id/mark-arrived", requirePermission("containers.edit"), markContainerAsArrived);
+router.put("/:id/receive", requirePermission("containers.edit"), receiveContainerWithVerification);
 router.put("/:id/mark-received", requirePermission("containers.edit"), markContainerAsReceived);
 
 /**

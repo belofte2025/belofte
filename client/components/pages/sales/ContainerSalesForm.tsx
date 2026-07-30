@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { getContainerItemsWithSales } from "@/services/containerService";
+import { getContainerItemsWithSales, getContainerById } from "@/services/containerService";
 import { getCustomers } from "@/services/customerService";
 import { recordSale } from "@/services/salesService";
 import { toast } from "react-hot-toast";
@@ -84,19 +84,25 @@ export default function ContainerSalesForm() {
   const [containerNo, setContainerNo] = useState<string | null>(null);
   const [discountType, setDiscountType] = useState<"percentage" | "amount" | null>(null);
   const [discountValue, setDiscountValue] = useState<number>(0);
+  const [containerStatus, setContainerStatus] = useState<string | null>(null);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPrintPrompt, setShowPrintPrompt] = useState(false);
   const [showCreditPrompt, setShowCreditPrompt] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
+  const PRE_WAREHOUSE = ["Pending", "Shipped", "Arrived"];
+  const isPreWarehouse = containerStatus !== null && PRE_WAREHOUSE.includes(containerStatus);
+
   const fetchData = useCallback(async () => {
     try {
-      const [itemData, customerData] = await Promise.all([
+      const [itemData, customerData, containerData] = await Promise.all([
         getContainerItemsWithSales(containerId as string),
         getCustomers(),
+        getContainerById(containerId as string),
       ]);
       setItems(itemData);
+      setContainerStatus(containerData?.status ?? null);
       setCustomers(
         customerData.map((c: Customer) => ({
           label: `${c.name} (${c.phone})`,
@@ -192,6 +198,10 @@ export default function ContainerSalesForm() {
   );
 
   const handleConfirmSale = () => {
+    if (isPreWarehouse) {
+      toast.error("Container has not yet arrived at the warehouse.");
+      return;
+    }
     if (!selectedCustomer) {
       toast.error("Select a customer first.");
       return;
@@ -296,6 +306,18 @@ export default function ContainerSalesForm() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Pre-warehouse banner */}
+        {isPreWarehouse && (
+          <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Container not yet at warehouse</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                This container is currently <strong>{containerStatus}</strong>. Sales will be available once it is marked as Received.
+              </p>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -536,8 +558,8 @@ export default function ContainerSalesForm() {
                     {filteredItems.map((item) => (
                       <div
                         key={item.id}
-                        onClick={() => addToCart(item)}
-                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200 group"
+                        onClick={() => !isPreWarehouse && addToCart(item)}
+                        className={`p-4 transition-colors duration-200 group ${isPreWarehouse ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50 cursor-pointer"}`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">

@@ -33,11 +33,14 @@ export const getContainers = async (req: Request, res: Response) => {
 
 export const createContainer = async (req: Request, res: Response) => {
   try {
-    const { containerNo, arrivalDate, year, supplierId, items } = req.body;
+    const { containerNo, arrivalDate, year, supplierId, items, initialStatus } = req.body;
     const companyId = req.user!.companyId;
 
     // Resolve canonical names (case-insensitive + alias match) and upsert SupplierItems
     const nameMap = await upsertSupplierItems(supplierId, items);
+
+    const validStatuses = ["Pending", "Received"];
+    const status = validStatuses.includes(initialStatus) ? initialStatus : "Pending";
 
     const container = await prisma.container.create({
       data: {
@@ -46,6 +49,7 @@ export const createContainer = async (req: Request, res: Response) => {
         year,
         supplierId,
         companyId,
+        status,
         ContainerItem: {
           create: items.map((item: { itemName: string; quantity: number; unitPrice: number }) => ({
             itemName: nameMap.get(item.itemName) ?? item.itemName.trim(),
@@ -85,6 +89,47 @@ async function verifyContainerOwnership(id: string, companyId: string | undefine
   const container = await prisma.container.findUnique({ where: { id }, select: { companyId: true } });
   return container?.companyId === companyId;
 }
+
+export const markContainerAsShipped = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+    res.status(404).json({ error: "Container not found" });
+    return;
+  }
+  await prisma.container.update({ where: { id }, data: { status: "Shipped" } });
+  res.json({ message: "Container marked as shipped" });
+};
+
+export const markContainerAsArrived = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+    res.status(404).json({ error: "Container not found" });
+    return;
+  }
+  await prisma.container.update({ where: { id }, data: { status: "Arrived" } });
+  res.json({ message: "Container marked as arrived at port" });
+};
+
+export const receiveContainerWithVerification = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { nameCorrections } = req.body as { nameCorrections?: Record<string, string> };
+  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+    res.status(404).json({ error: "Container not found" });
+    return;
+  }
+  await prisma.$transaction(async (tx) => {
+    for (const [oldName, newName] of Object.entries(nameCorrections || {})) {
+      if (oldName !== newName) {
+        await tx.containerItem.updateMany({
+          where: { containerId: id, itemName: oldName },
+          data: { itemName: newName },
+        });
+      }
+    }
+    await tx.container.update({ where: { id }, data: { status: "Received" } });
+  });
+  res.json({ message: "Container received and item names verified" });
+};
 
 export const markContainerAsReceived = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -282,6 +327,9 @@ export const listContainerItemsWithSales = async (
       return;
     }
 
+    const PRE_WAREHOUSE = ["Pending", "Shipped", "Arrived"];
+    const preWarehouse = PRE_WAREHOUSE.includes(container.status);
+
     // Step 2: Get container items
     const containerItems = await prisma.containerItem.findMany({
       where: { containerId },
@@ -317,7 +365,7 @@ export const listContainerItemsWithSales = async (
     // Step 6: Final result
     const result = containerItems.map((item: { id: string; itemName: string; quantity: number; receivedQty: number; unitPrice: number }) => {
       const soldQty = soldMap[item.itemName] || 0;
-      const remainingQty = (item.quantity || 0) - soldQty;
+      const remainingQty = preWarehouse ? 0 : (item.quantity || 0) - soldQty;
       const alias = supplierItemMap.get(item.itemName);
       const isMatched = supplierItemMap.has(item.itemName);
       const supplierName = isMatched

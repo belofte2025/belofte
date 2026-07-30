@@ -1,35 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { getContainers, markAsReceived, deleteContainer } from "@/services/containerService";
+import { useRouter } from "next/navigation";
+import {
+  getContainers,
+  markAsShipped,
+  markAsArrived,
+  markAsDone,
+  deleteContainer,
+} from "@/services/containerService";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
 import { Dialog } from "@headlessui/react";
 import {
   Container, Plus, MoreVertical, Truck, CheckCircle, Clock,
-  Building, Calendar, X, FileText, List,
+  Building, Calendar, X, FileText, List, Ship, Anchor, ChevronDown,
 } from "lucide-react";
 import SearchInput from "@/components/ui/SearchInput";
 import Badge from "@/components/ui/Badge";
 import clsx from "clsx";
+
+type ContainerStatus = "Pending" | "Shipped" | "Arrived" | "Received" | "Incomplete" | "Done";
 
 type ContainerData = {
   id: string;
   number: string;
   company: string;
   deliveryDate: string;
-  status: "Pending" | "Received" | "Done";
+  status: ContainerStatus;
 };
 
 const ITEMS_PER_PAGE = 10;
 
+const PRE_WAREHOUSE: ContainerStatus[] = ["Pending", "Shipped", "Arrived"];
+
 export default function ContainerListPage() {
+  const router = useRouter();
   const [containers, setContainers] = useState<ContainerData[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const addMenuRef = useRef<HTMLDivElement>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -45,6 +59,16 @@ export default function ContainerListPage() {
 
   useEffect(() => { loadData(); }, []);
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setAddMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const filtered = containers.filter((c) =>
     c.number.toLowerCase().includes(search.toLowerCase())
   );
@@ -53,12 +77,18 @@ export default function ContainerListPage() {
   const startIdx = (page - 1) * ITEMS_PER_PAGE;
   const paginated = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
-  const handleMarkReceived = async (id: string) => {
+  const statusUpdate = async (
+    id: string,
+    action: () => Promise<unknown>,
+    newStatus: ContainerStatus,
+    successMsg: string,
+    then?: (id: string) => void,
+  ) => {
     try {
-      await markAsReceived(id);
-      setContainers((prev) => prev.map((c) => (c.id === id ? { ...c, status: "Received" } : c)));
-      toast.success("Marked as received");
-      window.location.href = `/offload/container/${id}`;
+      await action();
+      setContainers((prev) => prev.map((c) => c.id === id ? { ...c, status: newStatus } : c));
+      toast.success(successMsg);
+      then?.(id);
     } catch {
       toast.error("Failed to update status");
     }
@@ -76,16 +106,30 @@ export default function ContainerListPage() {
     }
   };
 
-  const statusVariant = (s: string) =>
-    s === "Pending" ? "warning" : s === "Received" ? "success" : "info";
+  const statusVariant = (s: ContainerStatus) => {
+    if (s === "Pending") return "warning";
+    if (s === "Shipped") return "info";
+    if (s === "Arrived") return "default";
+    if (s === "Received" || s === "Incomplete") return "success";
+    return "info"; // Done
+  };
 
-  const statusIcon = (s: string) =>
-    s === "Pending" ? <Clock className="w-3.5 h-3.5" /> :
-    s === "Received" ? <CheckCircle className="w-3.5 h-3.5" /> :
-    <Truck className="w-3.5 h-3.5" />;
+  const statusLabel = (s: ContainerStatus) => {
+    if (s === "Arrived") return "At Port";
+    return s;
+  };
+
+  const statusIcon = (s: ContainerStatus) => {
+    if (s === "Pending") return <Clock className="w-3.5 h-3.5" />;
+    if (s === "Shipped") return <Ship className="w-3.5 h-3.5" />;
+    if (s === "Arrived") return <Anchor className="w-3.5 h-3.5" />;
+    if (s === "Received" || s === "Incomplete") return <CheckCircle className="w-3.5 h-3.5" />;
+    return <Truck className="w-3.5 h-3.5" />;
+  };
 
   const pending   = containers.filter((c) => c.status === "Pending").length;
-  const received  = containers.filter((c) => c.status === "Received").length;
+  const inTransit = containers.filter((c) => c.status === "Shipped" || c.status === "Arrived").length;
+  const received  = containers.filter((c) => c.status === "Received" || c.status === "Incomplete").length;
   const done      = containers.filter((c) => c.status === "Done").length;
 
   const selectedContainer = containers.find((c) => c.id === selectedId);
@@ -95,15 +139,48 @@ export default function ContainerListPage() {
       {/* Header */}
       <div className="page-header">
         <h1 className="page-title">Containers</h1>
-        <Link href="/containers/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add Container</span>
-          <span className="sm:hidden">Add</span>
-        </Link>
+        {/* Add button with dropdown */}
+        <div className="relative" ref={addMenuRef}>
+          <button
+            onClick={() => setAddMenuOpen((o) => !o)}
+            className="btn btn-primary flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add Container</span>
+            <span className="sm:hidden">Add</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+          {addMenuOpen && (
+            <div className="absolute right-0 mt-1 w-52 bg-white rounded-xl border border-gray-200 shadow-lg z-10 overflow-hidden">
+              <Link
+                href="/containers/new"
+                onClick={() => setAddMenuOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <div>
+                  <p className="font-medium">Direct Arrival</p>
+                  <p className="text-xs text-gray-400">Already at warehouse</p>
+                </div>
+              </Link>
+              <Link
+                href="/containers/pre-register"
+                onClick={() => setAddMenuOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-100"
+              >
+                <Ship className="w-4 h-4 text-blue-600" />
+                <div>
+                  <p className="font-medium">Register Shipment</p>
+                  <p className="text-xs text-gray-400">Container in transit</p>
+                </div>
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      {/* Stats — 5 columns */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
         <div className="stat-card">
           <p className="stat-label">Total</p>
           <p className="stat-value">{containers.length}</p>
@@ -111,6 +188,10 @@ export default function ContainerListPage() {
         <div className="stat-card">
           <p className="stat-label">Pending</p>
           <p className="stat-value text-yellow-600">{pending}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">In Transit</p>
+          <p className="stat-value text-blue-600">{inTransit}</p>
         </div>
         <div className="stat-card">
           <p className="stat-label">Received</p>
@@ -163,7 +244,7 @@ export default function ContainerListPage() {
                 </div>
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
                   <Badge variant={statusVariant(item.status) as "default" | "success" | "warning" | "danger" | "info"}>
-                    <span className="flex items-center gap-1">{statusIcon(item.status)}{item.status}</span>
+                    <span className="flex items-center gap-1">{statusIcon(item.status)}{statusLabel(item.status)}</span>
                   </Badge>
                   <button onClick={() => setSelectedId(item.id)} className="icon-btn text-gray-400 hover:text-blue-600 hover:bg-blue-50">
                     <MoreVertical className="w-4 h-4" />
@@ -204,7 +285,7 @@ export default function ContainerListPage() {
                     </td>
                     <td>
                       <Badge variant={statusVariant(item.status) as "default" | "success" | "warning" | "danger" | "info"}>
-                        <span className="flex items-center gap-1">{statusIcon(item.status)}{item.status}</span>
+                        <span className="flex items-center gap-1">{statusIcon(item.status)}{statusLabel(item.status)}</span>
                       </Badge>
                     </td>
                     <td className="text-right">
@@ -260,20 +341,80 @@ export default function ContainerListPage() {
               </button>
             </div>
             <div className="p-4 space-y-2">
-              <button
-                onClick={() => { setSelectedId(null); window.location.href = `/sales/container/${selectedId}`; }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-sm font-medium transition-colors"
-              >
-                <Container className="w-4 h-4" />
-                Make Sale in Container
-              </button>
-              <button
-                onClick={() => { setSelectedId(null); handleMarkReceived(selectedId!); }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Perform Offload
-              </button>
+
+              {/* Lifecycle actions by status */}
+              {selectedContainer?.status === "Pending" && (
+                <button
+                  onClick={() => {
+                    const id = selectedId!;
+                    setSelectedId(null);
+                    statusUpdate(id, () => markAsShipped(id), "Shipped", "Container marked as shipped");
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-sm font-medium transition-colors"
+                >
+                  <Ship className="w-4 h-4" />
+                  Mark as Shipped
+                </button>
+              )}
+
+              {selectedContainer?.status === "Shipped" && (
+                <button
+                  onClick={() => {
+                    const id = selectedId!;
+                    setSelectedId(null);
+                    statusUpdate(id, () => markAsArrived(id), "Arrived", "Container marked as arrived at port");
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-xl text-sm font-medium transition-colors"
+                >
+                  <Anchor className="w-4 h-4" />
+                  Mark as Arrived at Port
+                </button>
+              )}
+
+              {selectedContainer?.status === "Arrived" && (
+                <button
+                  onClick={() => { setSelectedId(null); router.push(`/containers/${selectedId}/receive`); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Verify &amp; Mark as Received
+                </button>
+              )}
+
+              {(selectedContainer?.status === "Received" || selectedContainer?.status === "Incomplete") && (
+                <>
+                  <button
+                    onClick={() => { setSelectedId(null); window.location.href = `/offload/container/${selectedId}`; }}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <List className="w-4 h-4" />
+                    Perform Offload
+                  </button>
+                  <button
+                    onClick={() => {
+                      const id = selectedId!;
+                      setSelectedId(null);
+                      statusUpdate(id, () => markAsDone(id), "Done", "Container marked as complete");
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 hover:bg-green-100 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Mark as Complete
+                  </button>
+                </>
+              )}
+
+              {/* Always-visible actions (not for pre-warehouse containers) */}
+              {!PRE_WAREHOUSE.includes(selectedContainer?.status ?? "Pending") && (
+                <button
+                  onClick={() => { setSelectedId(null); window.location.href = `/sales/container/${selectedId}`; }}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-sm font-medium transition-colors"
+                >
+                  <Container className="w-4 h-4" />
+                  Make Sale in Container
+                </button>
+              )}
+
               <button
                 onClick={() => { setSelectedId(null); window.location.href = `/reports/sales/container/${selectedId}`; }}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-xl text-sm font-medium transition-colors"
