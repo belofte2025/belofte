@@ -91,7 +91,16 @@ export default function ReceiveContainerPage() {
     load();
   }, [id]);
 
-  const options = supplierItems.map((s) => ({ value: s.itemName, label: s.itemName }));
+  // Supplier items as canonical options; also include any packing list names not already covered
+  // so users can always "keep original" even if no supplier item matches
+  const supplierOptionValues = new Set(supplierItems.map((s) => s.itemName));
+  const packingListNames = items
+    .map((i) => i.itemName)
+    .filter((n) => !supplierOptionValues.has(n));
+  const options = [
+    ...supplierItems.map((s) => ({ value: s.itemName, label: s.itemName, group: "Supplier Items" })),
+    ...packingListNames.map((n) => ({ value: n, label: `${n} (packing list)`, group: "Packing List" })),
+  ];
 
   const handleConfirm = async () => {
     setSaving(true);

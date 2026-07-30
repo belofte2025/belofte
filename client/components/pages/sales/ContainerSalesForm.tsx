@@ -84,7 +84,7 @@ export default function ContainerSalesForm() {
   const [containerNo, setContainerNo] = useState<string | null>(null);
   const [discountType, setDiscountType] = useState<"percentage" | "amount" | null>(null);
   const [discountValue, setDiscountValue] = useState<number>(0);
-  const [containerStatus, setContainerStatus] = useState<string | null>(null);
+  const [containerStatus, setContainerStatus] = useState<string>("loading");
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPrintPrompt, setShowPrintPrompt] = useState(false);
@@ -92,7 +92,8 @@ export default function ContainerSalesForm() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
   const PRE_WAREHOUSE = ["Pending", "Shipped", "Arrived"];
-  const isPreWarehouse = containerStatus !== null && PRE_WAREHOUSE.includes(containerStatus);
+  // "loading" sentinel keeps the form blocked until we know the actual status
+  const isPreWarehouse = containerStatus === "loading" || PRE_WAREHOUSE.includes(containerStatus);
 
   const fetchData = useCallback(async () => {
     try {
@@ -307,7 +308,7 @@ export default function ContainerSalesForm() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Pre-warehouse banner */}
-        {isPreWarehouse && (
+        {containerStatus !== "loading" && isPreWarehouse && (
           <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div>

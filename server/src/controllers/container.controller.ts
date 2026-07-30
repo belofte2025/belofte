@@ -92,43 +92,58 @@ async function verifyContainerOwnership(id: string, companyId: string | undefine
 
 export const markContainerAsShipped = async (req: Request, res: Response) => {
   const { id } = req.params;
-  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
-    res.status(404).json({ error: "Container not found" });
-    return;
+  try {
+    if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+      res.status(404).json({ error: "Container not found" });
+      return;
+    }
+    await prisma.container.update({ where: { id }, data: { status: "Shipped" } });
+    res.json({ message: "Container marked as shipped" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to mark container as shipped" });
   }
-  await prisma.container.update({ where: { id }, data: { status: "Shipped" } });
-  res.json({ message: "Container marked as shipped" });
 };
 
 export const markContainerAsArrived = async (req: Request, res: Response) => {
   const { id } = req.params;
-  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
-    res.status(404).json({ error: "Container not found" });
-    return;
+  try {
+    if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+      res.status(404).json({ error: "Container not found" });
+      return;
+    }
+    await prisma.container.update({ where: { id }, data: { status: "Arrived" } });
+    res.json({ message: "Container marked as arrived at port" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to mark container as arrived" });
   }
-  await prisma.container.update({ where: { id }, data: { status: "Arrived" } });
-  res.json({ message: "Container marked as arrived at port" });
 };
 
 export const receiveContainerWithVerification = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { nameCorrections } = req.body as { nameCorrections?: Record<string, string> };
-  if (!await verifyContainerOwnership(id, req.user?.companyId)) {
-    res.status(404).json({ error: "Container not found" });
-    return;
-  }
-  await prisma.$transaction(async (tx) => {
-    for (const [oldName, newName] of Object.entries(nameCorrections || {})) {
-      if (oldName !== newName) {
-        await tx.containerItem.updateMany({
-          where: { containerId: id, itemName: oldName },
-          data: { itemName: newName },
-        });
-      }
+  try {
+    if (!await verifyContainerOwnership(id, req.user?.companyId)) {
+      res.status(404).json({ error: "Container not found" });
+      return;
     }
-    await tx.container.update({ where: { id }, data: { status: "Received" } });
-  });
-  res.json({ message: "Container received and item names verified" });
+    await prisma.$transaction(async (tx) => {
+      for (const [oldName, newName] of Object.entries(nameCorrections || {})) {
+        if (oldName !== newName) {
+          await tx.containerItem.updateMany({
+            where: { containerId: id, itemName: oldName },
+            data: { itemName: newName },
+          });
+        }
+      }
+      await tx.container.update({ where: { id }, data: { status: "Received" } });
+    });
+    res.json({ message: "Container received and item names verified" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to receive container" });
+  }
 };
 
 export const markContainerAsReceived = async (req: Request, res: Response) => {
