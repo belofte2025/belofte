@@ -39,8 +39,8 @@ interface ContainerSummary {
   items: Item[];
 }
 
-// Local currency helper — cedis only, no "GHS" prefix
-const fmt = (n: number) => `₵${formatCurrency(n)}`;
+// formatCurrency already includes the ₵ symbol
+const fmt = (n: number) => formatCurrency(n);
 
 export default function ContainerSummaryPage() {
   const router = useRouter();
@@ -96,15 +96,15 @@ export default function ContainerSummaryPage() {
                 <td class="text-center">${item.expected}</td>
                 <td class="text-center">${item.sold}</td>
                 <td class="text-center">${item.remainingQty}</td>
-                <td class="text-right">₵${formatCurrency(item.unitPrice)}</td>
-                <td class="text-right font-bold">₵${formatCurrency(item.total)}</td>
+                <td class="text-right">${formatCurrency(item.unitPrice)}</td>
+                <td class="text-right font-bold">${formatCurrency(item.total)}</td>
               </tr>
             `).join('') || '<tr><td colspan="6">No items found.</td></tr>'}
           </tbody>
           <tfoot>
             <tr>
               <td colspan="5" class="text-right font-bold">Grand Total</td>
-              <td class="text-right font-bold">₵${formatCurrency(container.totalSales)}</td>
+              <td class="text-right font-bold">${formatCurrency(container.totalSales)}</td>
             </tr>
           </tfoot>
         </table>
@@ -116,9 +116,9 @@ export default function ContainerSummaryPage() {
         {
           subtitle: `Supplier: ${container.company} | Delivery Date: ${new Date(container.deliveryDate).toLocaleDateString()}`,
           summaryStats: [
-            { label: "Total Sales",     value: `₵${formatCurrency(container.totalSales)}` },
-            { label: "Credit Sales",    value: `₵${formatCurrency(container.creditSales)}` },
-            { label: "Cash Sales",      value: `₵${formatCurrency(container.cashSales)}` },
+            { label: "Total Sales",     value: formatCurrency(container.totalSales) },
+            { label: "Credit Sales",    value: formatCurrency(container.creditSales) },
+            { label: "Cash Sales",      value: formatCurrency(container.cashSales) },
             { label: "Items Sold",      value: totalSold.toString() },
             { label: "Remaining Stock", value: totalRemaining.toString() },
           ],
