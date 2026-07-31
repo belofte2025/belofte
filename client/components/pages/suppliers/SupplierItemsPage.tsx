@@ -519,7 +519,7 @@ export default function SupplierItemsPage({ supplierId }: SupplierItemsPageProps
                   <div className="col-span-1">#</div>
                   <div className="col-span-4">Item Name</div>
                   <div className="col-span-3">Alias</div>
-                  <div className="col-span-3">Price (GHS)</div>
+                  <div className="col-span-3">Price (₵)</div>
                   <div className="col-span-1">Action</div>
                 </div>
 

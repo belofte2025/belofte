@@ -305,12 +305,8 @@ export function addPDFSummarySection(
   return yPosition + rowHeight + 6;
 }
 
-/**
- * Format currency for PDF reports
- * Uses GHS instead of ₵ symbol for better PDF compatibility
- */
 export function formatPDFCurrency(amount: number): string {
-  return `GHS ${amount.toFixed(2)}`;
+  return `₵ ${amount.toFixed(2)}`;
 }
 
 /**

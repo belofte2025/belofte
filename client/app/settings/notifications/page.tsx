@@ -201,19 +201,19 @@ export default function NotificationsSettingsPage() {
                 <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
                   <p className="text-xs font-medium text-gray-700 mb-1">On sale (cash)</p>
                   <p className="text-xs text-gray-500 font-mono leading-relaxed">
-                    "Dear John, your purchase of 3 item(s) totaling GHS 150.00 has been processed. Thank you!"
+                    "Dear John, your purchase of 3 item(s) totaling ₵150.00 has been processed. Thank you!"
                   </p>
                 </div>
                 <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
                   <p className="text-xs font-medium text-gray-700 mb-1">On credit sale</p>
                   <p className="text-xs text-gray-500 font-mono leading-relaxed">
-                    "Dear John, your purchase of 2 item(s) totaling GHS 300.00 has been processed. Outstanding balance: GHS 500.00. Thank you!"
+                    "Dear John, your purchase of 2 item(s) totaling ₵300.00 has been processed. Outstanding balance: ₵500.00. Thank you!"
                   </p>
                 </div>
                 <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
                   <p className="text-xs font-medium text-gray-700 mb-1">On payment received</p>
                   <p className="text-xs text-gray-500 font-mono leading-relaxed">
-                    "Dear John, payment of GHS 200.00 received. Outstanding balance: GHS 300.00. Thank you!"
+                    "Dear John, payment of ₵200.00 received. Outstanding balance: ₵300.00. Thank you!"
                   </p>
                 </div>
               </div>

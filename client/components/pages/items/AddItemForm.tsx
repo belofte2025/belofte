@@ -254,7 +254,7 @@ export default function AddItemForm() {
                     <div className="col-span-1">#</div>
                     <div className="col-span-4">Item Name</div>
                     <div className="col-span-4">Alias (Optional)</div>
-                    <div className="col-span-2">Price (GHS)</div>
+                    <div className="col-span-2">Price (₵)</div>
                     <div className="col-span-1">Action</div>
                   </div>
 
@@ -365,7 +365,7 @@ export default function AddItemForm() {
             {/* Price */}
             <div>
               <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                Price per Unit (GHS) *
+                Price per Unit (₵) *
               </label>
               <input
                 type="number"

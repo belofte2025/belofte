@@ -186,7 +186,7 @@ export default function ItemDetailsPage({ itemId }: ItemDetailsPageProps) {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (GHS)
+                      Price (₵)
                     </label>
                     <input
                       type="number"

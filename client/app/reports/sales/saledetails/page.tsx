@@ -117,8 +117,8 @@ export default function SupplierSummaryPage() {
               <tr>
                 <th>Item Name</th>
                 <th>Quantity</th>
-                <th>Unit Price (GHS)</th>
-                <th>Total (GHS)</th>
+                <th>Unit Price</th>
+                <th>Total</th>
                 <th>Supplier</th>
               </tr>
             </thead>
@@ -137,7 +137,7 @@ export default function SupplierSummaryPage() {
                 .join("")}
             </tbody>
           </table>
-          <p style="text-align: right; font-weight: bold; margin-top: 8px;">Total: GHS ${formatCurrency(
+          <p style="text-align: right; font-weight: bold; margin-top: 8px;">Total: ${formatCurrency(
             s.items.reduce((sum, i) => sum + i.total, 0)
           )}</p>
         </div>
@@ -148,7 +148,7 @@ export default function SupplierSummaryPage() {
       const content = `
         ${salesContent}
         <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #000; font-size: 18px; font-weight: bold; text-align: right;">
-          Grand Total: GHS ${formatCurrency(grandTotal)}
+          Grand Total: ${formatCurrency(grandTotal)}
         </div>
       `;
 
@@ -162,7 +162,7 @@ export default function SupplierSummaryPage() {
           ).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`,
           summaryStats: [
             { label: "Total Sales", value: filtered.length.toString() },
-            { label: "Grand Total", value: `GHS ${formatCurrency(grandTotal)}` },
+            { label: "Grand Total", value: formatCurrency(grandTotal) },
           ],
         }
       );
@@ -312,7 +312,7 @@ export default function SupplierSummaryPage() {
                         <div className="text-right">
                           <p className="text-sm text-gray-500">Total</p>
                           <p className="text-xl font-bold text-blue-600">
-                            GHS {formatCurrency(total)}
+                            {formatCurrency(total)}
                           </p>
                         </div>
                       </div>
@@ -349,10 +349,10 @@ export default function SupplierSummaryPage() {
                                   {item.quantity}
                                 </td>
                                 <td className="px-4 py-3 text-sm text-right text-gray-600">
-                                  GHS {formatCurrency(item.unitPrice)}
+                                  {formatCurrency(item.unitPrice)}
                                 </td>
                                 <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900">
-                                  GHS {formatCurrency(item.total)}
+                                  {formatCurrency(item.total)}
                                 </td>
                                 <td className="px-4 py-3 text-sm text-gray-600">
                                   {item.supplierName || "N/A"}
@@ -373,7 +373,7 @@ export default function SupplierSummaryPage() {
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Grand Total</p>
                     <p className="text-3xl font-bold text-green-600">
-                      GHS {formatCurrency(grandTotal)}
+                      {formatCurrency(grandTotal)}
                     </p>
                   </div>
                   <button
