@@ -13,7 +13,7 @@ import {
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
   BookOpen, BookText, ArrowLeftRight, LineChart, Receipt, BadgeDollarSign,
-  Bell,
+  Bell, History,
 } from "lucide-react";
 
 const mainItems = [
@@ -55,6 +55,7 @@ const settingsItems = [
   { name: "User Management",    href: "/settings/users",              icon: UserCog,     permission: "users.view" },
   { name: "Item Deduplication", href: "/settings/item-deduplication", icon: Package,     permission: "items.deduplicate" },
   { name: "Notifications",      href: "/settings/notifications",      icon: Bell,        permission: "users.view" },
+  { name: "Audit Log",          href: "/settings/audit",              icon: History,     permission: "audit.view" },
 ];
 
 const inventoryItems = [

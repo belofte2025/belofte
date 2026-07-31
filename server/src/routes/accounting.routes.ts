@@ -8,7 +8,7 @@ import {
   runAccountingBackfill,
 } from "../controllers/accounting.controller";
 import { getInvoices, getInvoice, createInvoice, updateInvoiceStatus, recordInvoicePayment, deleteInvoice } from "../controllers/invoice.controller";
-import { getExpenses, getExpense, createExpense, deleteExpense } from "../controllers/expense.controller";
+import { getExpenses, getExpense, createExpense, updateExpense, deleteExpense } from "../controllers/expense.controller";
 import { getWaybills, getWaybill, createWaybill, updateWaybillStatus } from "../controllers/waybill.controller";
 
 const router = Router();
@@ -42,6 +42,7 @@ router.delete("/invoices/:id",             deleteInvoice);
 router.get("/expenses",             getExpenses);
 router.get("/expenses/:id",         getExpense);
 router.post("/expenses",            createExpense);
+router.put("/expenses/:id",         updateExpense);
 router.delete("/expenses/:id",      deleteExpense);
 
 // Waybills

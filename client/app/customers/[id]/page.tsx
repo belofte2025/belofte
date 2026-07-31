@@ -6,7 +6,7 @@ import CustomerForm from "@/components/pages/customers/CustomerForm";
 import CustomerDebtsSection from "@/components/pages/customers/CustomerDebtsSection";
 import { getCustomerById } from "@/services/customerService";
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RotateCcw } from 'lucide-react';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -49,6 +49,29 @@ export default async function CustomerDetailsPage({ params }: Props) {
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Customer Details</h1>
           <p className="text-gray-600 mt-1">Manage customer information and debts</p>
+        </div>
+
+        {/* Quick links */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          <Link
+            href={`/customers/${resolvedParams.id}/payments`}
+            className="btn btn-secondary text-sm inline-flex items-center gap-1.5"
+          >
+            Record Payment
+          </Link>
+          <Link
+            href={`/customers/${resolvedParams.id}/returns`}
+            className="btn btn-secondary text-sm inline-flex items-center gap-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Returns
+          </Link>
+          <Link
+            href={`/customers/${resolvedParams.id}/statement`}
+            className="btn btn-secondary text-sm inline-flex items-center gap-1.5"
+          >
+            Statement
+          </Link>
         </div>
 
         {/* Customer Form and Debts */}

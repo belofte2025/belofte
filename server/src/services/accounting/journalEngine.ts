@@ -1,5 +1,6 @@
 import { PrismaClient, JournalSource } from "@prisma/client";
 import { ACCOUNT_CODES, getAccountId, assertBalanced, nextEntryNumber, paymentTypeToAccountCode } from "./accounts";
+export { nextEntryNumber };
 
 type Tx = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 
@@ -251,6 +252,72 @@ export async function postInvoiceJournal(
       description: "Invoice issued",
       source: JournalSource.INVOICE,
       invoiceId: invoice.id,
+      postedById,
+      lines: { create: lines },
+    },
+  });
+}
+
+// Customer return journal: DR Sales Returns + CR AR (or Cash) + DR Inventory + CR COGS
+interface ReturnRecord {
+  id: string;
+  totalAmount: number;
+  companyId: string;
+  createdAt: Date;
+  saleType?: string;
+}
+
+interface ReturnItem {
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  costPrice?: number;
+}
+
+export async function postCustomerReturnJournal(
+  prismaOrTx: PrismaClient | Tx,
+  returnRecord: ReturnRecord,
+  items: ReturnItem[],
+  companyId: string,
+  postedById: string
+): Promise<void> {
+  const tx = prismaOrTx as Tx;
+  const entryNumber = await nextEntryNumber(tx, companyId);
+  const amount = returnRecord.totalAmount;
+
+  const salesReturnsId = await getAccountId(tx, companyId, ACCOUNT_CODES.SALES_RETURNS);
+
+  // Credit: reduce AR (for credit sales) or reduce Cash (for cash sales)
+  const creditCode =
+    returnRecord.saleType?.toLowerCase() === "cash"
+      ? ACCOUNT_CODES.CASH_ON_HAND
+      : ACCOUNT_CODES.ACCOUNTS_RECEIVABLE;
+  const creditAccountId = await getAccountId(tx, companyId, creditCode);
+
+  const lines: { accountId: string; debit: number; credit: number; description?: string }[] = [
+    { accountId: salesReturnsId, debit: amount, credit: 0,      description: "Sales return" },
+    { accountId: creditAccountId, debit: 0,      credit: amount, description: `Return ${returnRecord.id}` },
+  ];
+
+  // Reverse COGS if cost is available: DR Inventory + CR COGS
+  const totalCost = items.reduce((s, i) => s + (i.costPrice ?? 0) * i.quantity, 0);
+  if (totalCost > 0) {
+    const inventoryId = await getAccountId(tx, companyId, ACCOUNT_CODES.INVENTORY);
+    const cogsId      = await getAccountId(tx, companyId, ACCOUNT_CODES.COGS);
+    lines.push({ accountId: inventoryId, debit: totalCost, credit: 0,         description: "Inventory return" });
+    lines.push({ accountId: cogsId,      debit: 0,         credit: totalCost, description: "COGS reversal" });
+  }
+
+  assertBalanced(lines);
+
+  await (tx as PrismaClient).journalEntry.create({
+    data: {
+      companyId,
+      entryNumber,
+      date: returnRecord.createdAt,
+      description: "Customer return",
+      source: JournalSource.CUSTOMER_RETURN,
+      customerReturnId: returnRecord.id,
       postedById,
       lines: { create: lines },
     },

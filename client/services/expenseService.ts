@@ -51,6 +51,11 @@ export const createExpense = async (data: CreateExpenseData): Promise<Expense> =
   return res.data;
 };
 
+export const updateExpense = async (id: string, data: CreateExpenseData): Promise<Expense> => {
+  const res = await api.put(`/accounting/expenses/${id}`, data);
+  return res.data;
+};
+
 export const deleteExpense = async (id: string): Promise<void> => {
   await api.delete(`/accounting/expenses/${id}`);
 };

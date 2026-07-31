@@ -93,6 +93,50 @@ export const createExpense = async (req: Request, res: Response) => {
   }
 };
 
+export const updateExpense = async (req: Request, res: Response) => {
+  const companyId  = req.user?.companyId;
+  const postedById = req.user?.id;
+  const { id } = req.params;
+  if (!companyId || !postedById) { res.status(400).json({ error: "Missing auth context" }); return; }
+  const { date, description, amount, accountId, paymentAccountId, reference } = req.body;
+  if (!description || !amount || !accountId || !paymentAccountId) {
+    res.status(400).json({ error: "description, amount, accountId, paymentAccountId required" }); return;
+  }
+  try {
+    const existing = await prisma.expense.findFirst({ where: { id, companyId } });
+    if (!existing) { res.status(404).json({ error: "Expense not found" }); return; }
+
+    const updated = await prisma.expense.update({
+      where: { id },
+      data: {
+        description,
+        amount: parseFloat(amount),
+        accountId,
+        paymentAccountId,
+        reference: reference ?? null,
+        date: date ? new Date(date) : existing.date,
+      },
+      include: { ExpenseAccount: true, PaymentAccount: true },
+    });
+
+    // Reverse old journal and post new one if accounting is enabled
+    try {
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { enableAccounting: true } });
+      if (company?.enableAccounting) {
+        const oldEntry = await prisma.journalEntry.findFirst({ where: { expenseId: id } });
+        if (oldEntry) {
+          await prisma.journalEntry.update({ where: { id: oldEntry.id }, data: { status: "VOID" } });
+        }
+        await postExpenseJournal(prisma as any, updated, companyId, postedById);
+      }
+    } catch (journalErr) { console.error("Expense journal update failed (non-fatal):", journalErr); }
+
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to update expense", detail: err.message });
+  }
+};
+
 export const deleteExpense = async (req: Request, res: Response) => {
   const companyId = req.user?.companyId;
   const { id } = req.params;

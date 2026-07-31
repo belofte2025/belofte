@@ -88,6 +88,17 @@ export async function nextWaybillNumber(tx: Tx, companyId: string): Promise<stri
   return `WB-${String((isNaN(num) ? 0 : num) + 1).padStart(4, "0")}`;
 }
 
+export async function nextReturnNumber(tx: Tx, companyId: string): Promise<string> {
+  const last = await tx.customerReturn.findFirst({
+    where: { companyId },
+    orderBy: { createdAt: "desc" },
+    select: { returnNo: true },
+  });
+  if (!last) return "RTN-0001";
+  const num = parseInt(last.returnNo.replace(/\D/g, ""), 10);
+  return `RTN-${String((isNaN(num) ? 0 : num) + 1).padStart(4, "0")}`;
+}
+
 // Map paymentType string to account code
 export function paymentTypeToAccountCode(paymentType?: string | null, depositAccountCode?: string | null): string {
   if (depositAccountCode) return depositAccountCode;

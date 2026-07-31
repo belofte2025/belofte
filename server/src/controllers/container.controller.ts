@@ -444,33 +444,34 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       },
     });
 
-    // Flatten and group sale items by itemName
-    const soldItemMap: Record<
-      string,
-      { soldQty: number; totalAmount: number }
-    > = {};
+    // Flatten and group sale items by itemName; also tally credit vs cash
+    const soldItemMap: Record<string, { soldQty: number; totalAmount: number }> = {};
+    let creditSales = 0;
+    let cashSales = 0;
 
     for (const sale of sales) {
+      const saleTotal = sale.totalAmount ?? 0;
+      if ((sale.saleType ?? "").toLowerCase() === "credit") {
+        creditSales += saleTotal;
+      } else {
+        cashSales += saleTotal;
+      }
       for (const item of sale.SaleItem) {
         if (!soldItemMap[item.itemName]) {
           soldItemMap[item.itemName] = { soldQty: 0, totalAmount: 0 };
         }
         soldItemMap[item.itemName].soldQty += item.quantity;
-        soldItemMap[item.itemName].totalAmount +=
-          item.quantity * item.unitPrice;
+        soldItemMap[item.itemName].totalAmount += item.quantity * item.unitPrice;
       }
     }
 
     const itemReport = containerItems.map((item: { itemName: string; quantity: number; receivedQty: number; unitPrice: number }) => {
-      const soldData = soldItemMap[item.itemName] || {
-        soldQty: 0,
-        totalAmount: 0,
-      };
+      const soldData = soldItemMap[item.itemName] || { soldQty: 0, totalAmount: 0 };
       const remainingQty = item.quantity - soldData.soldQty;
 
       return {
         itemName: item.itemName,
-        expectedQty: item.quantity,
+        quantity: item.quantity,
         receivedQty: item.receivedQty,
         soldQty: soldData.soldQty,
         remainingQty,
@@ -489,8 +490,10 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       containerNo: container.containerNo,
       arrivalDate: container.arrivalDate,
       companyName: container.Supplier.suppliername,
-      containerItems: itemReport.filter((i: { soldQty: number }) => i.soldQty > 0), // optional: filter only sold
+      containerItems: itemReport, // all items, including unsold (shows remaining stock)
       totalSales,
+      creditSales,
+      cashSales,
     });
     return;
   } catch (error) {

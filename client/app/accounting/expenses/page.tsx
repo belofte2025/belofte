@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Plus, Receipt, AlertCircle } from "lucide-react";
+import { Plus, Receipt, AlertCircle, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getExpenses, Expense } from "@/services/expenseService";
@@ -171,6 +171,7 @@ export default function ExpensesPage() {
                     <th>Account</th>
                     <th>Paid From</th>
                     <th>Amount</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -190,6 +191,14 @@ export default function ExpensesPage() {
                           : "—"}
                       </td>
                       <td className="font-medium">{formatCurrency(exp.amount)}</td>
+                      <td>
+                        <Link
+                          href={`/accounting/expenses/${exp.id}/edit`}
+                          className="icon-btn text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

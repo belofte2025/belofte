@@ -94,6 +94,7 @@ model Company {
   Customer         Customer[]
   CustomerDebt     CustomerDebt[]
   CustomerPayment  CustomerPayment[]
+  CustomerReturn   CustomerReturn[]
   Expense          Expense[]
   Invoice          Invoice[]
   JournalEntry     JournalEntry[]
@@ -142,6 +143,7 @@ model Customer {
   Company         Company          @relation(fields: [companyId], references: [id])
   CustomerDebt    CustomerDebt[]
   CustomerPayment CustomerPayment[]
+  CustomerReturn  CustomerReturn[]
   Invoice         Invoice[]
   SMSLog          SMSLog[]
   Sale            Sale[]
@@ -243,6 +245,7 @@ model Sale {
   Invoice        Invoice[]
   Waybill        Waybill[]
   JournalEntries JournalEntry[]
+  CustomerReturn CustomerReturn[]
 }
 
 model SaleItem {
@@ -362,6 +365,7 @@ model JournalEntry {
   ledgerTransferId  String?
   invoiceId         String?
   expenseId         String?
+  customerReturnId  String?
   reversalOfId      String?
   postedById        String
   createdAt         DateTime           @default(now())
@@ -372,6 +376,7 @@ model JournalEntry {
   LedgerTransfer    LedgerTransfer?    @relation("JELedgerTransfer", fields: [ledgerTransferId], references: [id])
   Invoice           Invoice?           @relation(fields: [invoiceId], references: [id])
   Expense           Expense?           @relation(fields: [expenseId], references: [id])
+  CustomerReturn    CustomerReturn?    @relation(fields: [customerReturnId], references: [id])
   ReversalOf        JournalEntry?      @relation("JEReversalOf", fields: [reversalOfId], references: [id])
   Reversals         JournalEntry[]     @relation("JEReversalOf")
   lines             JournalLine[]
@@ -521,4 +526,34 @@ model Expense {
 
   @@unique([companyId, expenseNumber])
   @@index([companyId])
+}
+
+model CustomerReturn {
+  id          String               @id @default(uuid())
+  returnNo    String
+  customerId  String
+  companyId   String
+  saleId      String?
+  totalAmount Float
+  note        String?
+  createdAt   DateTime             @default(now())
+  Customer    Customer             @relation(fields: [customerId], references: [id])
+  Company     Company              @relation(fields: [companyId], references: [id])
+  Sale        Sale?                @relation(fields: [saleId], references: [id])
+  Items       CustomerReturnItem[]
+  JournalEntries JournalEntry[]
+
+  @@unique([companyId, returnNo])
+  @@index([companyId])
+  @@index([customerId])
+}
+
+model CustomerReturnItem {
+  id         String         @id @default(uuid())
+  returnId   String
+  itemName   String
+  quantity   Int
+  unitPrice  Float
+  costPrice  Float          @default(0)
+  Return     CustomerReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
 }
