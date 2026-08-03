@@ -94,15 +94,12 @@ export const recordSale = async (req: Request, res: Response) => {
           return;
         }
 
-        // Get total received from containers (only warehouse-received containers count as stock)
+        // Get total received from containers (all containers count — legacy containers
+        // pre-dating the lifecycle feature all have "Pending" as their default status)
         const containerItems = await prisma.containerItem.findMany({
           where: {
             itemName,
-            Container: {
-              supplierId,
-              companyId,
-              status: { in: ["Received", "Incomplete", "Done"] },
-            },
+            Container: { supplierId, companyId },
           },
           select: { quantity: true, containerId: true },
         });
