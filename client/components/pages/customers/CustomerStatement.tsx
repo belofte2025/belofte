@@ -4,6 +4,7 @@ import {
   getCustomerStatement,
   getCustomerById,
 } from "@/services/customerService";
+import { getSaleById } from "@/services/salesService";
 import {
   createPDFReport,
   addPDFTable,
@@ -18,8 +19,11 @@ import {
   TrendingUp,
   TrendingDown,
   User,
+  X,
+  ShoppingCart,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/format";
+import { format } from "date-fns";
 import toast from "react-hot-toast";
 
 type StatementEntry = {
@@ -55,6 +59,25 @@ export default function CustomerStatement({ customerId }: Props) {
   const [toDate, setToDate] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Sale detail modal
+  const [modalSale, setModalSale] = useState<any>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  const openSaleModal = async (saleId: string) => {
+    setModalLoading(true);
+    setModalSale(null);
+    try {
+      const data = await getSaleById(saleId);
+      setModalSale(data);
+    } catch {
+      toast.error("Could not load sale details");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const closeModal = () => setModalSale(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -367,9 +390,10 @@ export default function CustomerStatement({ customerId }: Props) {
                   {filteredEntries.map((entry, index) => (
                     <tr
                       key={entry.id}
-                      className={`hover:bg-gray-50 transition-colors duration-200 ${
+                      onClick={() => entry.type === "credit_sale" ? openSaleModal(entry.id) : undefined}
+                      className={`transition-colors duration-200 ${
                         index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      }`}
+                      } ${entry.type === "credit_sale" ? "cursor-pointer hover:bg-blue-50" : "hover:bg-gray-50"}`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {new Date(entry.date).toLocaleDateString()}
@@ -378,11 +402,13 @@ export default function CustomerStatement({ customerId }: Props) {
                         {getTypeBadge(entry.type, entry.description)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        <div
-                          className="max-w-xs truncate"
-                          title={entry.description}
-                        >
-                          {entry.description}
+                        <div className="flex items-center gap-2">
+                          <div className="max-w-xs truncate" title={entry.description}>
+                            {entry.description}
+                          </div>
+                          {entry.type === "credit_sale" && (
+                            <ShoppingCart className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-red-600">
@@ -444,6 +470,108 @@ export default function CustomerStatement({ customerId }: Props) {
             {filteredEntries.length !== 1 ? "s" : ""}
           </div>
         )}
+
+      {/* Sale Detail Modal */}
+      {(modalLoading || modalSale) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={closeModal}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5 text-blue-600" />
+                <h2 className="text-base font-semibold text-gray-900">Sale Details</h2>
+              </div>
+              <button onClick={closeModal} className="icon-btn text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {modalLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+              </div>
+            ) : modalSale && (
+              <div className="px-6 py-4 space-y-4">
+                {/* Meta row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-500 mb-0.5">Date</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {format(new Date(modalSale.createdAt ?? modalSale.saleDate), "MMM d, yyyy")}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-500 mb-0.5">Type</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      (modalSale.saleType ?? "").toLowerCase() === "credit"
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-green-100 text-green-700"
+                    }`}>
+                      {modalSale.saleType ?? "—"}
+                    </span>
+                  </div>
+                  {modalSale.subtotal > 0 && modalSale.discountValue > 0 && (
+                    <>
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500 mb-0.5">Subtotal</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatCurrency(modalSale.subtotal)}</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500 mb-0.5">Discount</p>
+                        <p className="text-sm font-semibold text-red-600">
+                          {modalSale.discountType === "percentage"
+                            ? `${modalSale.discountValue}%`
+                            : formatCurrency(modalSale.discountValue)}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Items table */}
+                {(modalSale.SaleItem ?? modalSale.items ?? []).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Items</p>
+                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Item</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500">Qty</th>
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Unit Price</th>
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {(modalSale.SaleItem ?? modalSale.items ?? []).map((item: any, i: number) => (
+                            <tr key={i} className="hover:bg-gray-50">
+                              <td className="px-4 py-2.5 font-medium text-gray-900">{item.itemName}</td>
+                              <td className="px-4 py-2.5 text-center text-gray-600">{item.quantity}</td>
+                              <td className="px-4 py-2.5 text-right text-gray-600">{formatCurrency(item.unitPrice)}</td>
+                              <td className="px-4 py-2.5 text-right font-semibold text-gray-900">
+                                {formatCurrency(item.quantity * item.unitPrice)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Total */}
+                <div className="flex justify-between items-center border-t border-gray-200 pt-3">
+                  <span className="text-sm font-semibold text-gray-600">Total</span>
+                  <span className="text-xl font-bold text-blue-600">{formatCurrency(modalSale.totalAmount)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
