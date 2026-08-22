@@ -1,12 +1,18 @@
+import api from "@/lib/api";
 import axios from "axios";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-
-const saApi = axios.create({ baseURL: `${BASE_URL}/superadmin` });
+// Separate axios instance that reads sa_token instead of token
+const saApi = axios.create({
+  baseURL: api.defaults.baseURL,
+  timeout: 150000,
+  headers: { "Content-Type": "application/json" },
+});
 
 saApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem("sa_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("sa_token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
@@ -55,31 +61,31 @@ export interface PlatformStats {
 }
 
 export const superAdminLogin = async (email: string, password: string) => {
-  const res = await saApi.post("/login", { email, password });
+  const res = await saApi.post("/superadmin/login", { email, password });
   return res.data as { token: string; user: { email: string; userName: string; role: string; isSuperAdmin: boolean } };
 };
 
 export const getPlatformStats = async (): Promise<PlatformStats> => {
-  const res = await saApi.get("/stats");
+  const res = await saApi.get("/superadmin/stats");
   return res.data;
 };
 
 export const getAllCompanies = async (): Promise<SACompany[]> => {
-  const res = await saApi.get("/companies");
+  const res = await saApi.get("/superadmin/companies");
   return res.data;
 };
 
 export const getCompanyDetail = async (id: string): Promise<SACompanyDetail> => {
-  const res = await saApi.get(`/companies/${id}`);
+  const res = await saApi.get(`/superadmin/companies/${id}`);
   return res.data;
 };
 
 export const toggleCompanySuspend = async (id: string, suspended: boolean): Promise<SACompany> => {
-  const res = await saApi.put(`/companies/${id}/suspend`, { suspended });
+  const res = await saApi.put(`/superadmin/companies/${id}/suspend`, { suspended });
   return res.data;
 };
 
 export const impersonateCompany = async (id: string) => {
-  const res = await saApi.post(`/companies/${id}/impersonate`);
+  const res = await saApi.post(`/superadmin/companies/${id}/impersonate`);
   return res.data as { token: string; user: Record<string, unknown> };
 };
