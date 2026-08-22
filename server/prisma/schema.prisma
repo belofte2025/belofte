@@ -315,6 +315,7 @@ model User {
   createdAt       DateTime         @default(now())
   userName        String
   roleId          String?
+  isSuperAdmin    Boolean          @default(false)
   AuditLog        AuditLog[]
   StockAdjustment StockAdjustment[]
   Company         Company          @relation(fields: [companyId], references: [id])

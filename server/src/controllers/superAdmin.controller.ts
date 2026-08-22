@@ -3,36 +3,39 @@ import bcrypt from "bcrypt";
 import prisma from "../utils/prisma";
 import { generateToken } from "../utils/jwt";
 
+const PLATFORM_COMPANY_NAME = "__PLATFORM__";
+
 // ── Login ─────────────────────────────────────────────────────────────────────
 
 export const superAdminLogin = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    const saEmail = process.env.SUPERADMIN_EMAIL;
-    const saPassword = process.env.SUPERADMIN_PASSWORD;
-
-    if (!saEmail || !saPassword) {
-      res.status(503).json({ error: "Super admin is not configured on this server" });
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
       return;
     }
 
-    if (email !== saEmail || password !== saPassword) {
+    const user = await prisma.user.findFirst({
+      where: { email, isSuperAdmin: true },
+    });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
     const token = generateToken({
-      userId: "superadmin",
-      companyId: "",
-      userName: "Super Admin",
-      email: saEmail,
+      userId: user.id,
+      companyId: user.companyId,
+      userName: user.userName,
+      email: user.email,
       role: "superadmin",
       isSuperAdmin: true,
     });
 
     res.json({
       token,
-      user: { email: saEmail, userName: "Super Admin", role: "superadmin", isSuperAdmin: true },
+      user: { email: user.email, userName: user.userName, role: "superadmin", isSuperAdmin: true },
     });
   } catch (err) {
     res.status(500).json({ error: "Login failed" });
@@ -44,14 +47,14 @@ export const superAdminLogin = async (req: Request, res: Response) => {
 export const getPlatformStats = async (_req: Request, res: Response) => {
   try {
     const [companies, users, customers, sales, totalRevenue] = await Promise.all([
-      prisma.company.count(),
-      prisma.user.count(),
+      prisma.company.count({ where: { NOT: { companyName: PLATFORM_COMPANY_NAME } } }),
+      prisma.user.count({ where: { isSuperAdmin: false } }),
       prisma.customer.count(),
       prisma.sale.count(),
       prisma.sale.aggregate({ _sum: { totalAmount: true } }),
     ]);
 
-    const suspended = await prisma.company.count({ where: { suspended: true } });
+    const suspended = await prisma.company.count({ where: { suspended: true, NOT: { companyName: PLATFORM_COMPANY_NAME } } });
 
     res.json({
       companies,
@@ -71,6 +74,7 @@ export const getPlatformStats = async (_req: Request, res: Response) => {
 export const getAllCompanies = async (_req: Request, res: Response) => {
   try {
     const companies = await prisma.company.findMany({
+      where: { NOT: { companyName: PLATFORM_COMPANY_NAME } },
       include: {
         _count: {
           select: {

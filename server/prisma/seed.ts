@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const prisma = new PrismaClient();
+
+const PLATFORM_COMPANY_NAME = '__PLATFORM__';
 
 const permissions = [
   // Dashboard
@@ -185,7 +190,7 @@ async function main() {
           description: template.description,
           companyId: company.id,
           isDefault: roleKey === 'sales_attendant', // Make sales_attendant the default role
-          permissions: {
+          RolePermission: {
             create: permissionRecords.map(p => ({
               permissionId: p.id,
             })),
@@ -201,7 +206,7 @@ async function main() {
   console.log('\nAssigning existing users to default roles...');
   const usersWithoutRole = await prisma.user.findMany({
     where: { roleId: null },
-    include: { company: true },
+    include: { Company: true },
   });
 
   for (const user of usersWithoutRole) {
@@ -219,6 +224,51 @@ async function main() {
         data: { roleId: defaultRole.id },
       });
       console.log(`  ✓ Assigned user ${user.email} to role "${defaultRole.name}"`);
+    }
+  }
+
+  // 5. Seed super-admin user
+  console.log('\nSeeding super-admin...');
+  const saEmail    = process.env.SUPERADMIN_EMAIL;
+  const saPassword = process.env.SUPERADMIN_PASSWORD;
+
+  if (!saEmail || !saPassword) {
+    console.log('  ⚠ SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set — skipping super-admin seed');
+  } else {
+    // Find or create the platform company (invisible to tenants, holds SA accounts)
+    let platformCompany = await prisma.company.findFirst({
+      where: { companyName: PLATFORM_COMPANY_NAME },
+    });
+    if (!platformCompany) {
+      platformCompany = await prisma.company.create({
+        data: { companyName: PLATFORM_COMPANY_NAME },
+      });
+      console.log('  ✓ Created platform company');
+    }
+
+    const hashedPw = await bcrypt.hash(saPassword, 10);
+    const existing = await prisma.user.findFirst({
+      where: { email: saEmail, isSuperAdmin: true },
+    });
+
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          userName: 'Super Admin',
+          email: saEmail,
+          password: hashedPw,
+          companyId: platformCompany.id,
+          isSuperAdmin: true,
+        },
+      });
+      console.log(`  ✓ Created super-admin: ${saEmail}`);
+    } else {
+      // Refresh password in case it changed in env
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { password: hashedPw },
+      });
+      console.log(`  ✓ Updated super-admin password: ${saEmail}`);
     }
   }
 

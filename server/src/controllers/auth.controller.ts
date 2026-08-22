@@ -118,6 +118,11 @@ export const login = async (req: Request, res: Response) => {
       return;
     }
 
+    if (user.isSuperAdmin) {
+      res.status(403).json({ error: "Please use the super admin portal to log in." });
+      return;
+    }
+
     const company = await prisma.company.findUnique({ where: { id: user.companyId }, select: { suspended: true } });
     if (company?.suspended) {
       res.status(403).json({ error: "This account has been suspended. Please contact support." });
