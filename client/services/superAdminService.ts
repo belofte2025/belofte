@@ -1,9 +1,11 @@
-import api from "@/lib/api";
 import axios from "axios";
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000/api";
 
 // Separate axios instance that reads sa_token instead of token
 const saApi = axios.create({
-  baseURL: api.defaults.baseURL,
+  baseURL: BASE_URL,
   timeout: 150000,
   headers: { "Content-Type": "application/json" },
 });
