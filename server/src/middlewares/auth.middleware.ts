@@ -41,6 +41,7 @@ export const authenticate = async (
       role: string;
       roleId?: string | null;
       permissions?: string[];
+      isSuperAdmin?: boolean;
     };
 
     // Optional: Validate user still exists in DB
