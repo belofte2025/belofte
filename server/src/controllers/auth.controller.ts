@@ -118,6 +118,12 @@ export const login = async (req: Request, res: Response) => {
       return;
     }
 
+    const company = await prisma.company.findUnique({ where: { id: user.companyId }, select: { suspended: true } });
+    if (company?.suspended) {
+      res.status(403).json({ error: "This account has been suspended. Please contact support." });
+      return;
+    }
+
     // Extract permission codes from role
     const permissions = user.Role?.RolePermission.map(rp => rp.Permission.code) || [];
     const roleName = user.Role?.name || 'user';

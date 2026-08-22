@@ -89,6 +89,7 @@ model Company {
   enableAccounting        Boolean          @default(false)
   notificationsEnabled    Boolean          @default(false)
   notificationChannel     String           @default("SMS")
+  suspended               Boolean          @default(false)
   Account          Account[]
   Container        Container[]
   Customer         Customer[]

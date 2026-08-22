@@ -8,6 +8,7 @@ interface TokenPayload {
   role: string;
   roleId?: string | null;
   permissions?: string[];
+  isSuperAdmin?: boolean;
 }
 
 export const generateToken = ({
@@ -18,6 +19,7 @@ export const generateToken = ({
   role,
   roleId,
   permissions = [],
+  isSuperAdmin = false,
 }: TokenPayload) => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -32,7 +34,8 @@ export const generateToken = ({
       userName,
       role,
       roleId,
-      permissions
+      permissions,
+      isSuperAdmin,
     },
     secret,
     {
