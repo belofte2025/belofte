@@ -363,6 +363,7 @@ export const importSuppliers = async (
       const itemsData = XLSX.utils.sheet_to_json<{
         supplierName: string;
         itemName: string;
+        alias?: string;
         price: number;
       }>(itemsSheet);
 
@@ -375,12 +376,14 @@ export const importSuppliers = async (
       const validItems: Array<{
         supplierName: string;
         itemName: string;
+        alias?: string;
         price: number;
       }> = [];
 
       for (const row of itemsData) {
         const supplierName = row.supplierName?.toString()?.trim();
         const itemName = row.itemName?.toString()?.trim();
+        const alias = row.alias?.toString()?.trim() || undefined;
         const price = parseFloat(row.price?.toString() || "0");
 
         if (!supplierName || !itemName || isNaN(price) || price < 0) {
@@ -390,7 +393,7 @@ export const importSuppliers = async (
           continue;
         }
 
-        validItems.push({ supplierName, itemName, price });
+        validItems.push({ supplierName, itemName, alias, price });
       }
 
       // Batch get suppliers
@@ -421,6 +424,7 @@ export const importSuppliers = async (
       const itemsToCreate: Array<{
         supplierId: string;
         itemName: string;
+        alias?: string;
         price: number;
       }> = [];
 
@@ -442,6 +446,7 @@ export const importSuppliers = async (
         itemsToCreate.push({
           supplierId: supplier.id,
           itemName: item.itemName,
+          alias: item.alias,
           price: item.price,
         });
       }

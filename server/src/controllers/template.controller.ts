@@ -102,13 +102,13 @@ export const generateSupplierTemplate = async (
 
     // 2. SUPPLIER ITEMS & PRICES SHEET
     const itemsData = [
-      ["supplierName", "itemName", "price"],
-      ["China Electronics Co", "iPhone 14 Pro Max", 1099.99],
-      ["China Electronics Co", "Samsung Galaxy S23", 999.99],
-      ["European Parts Ltd", "MacBook Air M2", 1199.99],
-      ["European Parts Ltd", 'iPad Pro 12.9"', 1099.99],
-      ["Asian Manufacturing", "Sony WH-1000XM4", 349.99],
-      ["Tech Components Inc", "Dell XPS 13", 899.99],
+      ["supplierName", "itemName", "alias", "price"],
+      ["China Electronics Co", "iPhone 14 Pro Max", "iphone14", 1099.99],
+      ["China Electronics Co", "Samsung Galaxy S23", "s23", 999.99],
+      ["European Parts Ltd", "MacBook Air M2", "", 1199.99],
+      ["European Parts Ltd", 'iPad Pro 12.9"', "", 1099.99],
+      ["Asian Manufacturing", "Sony WH-1000XM4", "", 349.99],
+      ["Tech Components Inc", "Dell XPS 13", "", 899.99],
     ];
     const itemsWs = XLSX.utils.aoa_to_sheet(itemsData);
     XLSX.utils.book_append_sheet(wb, itemsWs, "Items & Prices");
