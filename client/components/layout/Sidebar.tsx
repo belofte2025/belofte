@@ -5,10 +5,10 @@ import Link from "next/link";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
-  Home, Users, X, ShoppingCart, ChevronDown, BarChart3,
+  Home, Users, X, ShoppingCart, ChevronDown, ChevronsLeft, ChevronsRight, BarChart3,
   Container, Package, TrendingUp, TrendingDown, Factory,
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
@@ -73,21 +73,27 @@ const accountingItems = [
   { name: "Reports",           href: "/accounting/reports",                 icon: LineChart },
 ];
 
-type SidebarProps = { open: boolean; setOpen: (v: boolean) => void };
+type SidebarProps = {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
+};
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, collapsed }: { children: React.ReactNode; collapsed: boolean }) {
+  if (collapsed) return <div className="mt-4 mx-3 border-t border-white/10 first:mt-2" />;
   return (
-    <p className="px-3 pt-5 pb-1 text-xs font-semibold uppercase tracking-widest text-gray-400 select-none first:pt-2">
+    <p className="px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-widest text-white/30 select-none first:pt-2">
       {children}
     </p>
   );
 }
 
 function NavItem({
-  href, name, icon: Icon, exact = false, small = false, onClick,
+  href, name, icon: Icon, exact = false, small = false, collapsed = false, onClick,
 }: {
   href: string; name: string; icon: React.ElementType;
-  exact?: boolean; small?: boolean; onClick?: () => void;
+  exact?: boolean; small?: boolean; collapsed?: boolean; onClick?: () => void;
 }) {
   const pathname = usePathname();
   const active = exact ? pathname === href : pathname.startsWith(href);
@@ -95,50 +101,71 @@ function NavItem({
     <Link
       href={href}
       onClick={onClick}
+      title={collapsed ? name : undefined}
       className={clsx(
-        "group flex items-center gap-2.5 rounded-md transition-colors duration-150",
-        small ? "px-3 py-1.5 text-xs" : "px-3 py-2 text-sm",
+        "group relative flex items-center gap-2.5 rounded-lg transition-colors duration-150",
+        collapsed ? "justify-center px-0 py-2.5" : small ? "px-3 py-1.5 text-xs" : "px-3 py-2 text-sm",
         active
-          ? "bg-blue-50 text-blue-700 font-semibold"
-          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          ? "bg-white/10 text-white font-semibold"
+          : "text-white/60 hover:bg-white/5 hover:text-white"
       )}
     >
+      {active && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full" style={{ background: "#00AEEF" }} />
+      )}
       <Icon className={clsx(
         "flex-shrink-0",
-        small ? "h-3.5 w-3.5" : "h-4 w-4",
-        active ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"
+        small ? "h-3.5 w-3.5" : "h-[18px] w-[18px]",
+        active ? "text-[#00AEEF]" : "text-white/40 group-hover:text-white/70"
       )} />
-      <span className="truncate flex-1">{name}</span>
-      {active && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />}
+      {!collapsed && <span className="truncate flex-1">{name}</span>}
     </Link>
   );
 }
 
 function CollapsibleGroup({
-  label, defaultOpen, activeTest, children,
+  label, icon: Icon, defaultOpen, activeTest, collapsed, onExpandSidebar, children,
 }: {
-  label: string; defaultOpen: boolean; activeTest: boolean; children: React.ReactNode;
+  label: string; icon: React.ElementType; defaultOpen: boolean; activeTest: boolean;
+  collapsed: boolean; onExpandSidebar: () => void; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+
+  const handleClick = () => {
+    if (collapsed) {
+      onExpandSidebar();
+      setOpen(true);
+      return;
+    }
+    setOpen(!open);
+  };
+
   return (
     <div>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleClick}
+        title={collapsed ? label : undefined}
         className={clsx(
-          "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150",
+          "w-full flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors duration-150",
+          collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2",
           activeTest
-            ? "text-blue-700 bg-blue-50"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            ? "text-white bg-white/10"
+            : "text-white/60 hover:bg-white/5 hover:text-white"
         )}
       >
-        <span className="flex-1 text-left truncate">{label}</span>
-        <ChevronDown className={clsx(
-          "h-3.5 w-3.5 flex-shrink-0 text-gray-400 transition-transform duration-200",
-          open && "rotate-180"
-        )} />
+        <Icon className={clsx(collapsed ? "h-[18px] w-[18px]" : "h-4 w-4 flex-shrink-0", activeTest ? "text-[#00AEEF]" : "text-white/40")} />
+        {!collapsed && (
+          <>
+            <span className="flex-1 text-left truncate">{label}</span>
+            <ChevronDown className={clsx(
+              "h-3.5 w-3.5 flex-shrink-0 text-white/30 transition-transform duration-200",
+              open && "rotate-180"
+            )} />
+          </>
+        )}
       </button>
-      {open && (
-        <div className="mt-0.5 ml-3 pl-3 border-l border-gray-200 space-y-0.5">
+      {!collapsed && open && (
+        <div className="mt-0.5 ml-3 pl-3 border-l border-white/10 space-y-0.5">
           {children}
         </div>
       )}
@@ -146,11 +173,27 @@ function CollapsibleGroup({
   );
 }
 
-export default function Sidebar({ open, setOpen }: SidebarProps) {
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
+
+export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   const [salesSubOpen, setSalesSubOpen] = useState(pathname.startsWith("/reports/sales"));
+  // The icon-only rail only ever applies on desktop — the mobile drawer must
+  // always render fully expanded, even if the desktop collapse preference is on.
+  const isDesktop = useIsDesktop();
+  const collapsedUi = collapsed && isDesktop;
 
   const visibleMain     = mainItems.filter(i => hasPermission(i.permission));
   const visibleReports  = reportItems.filter(i => hasPermission(i.permission));
@@ -159,6 +202,8 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const visibleInv      = inventoryItems.filter(i => hasPermission(i.permission));
 
   const close = () => setOpen(false);
+  const expandSidebar = () => setCollapsed(false);
+  const initials = (user?.userName || user?.email || "U").charAt(0).toUpperCase();
 
   return (
     <>
@@ -173,42 +218,51 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
       {/* Sidebar panel */}
       <aside className={clsx(
-        "fixed top-0 left-0 z-50 w-64 h-screen flex flex-col",
-        "bg-[#f8fafc] border-r border-gray-200",
-        "transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+        "fixed top-0 left-0 z-50 h-screen flex flex-col",
+        collapsed ? "lg:w-20" : "lg:w-64",
+        "w-64",
+        "transform transition-[transform,width] duration-300 ease-in-out lg:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full"
-      )}>
+      )} style={{ background: "#0A2540" }}>
 
         {/* Logo bar */}
-        <div className="h-14 flex items-center justify-between px-4 border-b flex-shrink-0" style={{ background: "#0A2540", borderColor: "#1a3a5c" }}>
-          <div className="flex items-center gap-2.5">
+        <div className={clsx(
+          "h-14 flex items-center border-b border-white/10 flex-shrink-0",
+          collapsedUi ? "justify-center px-2" : "justify-between px-4"
+        )}>
+          <div className="flex items-center gap-2.5 min-w-0">
             <Image src="/icon/eyo.png" alt="EYO" width={22} height={22} className="object-contain block flex-shrink-0" priority />
-            <span className="text-sm font-bold text-white tracking-tight">PETROS</span>
+            {!collapsedUi && <span className="text-sm font-bold text-white tracking-tight truncate">PETROS</span>}
           </div>
-          <button onClick={close} className="lg:hidden p-1.5 rounded-md transition-colors" style={{ color: "rgba(255,255,255,0.7)" }}>
-            <X className="w-4 h-4" />
-          </button>
+          {!collapsedUi && (
+            <button onClick={close} className="lg:hidden p-1.5 rounded-md text-white/70 hover:text-white transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+        <nav className={clsx("flex-1 overflow-y-auto overflow-x-hidden py-2 space-y-0.5", collapsedUi ? "px-2.5" : "px-2")}>
 
           {visibleMain.length > 0 && (
             <>
-              <SectionLabel>Main</SectionLabel>
+              <SectionLabel collapsed={collapsedUi}>Main</SectionLabel>
               {visibleMain.map(({ name, href, icon }) => (
-                <NavItem key={href} href={href} name={name} icon={icon} exact={href === "/dashboard"} onClick={close} />
+                <NavItem key={href} href={href} name={name} icon={icon} exact={href === "/dashboard"} collapsed={collapsedUi} onClick={close} />
               ))}
             </>
           )}
 
           {visibleReports.length > 0 && (
             <>
-              <SectionLabel>Reports</SectionLabel>
+              <SectionLabel collapsed={collapsedUi}>Reports</SectionLabel>
               <CollapsibleGroup
                 label="Reports"
+                icon={BarChart3}
                 defaultOpen={pathname.startsWith("/reports")}
                 activeTest={pathname.startsWith("/reports")}
+                collapsed={collapsedUi}
+                onExpandSidebar={expandSidebar}
               >
                 {visibleReports.map(({ name, href, icon: Icon, sub }) => {
                   if (sub) {
@@ -219,16 +273,16 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                           className={clsx(
                             "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
                             pathname.startsWith(href)
-                              ? "text-blue-700 font-semibold"
-                              : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                              ? "text-white font-semibold"
+                              : "text-white/60 hover:text-white hover:bg-white/5"
                           )}
                         >
-                          <Icon className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                          <Icon className="h-3.5 w-3.5 flex-shrink-0 text-white/40" />
                           <span className="flex-1 text-left truncate">{name}</span>
-                          <ChevronDown className={clsx("h-3 w-3 text-gray-400 flex-shrink-0 transition-transform duration-200", salesSubOpen && "rotate-180")} />
+                          <ChevronDown className={clsx("h-3 w-3 text-white/30 flex-shrink-0 transition-transform duration-200", salesSubOpen && "rotate-180")} />
                         </button>
                         {salesSubOpen && (
-                          <div className="ml-3 pl-3 border-l border-gray-200 space-y-0.5 mt-0.5">
+                          <div className="ml-3 pl-3 border-l border-white/10 space-y-0.5 mt-0.5">
                             {sub.map(({ name: n, href: h, icon: I }) => (
                               <NavItem key={h} href={h} name={n} icon={I} exact onClick={close} small />
                             ))}
@@ -245,20 +299,23 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
           {visibleInv.length > 0 && (
             <>
-              <SectionLabel>Inventory</SectionLabel>
+              <SectionLabel collapsed={collapsedUi}>Inventory</SectionLabel>
               {visibleInv.map(({ name, href, icon }) => (
-                <NavItem key={href} href={href} name={name} icon={icon} onClick={close} />
+                <NavItem key={href} href={href} name={name} icon={icon} collapsed={collapsedUi} onClick={close} />
               ))}
             </>
           )}
 
           {visibleUtils.length > 0 && (
             <>
-              <SectionLabel>Tools</SectionLabel>
+              <SectionLabel collapsed={collapsedUi}>Tools</SectionLabel>
               <CollapsibleGroup
                 label="Utilities"
+                icon={Settings}
                 defaultOpen={pathname.startsWith("/utilities")}
                 activeTest={pathname.startsWith("/utilities")}
+                collapsed={collapsedUi}
+                onExpandSidebar={expandSidebar}
               >
                 {visibleUtils.map(({ name, href, icon }) => (
                   <NavItem key={href} href={href} name={name} icon={icon} exact onClick={close} small />
@@ -267,11 +324,14 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
             </>
           )}
 
-          <SectionLabel>Accounting</SectionLabel>
+          <SectionLabel collapsed={collapsedUi}>Accounting</SectionLabel>
           <CollapsibleGroup
             label="Accounting"
+            icon={BookOpen}
             defaultOpen={pathname.startsWith("/accounting")}
             activeTest={pathname.startsWith("/accounting")}
+            collapsed={collapsedUi}
+            onExpandSidebar={expandSidebar}
           >
             {accountingItems.map(({ name, href, icon }) => (
               <NavItem key={href} href={href} name={name} icon={icon} exact onClick={close} small />
@@ -280,21 +340,48 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
           {visibleSettings.length > 0 && (
             <>
-              <SectionLabel>Settings</SectionLabel>
+              <SectionLabel collapsed={collapsedUi}>Settings</SectionLabel>
               {visibleSettings.map(({ name, href, icon }) => (
-                <NavItem key={href} href={href} name={name} icon={icon} onClick={close} />
+                <NavItem key={href} href={href} name={name} icon={icon} collapsed={collapsedUi} onClick={close} />
               ))}
             </>
           )}
 
         </nav>
 
-        {/* Developer credit */}
-        <div className="px-3 py-2 flex-shrink-0">
-          <p className="text-xs text-gray-400 text-center leading-snug">
-            Developed by <span className="font-medium text-gray-500">EYO Solutions Ghana</span>
-          </p>
-          <p className="text-xs text-gray-400 text-center">0246462398</p>
+        {/* User card + collapse toggle */}
+        <div className="flex-shrink-0 border-t border-white/10">
+          <div className={clsx("flex items-center gap-2.5 px-3 py-3", collapsedUi && "justify-center px-2")}>
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-semibold text-sm"
+              style={{ background: "#00AEEF" }}
+              title={collapsedUi ? (user?.userName || user?.email || "User") : undefined}
+            >
+              {initials}
+            </div>
+            {!collapsedUi && (
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate">{user?.userName || "User"}</p>
+                <p className="text-xs text-white/40 truncate">{user?.role || user?.email}</p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={clsx(
+              "hidden lg:flex w-full items-center gap-2 px-3 py-2 text-xs text-white/40 hover:text-white hover:bg-white/5 transition-colors border-t border-white/10",
+              collapsedUi && "justify-center px-0"
+            )}
+          >
+            {collapsed ? <ChevronsRight className="w-4 h-4" /> : <><ChevronsLeft className="w-4 h-4" /> Collapse</>}
+          </button>
+
+          {!collapsedUi && (
+            <p className="px-3 pb-2 pt-1 text-[10px] text-white/25 text-center leading-snug">
+              EYO Solutions Ghana · 0246462398
+            </p>
+          )}
         </div>
 
       </aside>
