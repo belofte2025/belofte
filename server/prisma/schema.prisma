@@ -231,6 +231,7 @@ model SMSLog {
 model Sale {
   id             String         @id @default(uuid())
   saleType       String
+  paymentMethod  String?
   sourceType     String
   sourceId       String
   customerId     String

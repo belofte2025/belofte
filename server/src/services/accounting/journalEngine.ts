@@ -14,6 +14,7 @@ interface SaleItem {
 interface SaleRecord {
   id: string;
   saleType: string;
+  paymentMethod?: string | null;
   totalAmount: number;
   subtotal: number;
   companyId: string;
@@ -31,8 +32,11 @@ export async function postSaleJournal(
   const entryNumber = await nextEntryNumber(tx, companyId);
   const amount = sale.totalAmount;
 
-  // Determine debit account: credit sale → AR, cash sale → Cash on Hand
-  const debitCode = sale.saleType === "CREDIT" ? ACCOUNT_CODES.ACCOUNTS_RECEIVABLE : ACCOUNT_CODES.CASH_ON_HAND;
+  // Determine debit account: credit sale → AR, cash sale → Cash/Bank/MoMo based on payment method
+  const isCredit = sale.saleType?.toLowerCase() === "credit";
+  const debitCode = isCredit
+    ? ACCOUNT_CODES.ACCOUNTS_RECEIVABLE
+    : paymentTypeToAccountCode(sale.paymentMethod);
   const debitAccountId   = await getAccountId(tx, companyId, debitCode);
   const revenueAccountId = await getAccountId(tx, companyId, ACCOUNT_CODES.SALES_REVENUE);
 
@@ -57,7 +61,7 @@ export async function postSaleJournal(
       companyId,
       entryNumber,
       date: sale.createdAt,
-      description: `${sale.saleType === "CREDIT" ? "Credit" : "Cash"} sale`,
+      description: `${isCredit ? "Credit" : "Cash"} sale`,
       source: JournalSource.SALE,
       saleId: sale.id,
       postedById,

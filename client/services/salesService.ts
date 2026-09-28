@@ -38,6 +38,7 @@ export const updateSale = async (
   id: string,
   data: {
     saleType?: string;
+    paymentMethod?: string;
     saleDate?: string;
     customerId?: string;
     items?: Array<{ itemName: string; quantity: number; unitPrice: number }>;

@@ -4,9 +4,20 @@ import { logUpdate, EntityType } from "../utils/auditLogger";
 import { postSaleJournal } from "../services/accounting/journalEngine";
 import notificationService from "../services/notification.service";
 
+const VALID_PAYMENT_METHODS = ["CASH", "MOMO", "BANK"];
+
 export const recordSale = async (req: Request, res: Response) => {
-  const { saleType, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
+  const { saleType, paymentMethod, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
   const companyId = req.user?.companyId;
+
+  // Payment method only applies to non-credit sales; default to CASH for backward compatibility
+  // with older clients that don't send it yet.
+  const isCredit = saleType?.toLowerCase() === "credit";
+  const resolvedPaymentMethod = isCredit
+    ? null
+    : VALID_PAYMENT_METHODS.includes((paymentMethod || "").toUpperCase())
+    ? paymentMethod.toUpperCase()
+    : "CASH";
   const userPermissions = req.user?.permissions || [];
   const canEditPrice = userPermissions.includes("sales.edit_price");
 
@@ -220,6 +231,7 @@ export const recordSale = async (req: Request, res: Response) => {
     const sale = await prisma.sale.create({
       data: {
         saleType,
+        paymentMethod: resolvedPaymentMethod,
         sourceType,
         sourceId,
         customerId,
@@ -413,7 +425,7 @@ export const getSaleById = async (req: Request, res: Response) => {
 };
 export const updateSale = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { saleType, items, saleDate, customerId: newCustomerId } = req.body;
+  const { saleType, paymentMethod, items, saleDate, customerId: newCustomerId } = req.body;
   const userId = req.user?.id;
   const companyId = req.user?.companyId;
 
@@ -482,8 +494,19 @@ export const updateSale = async (req: Request, res: Response) => {
     }
     const totalAmount = Math.max(0, subtotal - discountAmount);
 
+    const effectiveSaleType = saleType ?? existing.saleType;
+    const isCredit = effectiveSaleType?.toLowerCase() === "credit";
+    const resolvedPaymentMethod = isCredit
+      ? null
+      : paymentMethod !== undefined
+      ? VALID_PAYMENT_METHODS.includes((paymentMethod || "").toUpperCase())
+        ? paymentMethod.toUpperCase()
+        : "CASH"
+      : undefined; // undefined → Prisma leaves the existing value untouched
+
     const updateData: any = {
       saleType,
+      paymentMethod: resolvedPaymentMethod,
       customerId: targetCustomerId,
       subtotal,
       totalAmount,

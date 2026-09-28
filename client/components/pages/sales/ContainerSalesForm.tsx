@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { getContainerItemsWithSales, getContainerById } from "@/services/containerService";
 import { getCustomers } from "@/services/customerService";
 import { recordSale } from "@/services/salesService";
-import { toast } from "react-hot-toast";
+import PaymentMethodSelector, { PaymentMethod } from "./PaymentMethodSelector";
+import { toast } from "@/lib/toast";
 import Select from "react-select";
 import { useParams, useRouter } from "next/navigation";
 import { Dialog } from "@headlessui/react";
@@ -17,7 +18,6 @@ import {
   Trash2,
   Receipt,
   CreditCard,
-  Banknote,
   Package,
   User,
   CheckCircle,
@@ -76,6 +76,7 @@ export default function ContainerSalesForm() {
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerOption | null>(null);
   const [saleType, setSaleType] = useState<"cash" | "credit">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [saleDate, setSaleDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -239,6 +240,7 @@ export default function ContainerSalesForm() {
         sourceId: containerId,
         customerId,
         saleType,
+        paymentMethod: saleType === "cash" ? paymentMethod : undefined,
         saleDate,
         discountType: discountType,
         discountValue: discountValue,
@@ -393,55 +395,12 @@ export default function ContainerSalesForm() {
             </div>
 
             {/* Sale Type */}
-            <div className="bg-white p-6 shadow-sm border border-gray-200 border-b-0">
-              <h3 className="font-semibold text-gray-900 mb-4">
-                Payment Method
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setSaleType("cash")}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                    saleType === "cash"
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <Banknote
-                    className={`w-6 h-6 mx-auto mb-2 ${
-                      saleType === "cash" ? "text-green-600" : "text-gray-400"
-                    }`}
-                  />
-                  <div
-                    className={`text-sm font-medium ${
-                      saleType === "cash" ? "text-green-700" : "text-gray-700"
-                    }`}
-                  >
-                    Cash Sale
-                  </div>
-                </button>
-                <button
-                  onClick={() => setSaleType("credit")}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                    saleType === "credit"
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <CreditCard
-                    className={`w-6 h-6 mx-auto mb-2 ${
-                      saleType === "credit" ? "text-blue-600" : "text-gray-400"
-                    }`}
-                  />
-                  <div
-                    className={`text-sm font-medium ${
-                      saleType === "credit" ? "text-blue-700" : "text-gray-700"
-                    }`}
-                  >
-                    Credit Sale
-                  </div>
-                </button>
-              </div>
-            </div>
+            <PaymentMethodSelector
+              saleType={saleType}
+              setSaleType={setSaleType}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+            />
 
             {/* Cart Summary */}
             <div className="bg-white p-6 shadow-sm border border-gray-200">
