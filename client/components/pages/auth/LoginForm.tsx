@@ -382,9 +382,12 @@ export default function LoginForm() {
           </div>
 
           {/* Footer */}
-          <div className="text-center mt-6">
+          <div className="text-center mt-6 space-y-1">
             <p className="text-sm text-gray-500">
               © 2024 PETROS. All rights reserved.
+            </p>
+            <p className="text-xs font-medium text-gray-400 tracking-wide">
+              SYSTEM DEVELOPED BY EYO SOLUTIONS | 0246462398
             </p>
           </div>
         </div>
