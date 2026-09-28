@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { updateSupplierItem } from "@/services/supplierService";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import { ArrowLeft, Package, Factory, Edit, Save, X } from "lucide-react";
 import Link from "next/link";
 import Badge from "@/components/ui/Badge";

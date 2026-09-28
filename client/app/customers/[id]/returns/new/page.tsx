@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, RotateCcw } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { createCustomerReturn } from "@/services/customerReturnService";
 import { getCustomerById } from "@/services/customerService";
 import { getSalesByCustomerId } from "@/services/salesService";

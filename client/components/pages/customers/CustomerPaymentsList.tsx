@@ -9,7 +9,7 @@ import { getCustomerById } from "@/services/customerService";
 import { useCallback } from "react";
 import { formatCurrency } from "@/utils/format";
 import { CreditCard, Calendar, Trash2, Receipt, User, FileText, Edit2 } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { Dialog } from "@headlessui/react";
 
 type Props = {

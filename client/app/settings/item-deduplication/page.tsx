@@ -11,7 +11,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ProtectedPage } from "@/components/auth/ProtectedPage";
 import { getSuppliers } from "@/services/supplierService";

@@ -12,7 +12,7 @@ import {
   Edit2,
   Trash2,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import {
   createCustomerDebt,
   getCustomerDebts,

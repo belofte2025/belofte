@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSupplierItems, addSupplierItem, updateSupplierItem, deleteSupplierItem, getSupplierById } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import { ArrowLeft, Plus, Trash2, Package, X, TrendingUp, Edit, Search, Tag } from "lucide-react";
 import Link from "next/link";
 import { Dialog } from "@headlessui/react";

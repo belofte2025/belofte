@@ -7,7 +7,7 @@ import { ArrowLeft, Receipt, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { createExpense } from "@/services/expenseService";
 import { getAccounts, Account } from "@/services/accountingService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const PAYMENT_ACCOUNT_CODES = ["1010", "1020", "1030"];
 

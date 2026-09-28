@@ -10,7 +10,7 @@ import { createWaybill } from "@/services/waybillService";
 import { getInvoice } from "@/services/invoiceService";
 import { getSupplierItemsWithSales } from "@/services/supplierService";
 import Select from "react-select";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 type SupplierItem = {
   id: string;

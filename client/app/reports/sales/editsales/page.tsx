@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { listSales, searchSalesByItem, updateSale, bulkUpdateSales } from "@/services/salesService";
 import { getAllCustomers } from "@/services/customerService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { Dialog } from "@headlessui/react";
 import Select from "react-select";
 import BulkEditModal from "@/components/sales/BulkEditModal";

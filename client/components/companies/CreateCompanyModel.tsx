@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { X, Building2 } from 'lucide-react';
 import { createCompany } from '@/services/companyService';
-import toast from 'react-hot-toast';
+import toast from "@/lib/toast";
 
 interface CreateCompanyModalProps {
   isOpen: boolean;

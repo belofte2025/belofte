@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, X, Printer, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getWaybills, updateWaybillStatus, Waybill } from "@/services/waybillService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "badge-yellow",

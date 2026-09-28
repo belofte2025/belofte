@@ -6,7 +6,7 @@ import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { getJournalEntry, reverseJournalEntry, JournalEntry } from "@/services/accountingService";
 import { formatCurrency } from "@/utils/format";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const sourceBadge: Record<string, string> = {
   SALE: "badge-blue",

@@ -16,7 +16,7 @@ import {
 import { useRouter, useParams } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { getContainerSalesSummary } from "@/services/containerService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface Item {

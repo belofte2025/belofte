@@ -8,7 +8,7 @@ import {
   ChevronRight, Receipt, Truck, RefreshCw, CheckCircle2, AlertTriangle, ExternalLink,
 } from "lucide-react";
 import { getAccounts, runBackfill, BackfillResult } from "@/services/accountingService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const navCards = [
   { href: "/accounting/chart-of-accounts", icon: BookOpen,       title: "Chart of Accounts",  description: "Manage your account codes and categories",        color: "text-blue-600 bg-blue-50" },

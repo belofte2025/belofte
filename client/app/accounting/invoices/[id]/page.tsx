@@ -6,7 +6,7 @@ import { ArrowLeft, Printer, Truck, FileDown, FileSpreadsheet } from "lucide-rea
 import { useRouter, useParams } from "next/navigation";
 import { getInvoice, updateInvoiceStatus, Invoice } from "@/services/invoiceService";
 import { formatCurrency } from "@/utils/format";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 async function exportPDF(invoice: Invoice) {
   const { default: jsPDF } = await import("jspdf");

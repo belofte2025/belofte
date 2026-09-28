@@ -12,7 +12,7 @@ import {
   type Permission,
   type CreateRoleData,
 } from "@/services/roleService";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import { Shield, Plus, Edit, Trash2, Users, X } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import clsx from "clsx";

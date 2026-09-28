@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAccounts, createManualJournal, Account } from "@/services/accountingService";
 import { formatCurrency } from "@/utils/format";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 interface JournalLine {
   accountId: string;

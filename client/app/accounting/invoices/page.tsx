@@ -6,7 +6,7 @@ import { Plus, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getInvoices, Invoice } from "@/services/invoiceService";
 import { formatCurrency } from "@/utils/format";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "badge-gray",

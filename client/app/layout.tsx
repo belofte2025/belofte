@@ -3,7 +3,7 @@ import "./globals.css";
 import { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/context/AuthContext";
-import { Toaster } from "react-hot-toast";
+import { Toaster } from "@/components/ui/toaster";
 import { OffloadProvider } from "@/context/offloadContext";
 import PwaRegister from "@/components/PwaRegister";
 
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A2540",
+  themeColor: "#0f172a",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AuthProvider>
           <OffloadProvider>{children}</OffloadProvider>
         </AuthProvider>
-        <Toaster position="top-right" />
+        <Toaster />
         <PwaRegister />
       </body>
     </html>

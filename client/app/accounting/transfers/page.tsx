@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, ArrowLeftRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getLedgerTransfers, LedgerTransfer } from "@/services/accountingService";
 import { formatCurrency } from "@/utils/format";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 export default function TransfersPage() {
   const router = useRouter();

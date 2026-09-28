@@ -14,7 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import { getAllContainers } from "@/services/containerService";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 interface ContainerData {
   id: string;

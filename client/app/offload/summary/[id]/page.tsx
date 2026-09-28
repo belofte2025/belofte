@@ -18,7 +18,7 @@ import {
   getContainerById,
   getOffloadSummary,
 } from "@/services/containerService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface SummaryItem {

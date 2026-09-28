@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { createAccount } from "@/services/accountingService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const ACCOUNT_TYPES = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "COGS", "EXPENSE"] as const;
 type AccountType = (typeof ACCOUNT_TYPES)[number];

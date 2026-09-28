@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSalesSummaryBySupplier } from "@/services/reportService";
 import { format } from "date-fns";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 type SupplierSalesItem = {

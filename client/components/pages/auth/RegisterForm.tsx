@@ -15,7 +15,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 export default function RegisterForm() {
   const { setUser } = useAuth();

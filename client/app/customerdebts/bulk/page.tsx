@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { bulkCreateCustomerDebts } from "@/services/customerDebtService";
 import { getCustomers } from "@/services/customerService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 interface Customer {
   id: string;

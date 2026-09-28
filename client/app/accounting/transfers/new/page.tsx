@@ -11,7 +11,7 @@ import {
   Account,
   LedgerTransferData,
 } from "@/services/accountingService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const PARTY_TYPES = ["CUSTOMER", "SUPPLIER", "ACCOUNT"] as const;
 type PartyType = (typeof PARTY_TYPES)[number];

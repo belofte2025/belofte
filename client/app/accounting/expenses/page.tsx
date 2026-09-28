@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { getExpenses, Expense } from "@/services/expenseService";
 import { getAccounts, Account } from "@/services/accountingService";
 import { formatCurrency } from "@/utils/format";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const PAYMENT_ACCOUNT_CODES = ["1010", "1020", "1030"];
 

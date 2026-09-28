@@ -8,7 +8,7 @@ import {
   checkCustomerName,
 } from "@/services/customerService";
 import { User, Phone, Save, AlertCircle, ArrowLeft, AlertTriangle } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import { Dialog } from "@headlessui/react";
 
 type Props = {

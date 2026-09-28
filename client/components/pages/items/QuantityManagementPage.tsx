@@ -21,7 +21,7 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 
 interface QuantityManagementPageProps {
   supplierId: string;

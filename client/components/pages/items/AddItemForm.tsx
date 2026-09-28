@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { addSupplierItem } from "@/services/supplierService";
 import { getSuppliers } from "@/services/supplierService";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import { ArrowLeft, Package, Factory, X, Plus } from "lucide-react";
 import Link from "next/link";
 

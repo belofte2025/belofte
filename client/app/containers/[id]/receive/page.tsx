@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getContainerById, getContainerItems, receiveWithVerification } from "@/services/containerService";
 import { getSupplierItems } from "@/services/supplierService";
 import Select from "react-select";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 
 type ContainerItem = {

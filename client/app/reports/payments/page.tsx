@@ -17,7 +17,7 @@ import {
 import { getAllPayments } from "@/services/paymentService";
 import { formatCurrency } from "@/utils/format";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 type Payment = {
   id: string;

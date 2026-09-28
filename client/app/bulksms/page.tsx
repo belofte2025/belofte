@@ -4,7 +4,7 @@ import { useState } from "react";
 import { sendBulkDebtReminders } from "@/services/smsService";
 import { Send, AlertCircle, CheckCircle, Users } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 // Define expected types for results
 interface SMSResultItem {

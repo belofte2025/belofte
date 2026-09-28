@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Building2 } from "lucide-react";
 import { getCompanies, Company } from "@/services/companyService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import CompanyList from "@/components/companies/CompanyList";
 import CreateCompanyModal from "@/components/companies/CreateCompanyModel";
 

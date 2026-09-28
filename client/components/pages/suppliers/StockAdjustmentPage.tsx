@@ -17,7 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 interface StockAdjustmentPageProps {

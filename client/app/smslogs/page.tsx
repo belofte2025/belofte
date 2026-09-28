@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getSMSLogs, SMSLog } from '@/services/smsService';
 import { MessageSquare, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import toast from 'react-hot-toast';
+import toast from "@/lib/toast";
 
 export default function SMSLogsPage() {
   const [logs, setLogs] = useState<SMSLog[]>([]);

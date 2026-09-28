@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { getAllCustomers } from "@/services/customerService";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 interface Customer {
   id: string;

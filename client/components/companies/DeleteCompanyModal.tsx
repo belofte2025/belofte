@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { deleteCompany, Company } from '@/services/companyService';
-import toast from 'react-hot-toast';
+import toast from "@/lib/toast";
 
 interface DeleteCompanyModalProps {
   company: Company;

@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft, Plus, Search, RefreshCw, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAccounts, seedDefaultAccounts, Account } from "@/services/accountingService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const typeColors: Record<string, string> = {
   ASSET: "badge-blue",

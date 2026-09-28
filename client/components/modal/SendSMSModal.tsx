@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X, Send, Loader2 } from "lucide-react";
 import { sendSingleSMS } from "@/services/smsService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 interface SendSMSModalProps {
   isOpen: boolean;

@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, FileText, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getJournalEntries, JournalEntry } from "@/services/accountingService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const sourceBadge: Record<string, string> = {
   SALE: "badge-blue",

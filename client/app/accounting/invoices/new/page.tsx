@@ -10,7 +10,7 @@ import { createInvoice } from "@/services/invoiceService";
 import { getSupplierItemsWithSales } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
 import Select from "react-select";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 type SupplierItem = {
   id: string;

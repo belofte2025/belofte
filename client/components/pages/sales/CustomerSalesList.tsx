@@ -7,7 +7,7 @@ import { getSuppliers, getSupplierItems } from "@/services/supplierService";
 import { formatCurrency } from "@/utils/format";
 import { ShoppingCart, TrendingUp, Receipt, Edit, Trash2, Plus, Minus, X } from "lucide-react";
 import { Dialog } from "@headlessui/react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 type Props = {
   customerId: string;

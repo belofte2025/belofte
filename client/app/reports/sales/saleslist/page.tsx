@@ -18,7 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { listSales, deleteSaleById, updateSale } from "@/services/salesService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { Dialog } from "@headlessui/react";
 
 interface SaleItem {

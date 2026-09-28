@@ -14,7 +14,7 @@ import {
   Save,
   MessageSquare,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 type Props = {
   customerId: string;

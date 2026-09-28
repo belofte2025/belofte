@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/utils/format";
 import { format } from "date-fns";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 type StatementEntry = {
   id: string;

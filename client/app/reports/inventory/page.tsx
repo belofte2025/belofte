@@ -6,7 +6,7 @@ import { ArrowLeft, Download, Package, Search, TrendingDown } from "lucide-react
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getInventoryReport } from "@/services/inventoryService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface InventoryItem {

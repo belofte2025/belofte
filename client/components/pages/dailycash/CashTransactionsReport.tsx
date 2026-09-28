@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getCashSalesAndPayments } from "@/services/reportService";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import {
   TrendingUp,
   CreditCard,

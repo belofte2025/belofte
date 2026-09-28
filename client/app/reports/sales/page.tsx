@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { getDetailedSalesReport } from "@/services/reportService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { createHTMLReportTemplate, getHTML2PDFOptions } from "@/lib/pdfTemplates";
 
 interface SaleItem {

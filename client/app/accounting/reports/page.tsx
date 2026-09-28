@@ -14,7 +14,7 @@ import {
   ReportRow,
 } from "@/services/accountingService";
 import { formatCurrency } from "@/utils/format";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 type Tab = "trial-balance" | "income-statement" | "balance-sheet";
 

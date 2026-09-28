@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ArrowLeft, Bell, MessageSquare, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import {
   getNotificationSettings,
   updateNotificationSettings,

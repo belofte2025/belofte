@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { X, Lock, Eye, EyeOff } from "lucide-react";
 import { updatePassword } from "@/services/authService";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 interface UpdatePasswordModalProps {
   isOpen: boolean;
