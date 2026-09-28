@@ -172,6 +172,7 @@ startDate: string, endDate: string, companyId: string) => {
   const transformedSales = sales.map((sale) => ({
     id: sale.id,
     saleType: sale.saleType,
+    paymentMethod: sale.paymentMethod,
     customerName: sale.Customer?.customerName || "Walk-in",
     totalAmount: sale.totalAmount,
     createdAt: sale.createdAt,

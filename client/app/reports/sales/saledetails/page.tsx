@@ -29,8 +29,16 @@ type SupplierSalesSummary = {
   saleId: string;
   customerName: string;
   saleType: string;
+  paymentMethod: string | null;
   createdAt: string;
   items: SupplierSalesItem[];
+};
+
+const paymentMethodLabel = (m: string | null) => {
+  const method = (m || "CASH").toUpperCase();
+  if (method === "MOMO") return "Momo";
+  if (method === "BANK") return "Bank";
+  return "Cash";
 };
 
 export default function SupplierSummaryPage() {
@@ -39,6 +47,7 @@ export default function SupplierSummaryPage() {
     []
   );
   const [search, setSearch] = useState("");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<"all" | "CASH" | "MOMO" | "BANK">("all");
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -77,10 +86,15 @@ export default function SupplierSummaryPage() {
 
   const filtered = useMemo(
     () =>
-      supplierSales.filter((s) =>
-        search ? s.saleType?.toLowerCase().includes(search.toLowerCase()) : true
-      ),
-    [supplierSales, search]
+      supplierSales.filter((s) => {
+        if (search && s.saleType?.toLowerCase() !== search.toLowerCase()) return false;
+        if (search === "cash" && paymentMethodFilter !== "all") {
+          const method = (s.paymentMethod || "CASH").toUpperCase();
+          if (method !== paymentMethodFilter) return false;
+        }
+        return true;
+      }),
+    [supplierSales, search, paymentMethodFilter]
   );
 
   const grandTotal = useMemo(
@@ -108,7 +122,7 @@ export default function SupplierSummaryPage() {
         .map(
           (s) => `
         <div class="sale no-page-break">
-          <h3 style="margin-top: 20px; color: #1f2937;">Customer: ${s.customerName} (${s.saleType})</h3>
+          <h3 style="margin-top: 20px; color: #1f2937;">Customer: ${s.customerName} (${s.saleType}${s.saleType.toLowerCase() === "cash" ? " - " + paymentMethodLabel(s.paymentMethod) : ""})</h3>
           <p><strong>Date:</strong> ${new Date(
             s.createdAt
           ).toLocaleDateString()}</p>
@@ -200,7 +214,7 @@ export default function SupplierSummaryPage() {
 
             {/* Filters */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-2">
@@ -210,14 +224,38 @@ export default function SupplierSummaryPage() {
                   </label>
                   <select
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPaymentMethodFilter("all");
+                    }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   >
                     <option value="">All Types</option>
-                    <option value="cash">Cash</option>
+                    <option value="cash">Paid</option>
                     <option value="credit">Credit</option>
                   </select>
                 </div>
+
+                {search === "cash" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4" />
+                        Payment Method
+                      </div>
+                    </label>
+                    <select
+                      value={paymentMethodFilter}
+                      onChange={(e) => setPaymentMethodFilter(e.target.value as "all" | "CASH" | "MOMO" | "BANK")}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    >
+                      <option value="all">All Methods</option>
+                      <option value="CASH">Cash</option>
+                      <option value="MOMO">Momo</option>
+                      <option value="BANK">Bank</option>
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -304,6 +342,11 @@ export default function SupplierSummaryPage() {
                             >
                               {sale.saleType}
                             </span>
+                            {sale.saleType.toLowerCase() === "cash" && (
+                              <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {paymentMethodLabel(sale.paymentMethod)}
+                              </span>
+                            )}
                             <span className="text-sm text-gray-500">
                               {new Date(sale.createdAt).toLocaleDateString()}
                             </span>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { 
-  ArrowLeft, 
-  Download, 
-  Calendar, 
-  BarChart3
+import {
+  ArrowLeft,
+  Download,
+  Calendar,
+  BarChart3,
+  Filter,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
@@ -24,11 +25,22 @@ interface SaleItem {
 interface Sale {
   id: string;
   saleType: string;
+  paymentMethod: string | null;
   customerName: string;
   totalAmount: number;
   createdAt: string;
   items: SaleItem[];
 }
+
+type SaleTypeFilter = "all" | "paid" | "credit";
+type PaymentMethodFilter = "all" | "CASH" | "MOMO" | "BANK";
+
+const paymentMethodLabel = (m: string | null) => {
+  const method = (m || "CASH").toUpperCase();
+  if (method === "MOMO") return "Momo";
+  if (method === "BANK") return "Bank";
+  return "Cash";
+};
 
 export default function SalesReportPage() {
   const router = useRouter();
@@ -43,6 +55,8 @@ export default function SalesReportPage() {
     const date = new Date();
     return date.toISOString().split('T')[0];
   });
+  const [saleTypeFilter, setSaleTypeFilter] = useState<SaleTypeFilter>("all");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<PaymentMethodFilter>("all");
 
   const fetchSalesReport = useCallback(async () => {
     if (!startDate || !endDate) {
@@ -72,12 +86,27 @@ export default function SalesReportPage() {
     fetchSalesReport();
   }, [fetchSalesReport]);
 
+  // Apply sale-type / payment-method filters
+  const filteredSales = useMemo(() => {
+    if (!Array.isArray(sales)) return [];
+    return sales.filter((s) => {
+      const isPaid = s.saleType.toLowerCase() === "cash";
+      if (saleTypeFilter === "paid" && !isPaid) return false;
+      if (saleTypeFilter === "credit" && isPaid) return false;
+      if (saleTypeFilter === "paid" && paymentMethodFilter !== "all") {
+        const method = (s.paymentMethod || "CASH").toUpperCase();
+        if (method !== paymentMethodFilter) return false;
+      }
+      return true;
+    });
+  }, [sales, saleTypeFilter, paymentMethodFilter]);
+
   // Calculate summary stats for PDF export
-  const totalRevenue = Array.isArray(sales) ? sales.reduce((sum, sale) => sum + sale.totalAmount, 0) : 0;
-  const totalTransactions = Array.isArray(sales) ? sales.length : 0;
+  const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+  const totalTransactions = filteredSales.length;
   const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-  const cashSales = Array.isArray(sales) ? sales.filter(s => s.saleType.toLowerCase() === 'cash') : [];
-  const creditSales = Array.isArray(sales) ? sales.filter(s => s.saleType.toLowerCase() === 'credit') : [];
+  const cashSales = filteredSales.filter(s => s.saleType.toLowerCase() === 'cash');
+  const creditSales = filteredSales.filter(s => s.saleType.toLowerCase() === 'credit');
   const totalCashRevenue = cashSales.reduce((sum, s) => sum + s.totalAmount, 0);
   const totalCreditRevenue = creditSales.reduce((sum, s) => sum + s.totalAmount, 0);
 
@@ -93,20 +122,22 @@ export default function SalesReportPage() {
               <th>Date</th>
               <th>Customer</th>
               <th>Type</th>
+              <th>Method</th>
               <th>Amount</th>
               <th>Items</th>
             </tr>
           </thead>
           <tbody>
-            ${Array.isArray(sales) ? sales.map(sale => `
+            ${filteredSales.map(sale => `
               <tr class="no-page-break">
                 <td>${new Date(sale.createdAt).toLocaleDateString()}</td>
                 <td>${sale.customerName}</td>
                 <td>${sale.saleType}</td>
+                <td>${sale.saleType.toLowerCase() === "cash" ? paymentMethodLabel(sale.paymentMethod) : "-"}</td>
                 <td class="text-right font-bold">${formatCurrency(sale.totalAmount)}</td>
                 <td class="text-center">${Array.isArray(sale.items) ? sale.items.length : 0} items</td>
               </tr>
-            `).join('') : ''}
+            `).join('')}
           </tbody>
         </table>
       `;
@@ -153,7 +184,7 @@ export default function SalesReportPage() {
           </div>
           <button
             onClick={exportToPDF}
-            disabled={loading || !Array.isArray(sales) || sales.length === 0}
+            disabled={loading || filteredSales.length === 0}
             className="btn btn-success"
           >
             <Download className="w-4 h-4" />
@@ -161,9 +192,9 @@ export default function SalesReportPage() {
           </button>
         </div>
 
-        {/* Date filters */}
+        {/* Date & type filters */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
             <div className="form-group">
               <label className="form-label flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />Start Date</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input" />
@@ -172,6 +203,36 @@ export default function SalesReportPage() {
               <label className="form-label flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />End Date</label>
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input" />
             </div>
+            <div className="form-group">
+              <label className="form-label flex items-center gap-1.5"><Filter className="w-3.5 h-3.5" />Sale Type</label>
+              <select
+                value={saleTypeFilter}
+                onChange={(e) => {
+                  setSaleTypeFilter(e.target.value as SaleTypeFilter);
+                  setPaymentMethodFilter("all");
+                }}
+                className="input"
+              >
+                <option value="all">All</option>
+                <option value="paid">Paid</option>
+                <option value="credit">Credit</option>
+              </select>
+            </div>
+            {saleTypeFilter === "paid" && (
+              <div className="form-group">
+                <label className="form-label flex items-center gap-1.5"><Filter className="w-3.5 h-3.5" />Payment Method</label>
+                <select
+                  value={paymentMethodFilter}
+                  onChange={(e) => setPaymentMethodFilter(e.target.value as PaymentMethodFilter)}
+                  className="input"
+                >
+                  <option value="all">All Methods</option>
+                  <option value="CASH">Cash</option>
+                  <option value="MOMO">Momo</option>
+                  <option value="BANK">Bank</option>
+                </select>
+              </div>
+            )}
             <button onClick={fetchSalesReport} disabled={loading} className="btn btn-primary">
               <BarChart3 className="w-4 h-4" />
               Generate
@@ -180,7 +241,7 @@ export default function SalesReportPage() {
         </div>
 
         {/* Summary stats */}
-        {!loading && Array.isArray(sales) && sales.length > 0 && (
+        {!loading && filteredSales.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="stat-card">
               <p className="stat-label">Total Revenue</p>
@@ -226,11 +287,11 @@ export default function SalesReportPage() {
               <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
               <span className="ml-3 text-sm text-gray-500">Loading...</span>
             </div>
-          ) : !Array.isArray(sales) || sales.length === 0 ? (
+          ) : filteredSales.length === 0 ? (
             <div className="text-center py-12">
               <BarChart3 className="mx-auto h-10 w-10 text-gray-300 mb-3" />
               <p className="text-sm font-medium text-gray-900">No Sales Found</p>
-              <p className="text-xs text-gray-500 mt-1">No sales found for the selected date range</p>
+              <p className="text-xs text-gray-500 mt-1">No sales found for the selected date range and filters</p>
             </div>
           ) : (
             <div className="table-wrapper border-0">
@@ -240,12 +301,13 @@ export default function SalesReportPage() {
                     <th>Date</th>
                     <th>Customer</th>
                     <th>Type</th>
+                    <th>Method</th>
                     <th>Amount</th>
                     <th>Items</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sales.map((sale) => (
+                  {filteredSales.map((sale) => (
                     <tr key={sale.id}>
                       <td className="text-gray-500">{new Date(sale.createdAt).toLocaleDateString()}</td>
                       <td className="font-medium">{sale.customerName}</td>
@@ -254,6 +316,7 @@ export default function SalesReportPage() {
                           {sale.saleType}
                         </span>
                       </td>
+                      <td className="text-gray-500">{sale.saleType.toLowerCase() === "cash" ? paymentMethodLabel(sale.paymentMethod) : "-"}</td>
                       <td className="font-semibold">{formatCurrency(sale.totalAmount)}</td>
                       <td className="text-gray-500">{Array.isArray(sale.items) ? sale.items.length : 0}</td>
                     </tr>

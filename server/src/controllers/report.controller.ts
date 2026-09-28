@@ -142,12 +142,14 @@ export const getSalesSummaryBySupplier = async (
       id: string;
       Customer: { customerName: string } | null;
       saleType: string;
+      paymentMethod: string | null;
       createdAt: Date;
       SaleItem: { itemName: string; quantity: number; unitPrice: number }[];
     }) => ({
       saleId: sale.id,
       customerName: sale.Customer?.customerName || "Walk-in",
       saleType: sale.saleType,
+      paymentMethod: sale.paymentMethod,
       createdAt: sale.createdAt,
       items: sale.SaleItem.map((item: { itemName: string; quantity: number; unitPrice: number }) => ({
         itemName: item.itemName,
