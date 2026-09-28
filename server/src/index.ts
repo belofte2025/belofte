@@ -26,6 +26,7 @@ import accountingRoutes from "./routes/accounting.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import customerReturnRoutes from "./routes/customerReturn.routes";
 import superAdminRoutes from "./routes/superAdmin.routes";
+import settingsRoutes from "./routes/settings.routes";
 dotenv.config();
 
 const app = express();
@@ -69,6 +70,7 @@ app.use("/api/accounting", accountingRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/returns", customerReturnRoutes);
 app.use("/api/superadmin", superAdminRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // ───────────────────── Static (Next.js export) ─────────────────────
 const clientBuildPath = path.join(__dirname, "../../client/out");

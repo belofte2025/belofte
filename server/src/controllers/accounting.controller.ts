@@ -453,8 +453,6 @@ export const runAccountingBackfill = async (req: Request, res: Response) => {
 
       for (const sale of sales) {
         try {
-          const already = await prisma.journalEntry.findFirst({ where: { saleId: sale.id } });
-          if (already) { skipped++; continue; }
           if (!dryRun) {
             await postSaleJournal(prisma as any, sale, (sale as any).SaleItem, companyId, postedById);
           }
@@ -474,8 +472,6 @@ export const runAccountingBackfill = async (req: Request, res: Response) => {
 
       for (const payment of payments) {
         try {
-          const already = await prisma.journalEntry.findFirst({ where: { customerPaymentId: payment.id } });
-          if (already) { skipped++; continue; }
           if (!dryRun) {
             await postCustomerPaymentJournal(prisma as any, payment, companyId, postedById);
           }
