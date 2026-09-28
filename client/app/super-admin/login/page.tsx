@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Eye, EyeOff, Building2, Users, BarChart3, Lock } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { superAdminLogin } from "@/services/superAdminService";
 
 const features = [

@@ -7,13 +7,14 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   Home, Users, X, ShoppingCart, ChevronDown, ChevronsLeft, ChevronsRight, BarChart3,
   Container, Package, TrendingUp, TrendingDown, Factory,
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
   BookOpen, BookText, ArrowLeftRight, LineChart, Receipt, BadgeDollarSign,
-  Bell, History,
+  Bell, History, Building2,
 } from "lucide-react";
 
 const mainItems = [
@@ -97,30 +98,35 @@ function NavItem({
 }) {
   const pathname = usePathname();
   const active = exact ? pathname === href : pathname.startsWith(href);
-  return (
+  const link = (
     <Link
       href={href}
       onClick={onClick}
-      title={collapsed ? name : undefined}
       className={clsx(
-        "group relative flex items-center gap-2.5 rounded-lg transition-colors duration-150",
+        "group flex items-center gap-2.5 transition-colors duration-150",
         collapsed ? "justify-center px-0 py-2.5" : small ? "px-3 py-1.5 text-xs" : "px-3 py-2 text-sm",
         active
-          ? "bg-white/10 text-white font-semibold"
+          ? "bg-blue-600 text-white font-semibold"
           : "text-white/60 hover:bg-white/5 hover:text-white"
       )}
     >
-      {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full" style={{ background: "#00AEEF" }} />
-      )}
       <Icon className={clsx(
         "flex-shrink-0",
         small ? "h-3.5 w-3.5" : "h-[18px] w-[18px]",
-        active ? "text-[#00AEEF]" : "text-white/40 group-hover:text-white/70"
+        active ? "text-white" : "text-white/40 group-hover:text-white/70"
       )} />
       {!collapsed && <span className="truncate flex-1">{name}</span>}
     </Link>
   );
+
+  if (collapsed) {
+    return (
+      <Tooltip text={name} side="right" wrapperClassName="block">
+        {link}
+      </Tooltip>
+    );
+  }
+  return link;
 }
 
 function CollapsibleGroup({
@@ -140,30 +146,39 @@ function CollapsibleGroup({
     setOpen(!open);
   };
 
+  const button = (
+    <button
+      onClick={handleClick}
+      className={clsx(
+        "w-full flex items-center gap-2.5 text-sm font-medium transition-colors duration-150",
+        collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2",
+        activeTest
+          ? "text-white bg-white/10"
+          : "text-white/60 hover:bg-white/5 hover:text-white"
+      )}
+    >
+      <Icon className={clsx(collapsed ? "h-[18px] w-[18px]" : "h-4 w-4 flex-shrink-0", activeTest ? "text-blue-400" : "text-white/40")} />
+      {!collapsed && (
+        <>
+          <span className="flex-1 text-left truncate">{label}</span>
+          <ChevronDown className={clsx(
+            "h-3.5 w-3.5 flex-shrink-0 text-white/30 transition-transform duration-200",
+            open && "rotate-180"
+          )} />
+        </>
+      )}
+    </button>
+  );
+
   return (
     <div>
-      <button
-        onClick={handleClick}
-        title={collapsed ? label : undefined}
-        className={clsx(
-          "w-full flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors duration-150",
-          collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2",
-          activeTest
-            ? "text-white bg-white/10"
-            : "text-white/60 hover:bg-white/5 hover:text-white"
-        )}
-      >
-        <Icon className={clsx(collapsed ? "h-[18px] w-[18px]" : "h-4 w-4 flex-shrink-0", activeTest ? "text-[#00AEEF]" : "text-white/40")} />
-        {!collapsed && (
-          <>
-            <span className="flex-1 text-left truncate">{label}</span>
-            <ChevronDown className={clsx(
-              "h-3.5 w-3.5 flex-shrink-0 text-white/30 transition-transform duration-200",
-              open && "rotate-180"
-            )} />
-          </>
-        )}
-      </button>
+      {collapsed ? (
+        <Tooltip text={label} side="right" wrapperClassName="block">
+          {button}
+        </Tooltip>
+      ) : (
+        button
+      )}
       {!collapsed && open && (
         <div className="mt-0.5 ml-3 pl-3 border-l border-white/10 space-y-0.5">
           {children}
@@ -218,12 +233,12 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
 
       {/* Sidebar panel */}
       <aside className={clsx(
-        "fixed top-0 left-0 z-50 h-screen flex flex-col",
+        "fixed top-0 left-0 z-50 h-screen flex flex-col bg-slate-900",
         collapsed ? "lg:w-20" : "lg:w-64",
         "w-64",
         "transform transition-[transform,width] duration-300 ease-in-out lg:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full"
-      )} style={{ background: "#0A2540" }}>
+      )}>
 
         {/* Logo bar */}
         <div className={clsx(
@@ -238,6 +253,22 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
             <button onClick={close} className="lg:hidden p-1.5 rounded-md text-white/70 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
+          )}
+        </div>
+
+        {/* Company banner */}
+        <div
+          className={clsx(
+            "flex-shrink-0 border-b border-white/10 flex items-center gap-2.5 bg-blue-600/10",
+            collapsedUi ? "justify-center px-2 py-3" : "px-4 py-3"
+          )}
+          title={user?.company?.companyName || "Company"}
+        >
+          <Building2 className="h-5 w-5 flex-shrink-0 text-blue-400" />
+          {!collapsedUi && (
+            <span className="text-base font-bold text-white leading-tight truncate">
+              {user?.company?.companyName || "Company"}
+            </span>
           )}
         </div>
 
@@ -353,8 +384,7 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
         <div className="flex-shrink-0 border-t border-white/10">
           <div className={clsx("flex items-center gap-2.5 px-3 py-3", collapsedUi && "justify-center px-2")}>
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-semibold text-sm"
-              style={{ background: "#00AEEF" }}
+              className="w-8 h-8 bg-blue-600 flex items-center justify-center flex-shrink-0 text-white font-semibold text-sm"
               title={collapsedUi ? (user?.userName || user?.email || "User") : undefined}
             >
               {initials}

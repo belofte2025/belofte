@@ -27,11 +27,6 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --radius-sm: 0.375rem;
-  --radius: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
   --bottom-nav-h: 64px;
 }
 
@@ -46,18 +41,13 @@
   --text-lg:   1.25rem;    /* 20px  (was 18px) */
   --text-xl:   1.375rem;   /* 22px  (was 20px) */
   --text-2xl:  1.625rem;   /* 26px  (was 24px) */
-  /* EYO Solutions brand cyan — overrides all Tailwind blue-* utilities */
-  --color-blue-50:  #e0f7ff;
-  --color-blue-100: #b8eeff;
-  --color-blue-200: #82e0ff;
-  --color-blue-300: #45cfff;
-  --color-blue-400: #1abdff;
-  --color-blue-500: #00aeef;
-  --color-blue-600: #0099d6;
-  --color-blue-700: #007cb5;
-  --color-blue-800: #005a8c;
-  --color-blue-900: #003d60;
-  --color-blue-950: #002340;
+  /* Sharp corners everywhere — matches market-inventory's design system */
+  --radius-sm: 0rem;
+  --radius-md: 0rem;
+  --radius-lg: 0rem;
+  --radius-xl: 0rem;
+  --radius-2xl: 0rem;
+  --radius-3xl: 0rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -95,7 +85,7 @@ body {
 
 /* ── Stat card ── */
 .stat-card {
-  @apply bg-white rounded-lg border border-gray-200 p-4 shadow-sm;
+  @apply bg-white shadow-sm ring-1 ring-black/5 p-4;
 }
 
 .stat-card .stat-label {
@@ -108,7 +98,7 @@ body {
 
 /* ── Card ── */
 .card {
-  @apply bg-white shadow-sm border border-gray-200 rounded-lg p-4 lg:p-6 transition-all duration-200;
+  @apply bg-white shadow-sm ring-1 ring-black/5 p-4 lg:p-6 transition-all duration-200;
 }
 
 .card:hover {
@@ -158,7 +148,7 @@ body {
 
 /* ── Responsive table wrapper ── */
 .table-wrapper {
-  @apply w-full overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm;
+  @apply w-full overflow-x-auto bg-white shadow-sm ring-1 ring-black/5;
 }
 
 table.data-table {
@@ -195,7 +185,7 @@ table.data-table tbody tr:hover td {
 }
 
 .mobile-list-item {
-  @apply bg-white rounded-lg border border-gray-200 p-4 shadow-sm;
+  @apply bg-white shadow-sm ring-1 ring-black/5 p-4;
 }
 
 /* ── Modal ── */
@@ -227,7 +217,7 @@ table.data-table tbody tr:hover td {
 
 /* ── Badge ── */
 .badge {
-  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  @apply inline-flex items-center px-2 py-0.5 text-xs font-medium;
 }
 .badge-blue   { @apply bg-blue-100 text-blue-800; }
 .badge-green  { @apply bg-green-100 text-green-800; }
@@ -337,4 +327,4 @@ table.data-table tbody tr:hover td {
 .react-select__menu { background-color: white !important; }
 .react-select__option { color: #111827 !important; }
 .react-select__option--is-focused { background-color: #f3f4f6 !important; }
-.react-select__option--is-selected { background-color: #0099d6 !important; color: white !important; }
+.react-select__option--is-selected { background-color: #2563eb !important; color: white !important; }

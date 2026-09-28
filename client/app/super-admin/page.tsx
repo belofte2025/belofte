@@ -5,7 +5,7 @@ import {
   ShieldCheck, Building2, Users, ShoppingCart, TrendingUp,
   LogOut, Search, Ban, CheckCircle2, ChevronRight, UserCheck,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import {
   getPlatformStats, getAllCompanies, toggleCompanySuspend,
   PlatformStats, SACompany,
@@ -81,7 +81,7 @@ export default function SuperAdminDashboard() {
       {/* Topbar */}
       <header
         className="h-14 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm"
-        style={{ background: "#0A2540" }}
+        style={{ background: "#0f172a" }}
       >
         <div className="flex items-center gap-3">
           <div
