@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import {
   getContainers,
   createContainer,
@@ -18,8 +19,11 @@ import {
   listContainerItemsWithSales,
   getContainerSalesSummary,
 } from "../controllers/container.controller";
+import { scanPackingList } from "../controllers/packingListScan.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { requirePermission } from "../middlewares/authorizePermission";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const router = Router();
 
@@ -91,6 +95,40 @@ router.get("/", getContainers);
  *         description: Container created
  */
 router.post("/", requirePermission("containers.create"), createContainer);
+
+/**
+ * @openapi
+ * /containers/scan-packing-list:
+ *   post:
+ *     tags:
+ *       - Containers
+ *     summary: Extract line items from a photo of a packing list using Claude vision
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Extracted items
+ *       400:
+ *         description: No image uploaded or unsupported type
+ *       502:
+ *         description: Image analysis failed
+ */
+router.post(
+  "/scan-packing-list",
+  requirePermission("containers.create"),
+  upload.single("image"),
+  scanPackingList
+);
 
 /**
  * @openapi

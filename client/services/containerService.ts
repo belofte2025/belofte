@@ -167,3 +167,16 @@ export const getContainerSalesSummary = async (id: string) => {
     })),
   };
 };
+
+export const scanPackingListImage = async (
+  file: File
+): Promise<{ itemName: string; quantity: number; unitPrice: number }[]> => {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const res = await api.post("/containers/scan-packing-list", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 60000,
+  });
+  return res.data.items;
+};

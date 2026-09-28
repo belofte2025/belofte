@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createContainer } from "@/services/containerService";
 import { getSuppliers, getSupplierItems } from "@/services/supplierService";
 import * as XLSX from "xlsx";
-import { toast } from "react-hot-toast";
+import { toast } from "@/lib/toast";
 import {
   Container,
   Upload,
@@ -20,8 +20,10 @@ import {
   Plus,
   X,
   AlertTriangle,
+  ScanLine,
 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
+import ScanPackingListModal from "./ScanPackingListModal";
 
 type ParsedExcelItem = {
   itemName: string;
@@ -140,8 +142,9 @@ export default function AddContainerForm({ initialStatus = "Received" }: { initi
   >([]);
   const [supplierItems, setSupplierItems] = useState<SupplierItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<ParsedExcelItem[]>([]);
-  const [mode, setMode] = useState<"none" | "excel" | "supplier">("none");
+  const [mode, setMode] = useState<"none" | "excel" | "supplier" | "scan">("none");
   const [saving, setSaving] = useState(false);
+  const [showScanModal, setShowScanModal] = useState(false);
 
   // New item form states
   const [showAddItemForm, setShowAddItemForm] = useState(false);
@@ -181,6 +184,21 @@ export default function AddContainerForm({ initialStatus = "Received" }: { initi
     setSelectedItems(parsed);
     setMode("excel");
     setWarnings(computeWarnings(parsed, supplierItems));
+  };
+
+  const handleScannedItems = (
+    items: { itemName: string; quantity: number; unitPrice: number }[]
+  ) => {
+    setMode((prev) => (prev === "none" ? "scan" : prev));
+    setSelectedItems((prev) => {
+      const existingNames = new Set(prev.map((p) => p.itemName.toLowerCase()));
+      const newOnes = items.filter(
+        (i) => !existingNames.has(i.itemName.toLowerCase())
+      );
+      const merged = [...prev, ...newOnes];
+      setWarnings(computeWarnings(merged, supplierItems));
+      return merged;
+    });
   };
 
   const handleQuantityChange = (itemName: string, qty: number) => {
@@ -490,7 +508,7 @@ export default function AddContainerForm({ initialStatus = "Received" }: { initi
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Add Items to Container
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <button
                     onClick={() => {
                       if (!supplierId) {
@@ -547,12 +565,29 @@ export default function AddContainerForm({ initialStatus = "Received" }: { initi
                       Excel format example
                     </div>
                   </a>
+
+                  <button
+                    onClick={() => setShowScanModal(true)}
+                    className="p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 group"
+                  >
+                    <ScanLine className="w-8 h-8 text-gray-400 group-hover:text-purple-500 mx-auto mb-2" />
+                    <div className="text-sm font-medium text-gray-700 group-hover:text-purple-700">
+                      Scan Packing List
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Photo or image upload
+                    </div>
+                  </button>
                 </div>
 
                 {mode !== "none" && (
                   <div className="mt-4 flex items-center justify-between">
                     <Badge variant={mode === "excel" ? "success" : "info"}>
-                      {mode === "excel" ? "Excel Import" : "Supplier Catalog"}{" "}
+                      {mode === "excel"
+                        ? "Excel Import"
+                        : mode === "scan"
+                        ? "Image Scan"
+                        : "Supplier Catalog"}{" "}
                       Active
                     </Badge>
                     <button
@@ -1059,6 +1094,14 @@ export default function AddContainerForm({ initialStatus = "Received" }: { initi
               </div>
             </div>
           </div>
+        )}
+
+        {/* Scan Packing List Modal */}
+        {showScanModal && (
+          <ScanPackingListModal
+            onClose={() => setShowScanModal(false)}
+            onAddItems={handleScannedItems}
+          />
         )}
 
         {/* Help Section */}
