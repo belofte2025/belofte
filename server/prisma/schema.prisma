@@ -237,6 +237,7 @@ model Sale {
   customerId     String
   companyId      String
   totalAmount    Float
+  amountPaid     Float          @default(0)
   createdAt      DateTime       @default(now())
   discountType   String?
   discountValue  Float          @default(0)

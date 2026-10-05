@@ -3,6 +3,7 @@ import prisma from "../utils/prisma";
 import * as XLSX from "xlsx";
 import type { Customer, CustomerPayment } from "@prisma/client";
 import notificationService from "../services/notification.service";
+import { computeCustomerBalance } from "../services/customerBalance.service";
 
 export const checkCustomerName = async (req: Request, res: Response) => {
   try {
@@ -104,7 +105,7 @@ export const getCustomers = async (req: Request, res: Response) => {
         balance: true,
         Sale: {
           where: { saleType: "credit" },
-          select: { totalAmount: true },
+          select: { totalAmount: true, amountPaid: true },
         },
         CustomerPayment: {
           select: { amount: true },
@@ -121,9 +122,10 @@ export const getCustomers = async (req: Request, res: Response) => {
 
     // Calculate accurate balance for each customer
     const enrichedCustomers = customers.map((customer) => {
-      // Calculate total credit sales
+      // Unpaid portion of credit sales — a deposit taken at the point of sale
+      // never becomes a receivable.
       const totalCreditSales = customer.Sale.reduce(
-        (sum, s) => sum + s.totalAmount,
+        (sum, s) => sum + (s.totalAmount - s.amountPaid),
         0
       );
 
@@ -202,7 +204,7 @@ export const getCustomerByIdBal = async (req: Request, res: Response) => {
         phone: true,
         Sale: {
           where: { saleType: "credit" },
-          select: { totalAmount: true },
+          select: { totalAmount: true, amountPaid: true },
         },
         CustomerPayment: {
           select: { amount: true },
@@ -221,9 +223,9 @@ export const getCustomerByIdBal = async (req: Request, res: Response) => {
       return;
     }
 
-    // Calculate balance (same as getCustomers)
+    // Calculate balance (same as getCustomers) — net of any deposit taken at sale time
     const totalCreditSales = customer.Sale.reduce(
-      (sum, s) => sum + s.totalAmount,
+      (sum, s) => sum + (s.totalAmount - s.amountPaid),
       0
     );
 
@@ -322,10 +324,12 @@ export const createCustomerPayment = async (req: Request, res: Response) => {
     // Send notification (fire-and-forget, non-fatal)
     try {
       if (companyId && updatedCustomer) {
+        // Derived from transactions — the stored balance column omits credit sales.
+        const outstanding = await computeCustomerBalance(customerId, companyId);
         const msg = notificationService.paymentMessage(
           updatedCustomer.customerName,
           parseFloat(amount),
-          updatedCustomer.balance
+          outstanding
         );
         notificationService.send({
           companyId,
@@ -384,6 +388,7 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
         id: true,
         createdAt: true,
         totalAmount: true,
+        amountPaid: true,
         SaleItem: true,
       },
     });
@@ -427,8 +432,9 @@ export const getCustomerStatement = async (req: Request, res: Response) => {
               `${i.quantity}x ${i.itemName}`
           )
           .join(", "),
-        debit: s.totalAmount, // Amount owed (increases balance)
-        credit: 0,
+        debit: s.totalAmount, // Full invoice (increases balance)
+        // Deposit taken at the point of sale — settles part of the invoice immediately
+        credit: s.amountPaid,
         status: "completed",
       })),
 

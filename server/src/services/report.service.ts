@@ -175,6 +175,7 @@ startDate: string, endDate: string, companyId: string) => {
     paymentMethod: sale.paymentMethod,
     customerName: sale.Customer?.customerName || "Walk-in",
     totalAmount: sale.totalAmount,
+    amountPaid: sale.amountPaid,
     createdAt: sale.createdAt,
     items: sale.SaleItem,
   }));

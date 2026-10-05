@@ -16,6 +16,7 @@ interface SaleRecord {
   saleType: string;
   paymentMethod?: string | null;
   totalAmount: number;
+  amountPaid?: number;
   subtotal: number;
   companyId: string;
   createdAt: Date;
@@ -32,18 +33,41 @@ export async function postSaleJournal(
   const entryNumber = await nextEntryNumber(tx, companyId);
   const amount = sale.totalAmount;
 
-  // Determine debit account: credit sale → AR, cash sale → Cash/Bank/MoMo based on payment method
+  // Revenue is always the full sale. How it was settled splits the debit side:
+  // whatever was paid at the point of sale hits Cash/Bank/MoMo, the remainder
+  // becomes a receivable. A cash sale is simply paid in full.
   const isCredit = sale.saleType?.toLowerCase() === "credit";
-  const debitCode = isCredit
-    ? ACCOUNT_CODES.ACCOUNTS_RECEIVABLE
-    : paymentTypeToAccountCode(sale.paymentMethod);
-  const debitAccountId   = await getAccountId(tx, companyId, debitCode);
-  const revenueAccountId = await getAccountId(tx, companyId, ACCOUNT_CODES.SALES_REVENUE);
+  const paidNow = Math.min(Math.max(0, sale.amountPaid ?? (isCredit ? 0 : amount)), amount);
+  const onCredit = amount - paidNow;
 
-  const lines: { accountId: string; debit: number; credit: number; description?: string }[] = [
-    { accountId: debitAccountId,  debit: amount, credit: 0,      description: `Sale ${sale.id}` },
-    { accountId: revenueAccountId, debit: 0,     credit: amount, description: `Sale revenue` },
-  ];
+  const revenueAccountId = await getAccountId(tx, companyId, ACCOUNT_CODES.SALES_REVENUE);
+  const lines: { accountId: string; debit: number; credit: number; description?: string }[] = [];
+
+  if (paidNow > 0) {
+    const cashAccountId = await getAccountId(
+      tx,
+      companyId,
+      paymentTypeToAccountCode(sale.paymentMethod)
+    );
+    lines.push({
+      accountId: cashAccountId,
+      debit: paidNow,
+      credit: 0,
+      description: isCredit ? `Deposit on sale ${sale.id}` : `Sale ${sale.id}`,
+    });
+  }
+
+  if (onCredit > 0) {
+    const arAccountId = await getAccountId(tx, companyId, ACCOUNT_CODES.ACCOUNTS_RECEIVABLE);
+    lines.push({
+      accountId: arAccountId,
+      debit: onCredit,
+      credit: 0,
+      description: `Sale ${sale.id}`,
+    });
+  }
+
+  lines.push({ accountId: revenueAccountId, debit: 0, credit: amount, description: `Sale revenue` });
 
   // COGS: use cost price captured at point of sale
   const totalCost = items.reduce((s, i) => s + (i.costPrice ?? 0) * i.quantity, 0);
@@ -61,7 +85,11 @@ export async function postSaleJournal(
       companyId,
       entryNumber,
       date: sale.createdAt,
-      description: `${isCredit ? "Credit" : "Cash"} sale`,
+      description: !isCredit
+        ? "Cash sale"
+        : paidNow > 0
+        ? "Credit sale (part-paid)"
+        : "Credit sale",
       source: JournalSource.SALE,
       saleId: sale.id,
       postedById,

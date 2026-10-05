@@ -77,6 +77,7 @@ export default function ContainerSalesForm() {
     useState<CustomerOption | null>(null);
   const [saleType, setSaleType] = useState<"cash" | "credit">("cash");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
+  const [amountPaid, setAmountPaid] = useState(0);
   const [saleDate, setSaleDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -240,7 +241,9 @@ export default function ContainerSalesForm() {
         sourceId: containerId,
         customerId,
         saleType,
-        paymentMethod: saleType === "cash" ? paymentMethod : undefined,
+        // On a credit sale the method describes how the down payment arrived
+        paymentMethod: saleType === "cash" || amountPaid > 0 ? paymentMethod : undefined,
+        amountPaid: saleType === "credit" ? amountPaid : undefined,
         saleDate,
         discountType: discountType,
         discountValue: discountValue,
@@ -400,6 +403,9 @@ export default function ContainerSalesForm() {
               setSaleType={setSaleType}
               paymentMethod={paymentMethod}
               setPaymentMethod={setPaymentMethod}
+              amountPaid={amountPaid}
+              setAmountPaid={setAmountPaid}
+              total={total}
             />
 
             {/* Cart Summary */}

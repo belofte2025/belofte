@@ -10,6 +10,11 @@ type Props = {
   setSaleType: (v: SaleType) => void;
   paymentMethod: PaymentMethod;
   setPaymentMethod: (v: PaymentMethod) => void;
+  /** Deposit taken at the point of sale on a credit sale. Omit to hide the field. */
+  amountPaid?: number;
+  setAmountPaid?: (v: number) => void;
+  /** Sale total, used to cap the deposit and show the remaining balance. */
+  total?: number;
 };
 
 const methods: { value: PaymentMethod; label: string; icon: React.ElementType }[] = [
@@ -20,13 +25,18 @@ const methods: { value: PaymentMethod; label: string; icon: React.ElementType }[
 
 export default function PaymentMethodSelector({
   saleType, setSaleType, paymentMethod, setPaymentMethod,
+  amountPaid = 0, setAmountPaid, total = 0,
 }: Props) {
+  const showDeposit = saleType === "credit" && !!setAmountPaid;
+  const deposit = Math.min(Math.max(0, amountPaid), total);
+  const remaining = Math.max(0, total - deposit);
+
   return (
     <div className="bg-white p-6 shadow-sm border border-gray-200 border-b-0">
       <h3 className="font-semibold text-gray-900 mb-4">Payment Method</h3>
       <div className="grid grid-cols-2 gap-3">
         <button
-          onClick={() => setSaleType("cash")}
+          onClick={() => { setSaleType("cash"); setAmountPaid?.(0); }}
           className={`p-4 rounded-xl border-2 transition-all duration-200 ${
             saleType === "cash" ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-gray-300"
           }`}
@@ -37,7 +47,7 @@ export default function PaymentMethodSelector({
           </div>
         </button>
         <button
-          onClick={() => setSaleType("credit")}
+          onClick={() => { setSaleType("credit"); }}
           className={`p-4 rounded-xl border-2 transition-all duration-200 ${
             saleType === "credit" ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
           }`}
@@ -49,9 +59,40 @@ export default function PaymentMethodSelector({
         </button>
       </div>
 
-      {saleType === "cash" && (
+      {showDeposit && (
         <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">How was it paid?</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            Down payment (optional)
+          </p>
+          <input
+            type="number"
+            min={0}
+            max={total}
+            step="0.01"
+            value={amountPaid || ""}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              setAmountPaid?.(Number.isFinite(v) ? Math.min(Math.max(0, v), total) : 0);
+            }}
+            placeholder="0.00"
+            className="input"
+          />
+          <div className="flex items-center justify-between mt-2 text-xs">
+            <span className="text-gray-500">
+              Paid now: <span className="font-semibold text-green-600">₵ {deposit.toFixed(2)}</span>
+            </span>
+            <span className="text-gray-500">
+              On credit: <span className="font-semibold text-orange-600">₵ {remaining.toFixed(2)}</span>
+            </span>
+          </div>
+        </div>
+      )}
+
+      {(saleType === "cash" || deposit > 0) && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            {saleType === "cash" ? "How was it paid?" : "How was the down payment made?"}
+          </p>
           <div className="grid grid-cols-3 gap-2">
             {methods.map(({ value, label, icon: Icon }) => (
               <button

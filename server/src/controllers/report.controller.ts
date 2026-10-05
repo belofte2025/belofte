@@ -143,6 +143,8 @@ export const getSalesSummaryBySupplier = async (
       Customer: { customerName: string } | null;
       saleType: string;
       paymentMethod: string | null;
+      totalAmount: number;
+      amountPaid: number;
       createdAt: Date;
       SaleItem: { itemName: string; quantity: number; unitPrice: number }[];
     }) => ({
@@ -150,6 +152,8 @@ export const getSalesSummaryBySupplier = async (
       customerName: sale.Customer?.customerName || "Walk-in",
       saleType: sale.saleType,
       paymentMethod: sale.paymentMethod,
+      totalAmount: sale.totalAmount,
+      amountPaid: sale.amountPaid,
       createdAt: sale.createdAt,
       items: sale.SaleItem.map((item: { itemName: string; quantity: number; unitPrice: number }) => ({
         itemName: item.itemName,

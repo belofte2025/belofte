@@ -30,6 +30,8 @@ type SupplierSalesSummary = {
   customerName: string;
   saleType: string;
   paymentMethod: string | null;
+  totalAmount: number;
+  amountPaid: number;
   createdAt: string;
   items: SupplierSalesItem[];
 };
@@ -342,9 +344,14 @@ export default function SupplierSummaryPage() {
                             >
                               {sale.saleType}
                             </span>
-                            {sale.saleType.toLowerCase() === "cash" && (
+                            {(sale.saleType.toLowerCase() === "cash" || (sale.amountPaid ?? 0) > 0) && (
                               <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                 {paymentMethodLabel(sale.paymentMethod)}
+                              </span>
+                            )}
+                            {sale.saleType.toLowerCase() === "credit" && (sale.amountPaid ?? 0) > 0 && (
+                              <span className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
+                                {formatCurrency(sale.amountPaid)} deposit
                               </span>
                             )}
                             <span className="text-sm text-gray-500">

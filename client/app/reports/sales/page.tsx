@@ -28,6 +28,7 @@ interface Sale {
   paymentMethod: string | null;
   customerName: string;
   totalAmount: number;
+  amountPaid: number;
   createdAt: string;
   items: SaleItem[];
 }
@@ -107,8 +108,16 @@ export default function SalesReportPage() {
   const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
   const cashSales = filteredSales.filter(s => s.saleType.toLowerCase() === 'cash');
   const creditSales = filteredSales.filter(s => s.saleType.toLowerCase() === 'credit');
-  const totalCashRevenue = cashSales.reduce((sum, s) => sum + s.totalAmount, 0);
-  const totalCreditRevenue = creditSales.reduce((sum, s) => sum + s.totalAmount, 0);
+  // A deposit on a credit sale is money received, not credit extended — so it
+  // counts as paid and only the remainder counts as credit. The two then sum
+  // to total revenue instead of double-counting the deposit.
+  const totalCashRevenue =
+    cashSales.reduce((sum, s) => sum + s.totalAmount, 0) +
+    creditSales.reduce((sum, s) => sum + (s.amountPaid ?? 0), 0);
+  const totalCreditRevenue = creditSales.reduce(
+    (sum, s) => sum + (s.totalAmount - (s.amountPaid ?? 0)),
+    0
+  );
 
   const exportToPDF = async () => {
     try {
@@ -264,14 +273,14 @@ export default function SalesReportPage() {
               </p>
             </div>
             <div className="stat-card">
-              <p className="stat-label">Total Cash Sales</p>
+              <p className="stat-label">Total Paid</p>
               <p className="stat-value text-green-600">{formatCurrency(totalCashRevenue)}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{cashSales.length} transaction{cashSales.length !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-gray-400 mt-0.5">incl. deposits on credit sales</p>
             </div>
             <div className="stat-card">
-              <p className="stat-label">Total Credit Sales</p>
+              <p className="stat-label">Total On Credit</p>
               <p className="stat-value text-orange-500">{formatCurrency(totalCreditRevenue)}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{creditSales.length} transaction{creditSales.length !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{creditSales.length} transaction{creditSales.length !== 1 ? "s" : ""}, net of deposits</p>
             </div>
           </div>
         )}
@@ -316,8 +325,19 @@ export default function SalesReportPage() {
                           {sale.saleType}
                         </span>
                       </td>
-                      <td className="text-gray-500">{sale.saleType.toLowerCase() === "cash" ? paymentMethodLabel(sale.paymentMethod) : "-"}</td>
-                      <td className="font-semibold">{formatCurrency(sale.totalAmount)}</td>
+                      <td className="text-gray-500">
+                        {sale.saleType.toLowerCase() === "cash" || (sale.amountPaid ?? 0) > 0
+                          ? paymentMethodLabel(sale.paymentMethod)
+                          : "-"}
+                      </td>
+                      <td className="font-semibold">
+                        {formatCurrency(sale.totalAmount)}
+                        {sale.saleType.toLowerCase() === "credit" && (sale.amountPaid ?? 0) > 0 && (
+                          <span className="block text-xs font-normal text-gray-400">
+                            {formatCurrency(sale.amountPaid)} paid · {formatCurrency(sale.totalAmount - sale.amountPaid)} owing
+                          </span>
+                        )}
+                      </td>
                       <td className="text-gray-500">{Array.isArray(sale.items) ? sale.items.length : 0}</td>
                     </tr>
                   ))}

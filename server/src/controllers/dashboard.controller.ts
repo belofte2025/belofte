@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
+import { computeCompanyReceivables } from "../services/customerBalance.service";
 
 const LOW_STOCK_THRESHOLD = 10;
 const TREND_DAYS = 14;
@@ -45,12 +46,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       }),
       // Total customers
       prisma.customer.count({ where: { companyId } }),
-      // Outstanding credit (positive balance = customer owes us)
-      prisma.customer.aggregate({
-        where: { companyId, balance: { gt: 0 } },
-        _sum: { balance: true },
-        _count: { id: true },
-      }),
+      // Outstanding credit, derived from transactions rather than the stored
+      // Customer.balance column, which is never raised by a credit sale.
+      computeCompanyReceivables(companyId),
       // Recent 5 sales
       prisma.sale.findMany({
         where: { companyId },
@@ -70,7 +68,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       prisma.sale.groupBy({
         by: ["saleType", "paymentMethod"],
         where: { companyId, createdAt: { gte: monthStart } },
-        _sum: { totalAmount: true },
+        _sum: { totalAmount: true, amountPaid: true },
         _count: { id: true },
       }),
       // Daily sales totals for the trend chart
@@ -110,12 +108,28 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     ]);
 
     // ── Payment method breakdown ──
+    // A part-paid credit sale is split: the deposit counts under the method that
+    // took it, only the unpaid remainder counts as CREDIT. Buckets therefore sum
+    // to total sales rather than double-counting a deposit.
     const paymentMethods: Record<string, { total: number; count: number }> = {};
-    for (const g of paymentMethodGroups) {
-      const key = g.saleType?.toLowerCase() === "credit" ? "CREDIT" : (g.paymentMethod || "CASH");
+    const addTo = (key: string, amount: number, count: number) => {
+      if (amount <= 0 && count === 0) return;
       if (!paymentMethods[key]) paymentMethods[key] = { total: 0, count: 0 };
-      paymentMethods[key].total += g._sum.totalAmount ?? 0;
-      paymentMethods[key].count += g._count.id;
+      paymentMethods[key].total += amount;
+      paymentMethods[key].count += count;
+    };
+
+    for (const g of paymentMethodGroups) {
+      const total = g._sum.totalAmount ?? 0;
+      const paid = g._sum.amountPaid ?? 0;
+      const method = g.paymentMethod || "CASH";
+
+      if (g.saleType?.toLowerCase() === "credit") {
+        addTo("CREDIT", total - paid, g._count.id);
+        addTo(method, paid, 0);
+      } else {
+        addTo(method, total, g._count.id);
+      }
     }
 
     // ── Sales trend, filled for days with no sales ──
@@ -166,8 +180,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       },
       customers: {
         total: customerCount,
-        withCredit: creditBalance._count.id,
-        outstandingCredit: creditBalance._sum.balance ?? 0,
+        withCredit: creditBalance.customersOwing,
+        outstandingCredit: creditBalance.total,
       },
       containers: {
         inTransit: containersInTransit,

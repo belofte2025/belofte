@@ -7,15 +7,12 @@ import notificationService from "../services/notification.service";
 const VALID_PAYMENT_METHODS = ["CASH", "MOMO", "BANK"];
 
 export const recordSale = async (req: Request, res: Response) => {
-  const { saleType, paymentMethod, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue } = req.body;
+  const { saleType, paymentMethod, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue, amountPaid } = req.body;
   const companyId = req.user?.companyId;
 
-  // Payment method only applies to non-credit sales; default to CASH for backward compatibility
-  // with older clients that don't send it yet.
   const isCredit = saleType?.toLowerCase() === "credit";
-  const resolvedPaymentMethod = isCredit
-    ? null
-    : VALID_PAYMENT_METHODS.includes((paymentMethod || "").toUpperCase())
+  // Default to CASH for backward compatibility with older clients that don't send a method.
+  const normalizedPaymentMethod = VALID_PAYMENT_METHODS.includes((paymentMethod || "").toUpperCase())
     ? paymentMethod.toUpperCase()
     : "CASH";
   const userPermissions = req.user?.permissions || [];
@@ -228,10 +225,23 @@ export const recordSale = async (req: Request, res: Response) => {
     // Calculate final total after discount
     const totalAmount = Math.max(0, subtotal - discountAmount);
 
+    // A cash sale is paid in full. A credit sale may carry a deposit taken at the
+    // point of sale — only the remainder becomes a receivable.
+    const requestedDeposit = Number(amountPaid);
+    const resolvedAmountPaid = isCredit
+      ? Math.min(Math.max(0, Number.isFinite(requestedDeposit) ? requestedDeposit : 0), totalAmount)
+      : totalAmount;
+
+    // On a credit sale the method describes how the deposit arrived; with no
+    // deposit there is nothing to attribute.
+    const resolvedPaymentMethod =
+      isCredit && resolvedAmountPaid === 0 ? null : normalizedPaymentMethod;
+
     const sale = await prisma.sale.create({
       data: {
         saleType,
         paymentMethod: resolvedPaymentMethod,
+        amountPaid: resolvedAmountPaid,
         sourceType,
         sourceId,
         customerId,
