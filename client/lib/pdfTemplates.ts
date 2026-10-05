@@ -516,11 +516,12 @@ export function createHTMLReportTemplate(
             text-align: left;
             font-weight: 600;
             font-size: 9px;
+            border: 1px solid #1e3a8a;
           }
 
           td {
             padding: 5px 6px;
-            border-bottom: 1px solid #e5e7eb;
+            border: 1px solid #e5e7eb;
           }
 
           tr:nth-child(even) {
