@@ -18,10 +18,45 @@ type Props = {
 };
 
 const methods: { value: PaymentMethod; label: string; icon: React.ElementType }[] = [
-  { value: "CASH", label: "Cash", icon: Banknote },
-  { value: "MOMO", label: "Mobile Money", icon: Smartphone },
-  { value: "BANK", label: "Bank", icon: Landmark },
+  { value: "CASH", label: "Cash",  icon: Banknote   },
+  { value: "MOMO", label: "MoMo",  icon: Smartphone },
+  { value: "BANK", label: "Bank",  icon: Landmark   },
 ];
+
+const saleTypes: { value: SaleType; label: string; icon: React.ElementType }[] = [
+  { value: "cash",   label: "Pay Now",     icon: Banknote   },
+  { value: "credit", label: "Credit Sale", icon: CreditCard },
+];
+
+/**
+ * One segment of a toggle group. The group behaves as a radio set, so selection
+ * is exposed through aria-checked rather than a pressed state.
+ */
+function Segment({
+  active, onClick, icon: Icon, label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ElementType;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      onClick={onClick}
+      className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
+        active
+          ? "bg-blue-600 text-white"
+          : "bg-white text-gray-600 hover:bg-gray-50"
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+      {label}
+    </button>
+  );
+}
 
 export default function PaymentMethodSelector({
   saleType, setSaleType, paymentMethod, setPaymentMethod,
@@ -32,38 +67,39 @@ export default function PaymentMethodSelector({
   const remaining = Math.max(0, total - deposit);
 
   return (
-    <div className="bg-white p-6 shadow-sm border border-gray-200 border-b-0">
-      <h3 className="font-semibold text-gray-900 mb-4">Payment Method</h3>
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => { setSaleType("cash"); setAmountPaid?.(0); }}
-          className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-            saleType === "cash" ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-gray-300"
-          }`}
+    <div className="bg-white p-4 shadow-sm border border-gray-200 border-b-0 space-y-3">
+      <div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+          Payment Method
+        </p>
+        <div
+          role="radiogroup"
+          aria-label="Payment method"
+          className="flex rounded-lg border border-gray-200 overflow-hidden divide-x divide-gray-200"
         >
-          <Banknote className={`w-6 h-6 mx-auto mb-2 ${saleType === "cash" ? "text-green-600" : "text-gray-400"}`} />
-          <div className={`text-sm font-medium ${saleType === "cash" ? "text-green-700" : "text-gray-700"}`}>
-            Pay Now
-          </div>
-        </button>
-        <button
-          onClick={() => { setSaleType("credit"); }}
-          className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-            saleType === "credit" ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
-          }`}
-        >
-          <CreditCard className={`w-6 h-6 mx-auto mb-2 ${saleType === "credit" ? "text-blue-600" : "text-gray-400"}`} />
-          <div className={`text-sm font-medium ${saleType === "credit" ? "text-blue-700" : "text-gray-700"}`}>
-            Credit Sale
-          </div>
-        </button>
+          {saleTypes.map(({ value, label, icon }) => (
+            <Segment
+              key={value}
+              active={saleType === value}
+              onClick={() => {
+                setSaleType(value);
+                if (value === "cash") setAmountPaid?.(0);
+              }}
+              icon={icon}
+              label={label}
+            />
+          ))}
+        </div>
       </div>
 
       {showDeposit && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-            Down payment (optional)
-          </p>
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Down payment
+            </p>
+            <span className="text-[10px] text-gray-400">optional</span>
+          </div>
           <input
             type="number"
             min={0}
@@ -75,9 +111,9 @@ export default function PaymentMethodSelector({
               setAmountPaid?.(Number.isFinite(v) ? Math.min(Math.max(0, v), total) : 0);
             }}
             placeholder="0.00"
-            className="input"
+            className="input py-1.5 text-sm"
           />
-          <div className="flex items-center justify-between mt-2 text-xs">
+          <div className="flex items-center justify-between mt-1.5 text-xs">
             <span className="text-gray-500">
               Paid now: <span className="font-semibold text-green-600">₵ {deposit.toFixed(2)}</span>
             </span>
@@ -89,24 +125,23 @@ export default function PaymentMethodSelector({
       )}
 
       {(saleType === "cash" || deposit > 0) && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-            {saleType === "cash" ? "How was it paid?" : "How was the down payment made?"}
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+            {saleType === "cash" ? "How was it paid?" : "Down payment made by"}
           </p>
-          <div className="grid grid-cols-3 gap-2">
-            {methods.map(({ value, label, icon: Icon }) => (
-              <button
+          <div
+            role="radiogroup"
+            aria-label="How the payment was made"
+            className="flex rounded-lg border border-gray-200 overflow-hidden divide-x divide-gray-200"
+          >
+            {methods.map(({ value, label, icon }) => (
+              <Segment
                 key={value}
+                active={paymentMethod === value}
                 onClick={() => setPaymentMethod(value)}
-                className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                  paymentMethod === value ? "border-indigo-500 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <Icon className={`w-5 h-5 mx-auto mb-1 ${paymentMethod === value ? "text-indigo-600" : "text-gray-400"}`} />
-                <div className={`text-xs font-medium ${paymentMethod === value ? "text-indigo-700" : "text-gray-600"}`}>
-                  {label}
-                </div>
-              </button>
+                icon={icon}
+                label={label}
+              />
             ))}
           </div>
         </div>
