@@ -11,8 +11,17 @@ import { formatCurrency } from "@/utils/format";
 import { format } from "date-fns";
 
 type DashboardStats = {
-  today: { salesTotal: number; salesCount: number };
-  thisMonth: { salesTotal: number; salesCount: number };
+  period: {
+    key: string;
+    label: string;
+    startDate: string;
+    endDate: string;
+    trendUnit: "day" | "month";
+    salesTotal: number;
+    salesCount: number;
+    paidTotal: number;
+    creditTotal: number;
+  };
   customers: { total: number; withCredit: number; outstandingCredit: number };
   containers: { inTransit: number; inStock: number };
   recentSales: {
@@ -34,23 +43,53 @@ const quickActions = [
   { title: "Add Customer", description: "Register a customer",  href: "/customers/new", icon: UserPlus,     color: "btn-secondary" },
 ];
 
-const paymentMethodMeta: Record<string, { label: string; color: string; bar: string }> = {
-  CASH:   { label: "Cash",         color: "text-green-700",  bar: "bg-green-500" },
-  MOMO:   { label: "Mobile Money", color: "text-amber-700",  bar: "bg-amber-500" },
-  BANK:   { label: "Bank",         color: "text-blue-700",   bar: "bg-blue-500" },
-  CREDIT: { label: "Credit",       color: "text-orange-700", bar: "bg-orange-500" },
+const paymentMethodMeta: Record<string, { label: string; color: string; bar: string; tile: string }> = {
+  CASH:   { label: "Cash",         color: "text-green-700",  bar: "bg-green-500",  tile: "bg-green-50"  },
+  MOMO:   { label: "Mobile Money", color: "text-amber-700",  bar: "bg-amber-500",  tile: "bg-amber-50"  },
+  BANK:   { label: "Bank",         color: "text-blue-700",   bar: "bg-blue-500",   tile: "bg-blue-50"   },
+  CREDIT: { label: "Credit",       color: "text-orange-700", bar: "bg-orange-500", tile: "bg-orange-50" },
 };
+
+// The paid methods always precede credit, and every one is shown even at zero so
+// the summary keeps the same shape from one period to the next.
+const PAID_METHODS = ["CASH", "MOMO", "BANK"] as const;
+const SUMMARY_METHODS = [...PAID_METHODS, "CREDIT"] as const;
+
+const PERIOD_OPTIONS = [
+  { key: "today",  label: "Today"        },
+  { key: "month",  label: "This Month"   },
+  { key: "last30", label: "Last 30 Days" },
+  { key: "custom", label: "Custom"       },
+];
+
+const toInputDate = (d: Date) => d.toISOString().slice(0, 10);
 
 export default function DashboardHome() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState("month");
+  const [customStart, setCustomStart] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 29);
+    return toInputDate(d);
+  });
+  const [customEnd, setCustomEnd] = useState(() => toInputDate(new Date()));
 
   useEffect(() => {
-    api.get("/dashboard/stats")
+    // A custom range only becomes a valid request once both ends are filled in.
+    if (period === "custom" && (!customStart || !customEnd)) return;
+
+    const params =
+      period === "custom"
+        ? { period, startDate: customStart, endDate: customEnd }
+        : { period };
+
+    setLoading(true);
+    api.get("/dashboard/stats", { params })
       .then((r) => setStats(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [period, customStart, customEnd]);
 
   const fmt = (n: number) => (loading ? "—" : formatCurrency(n));
 
@@ -58,13 +97,57 @@ export default function DashboardHome() {
   const paymentTotal = paymentEntries.reduce((sum, [, v]) => sum + v.total, 0);
 
   const trendMax = stats ? Math.max(...stats.salesTrend.map((d) => d.total), 1) : 1;
+  const trendLabel = stats?.period.trendUnit === "month" ? "MMM" : "d";
 
   return (
     <div className="space-y-4">
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Business overview</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Business overview{stats ? ` · ${stats.period.label}` : ""}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+            {PERIOD_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setPeriod(opt.key)}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  period === opt.key
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {period === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStart}
+                max={customEnd || undefined}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="input text-xs py-1.5"
+                aria-label="Start date"
+              />
+              <span className="text-xs text-gray-400">to</span>
+              <input
+                type="date"
+                value={customEnd}
+                min={customStart || undefined}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="input text-xs py-1.5"
+                aria-label="End date"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -75,10 +158,10 @@ export default function DashboardHome() {
             <TrendingUp className="w-5 h-5 text-blue-600" />
           </div>
           <div className="min-w-0">
-            <p className="stat-label">Today&apos;s Sales</p>
-            <p className="text-xl font-bold text-blue-600 mt-0.5">{fmt(stats?.today.salesTotal ?? 0)}</p>
+            <p className="stat-label">Total Sales</p>
+            <p className="text-xl font-bold text-blue-600 mt-0.5">{fmt(stats?.period.salesTotal ?? 0)}</p>
             {!loading && stats && (
-              <p className="text-xs text-gray-400 mt-0.5">{stats.today.salesCount} transaction{stats.today.salesCount !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{stats.period.salesCount} transaction{stats.period.salesCount !== 1 ? "s" : ""}</p>
             )}
           </div>
         </div>
@@ -88,10 +171,12 @@ export default function DashboardHome() {
             <TrendingUp className="w-5 h-5 text-purple-600" />
           </div>
           <div className="min-w-0">
-            <p className="stat-label">This Month</p>
-            <p className="text-xl font-bold text-purple-600 mt-0.5">{fmt(stats?.thisMonth.salesTotal ?? 0)}</p>
+            <p className="stat-label">Paid vs Credit</p>
+            <p className="text-xl font-bold text-purple-600 mt-0.5">{fmt(stats?.period.paidTotal ?? 0)}</p>
             {!loading && stats && (
-              <p className="text-xs text-gray-400 mt-0.5">{stats.thisMonth.salesCount} sales</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                paid · {formatCurrency(stats.period.creditTotal)} on credit
+              </p>
             )}
           </div>
         </div>
@@ -121,6 +206,49 @@ export default function DashboardHome() {
           </div>
         </div>
       </div>
+
+      {/* How the period's sales were settled: each paid method, then credit */}
+      {!loading && stats && (
+        <div>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            Sales Breakdown
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {SUMMARY_METHODS.map((method) => {
+              const meta = paymentMethodMeta[method];
+              const entry = stats.paymentMethods[method] ?? { total: 0, count: 0 };
+              const pct = stats.period.salesTotal > 0
+                ? (entry.total / stats.period.salesTotal) * 100
+                : 0;
+              return (
+                <div key={method} className="stat-card">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="stat-label">{meta.label}</p>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${meta.tile} ${meta.color}`}>
+                      {pct.toFixed(0)}%
+                    </span>
+                  </div>
+                  <p className={`text-lg font-bold mt-1 ${meta.color}`}>
+                    {formatCurrency(entry.total)}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {method === "CREDIT"
+                      ? `${entry.count} credit sale${entry.count !== 1 ? "s" : ""}`
+                      : `${entry.count} transaction${entry.count !== 1 ? "s" : ""}`}
+                  </p>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-2">
+                    <div className={`h-full ${meta.bar} rounded-full`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Deposits on credit sales count under the method that took them; only the
+            unpaid remainder counts as credit, so the four add up to total sales.
+          </p>
+        </div>
+      )}
 
       {/* Container status row — only shown when relevant */}
       {!loading && stats && (stats.containers.inTransit > 0 || stats.containers.inStock > 0) && (
@@ -169,7 +297,9 @@ export default function DashboardHome() {
         <div className="grid lg:grid-cols-3 gap-3">
           {/* Sales trend chart */}
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Sales Trend (14 days)</h2>
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+              Sales Trend · {stats.period.label}
+            </h2>
             {stats.salesTrend.every((d) => d.total === 0) ? (
               <p className="text-sm text-gray-400 py-8 text-center">No sales in this period yet</p>
             ) : (
@@ -179,10 +309,10 @@ export default function DashboardHome() {
                     <div
                       className="w-full rounded-t bg-blue-500 group-hover:bg-blue-600 transition-colors min-h-[2px]"
                       style={{ height: `${Math.max(2, (d.total / trendMax) * 100)}%` }}
-                      title={`${format(new Date(d.date + "T00:00:00"), "MMM d")}: ${formatCurrency(d.total)} (${d.count} sale${d.count !== 1 ? "s" : ""})`}
+                      title={`${format(new Date(d.date + "T00:00:00"), stats.period.trendUnit === "month" ? "MMM yyyy" : "MMM d")}: ${formatCurrency(d.total)} (${d.count} sale${d.count !== 1 ? "s" : ""})`}
                     />
                     <span className="text-[9px] text-gray-400 mt-1 hidden sm:block">
-                      {format(new Date(d.date + "T00:00:00"), "d")}
+                      {format(new Date(d.date + "T00:00:00"), trendLabel)}
                     </span>
                   </div>
                 ))}
@@ -194,7 +324,7 @@ export default function DashboardHome() {
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Payment Methods</h2>
             {paymentEntries.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">No sales this month yet</p>
+              <p className="text-sm text-gray-400 py-4 text-center">No sales in this period yet</p>
             ) : (
               <div className="space-y-3">
                 {paymentEntries
@@ -248,7 +378,7 @@ export default function DashboardHome() {
             <div className="bg-white rounded-xl border border-gray-200">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
                 <Award className="w-4 h-4 text-indigo-500" />
-                <h2 className="text-sm font-semibold text-gray-700">Top Selling This Month</h2>
+                <h2 className="text-sm font-semibold text-gray-700">Top Selling</h2>
               </div>
               <div className="divide-y divide-gray-50">
                 {stats.topItems.map((item, i) => (
