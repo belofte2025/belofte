@@ -17,11 +17,14 @@ export const metadata: Metadata = {
     title: "PETROS",
   },
   icons: {
+    // The SVG is listed first so browsers that support it scale the mark
+    // cleanly at any tab size; the PNGs and app/favicon.ico cover the rest.
     icon: [
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-touch-icon.png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
 };
 
