@@ -73,6 +73,9 @@ export default function InventoryReportPage() {
           (item) => item.available > 0 && item.available < 10
         );
         break;
+      case "negative":
+        filtered = filtered.filter((item) => item.available < 0);
+        break;
     }
 
     setFilteredInventory(filtered);
@@ -98,6 +101,12 @@ export default function InventoryReportPage() {
     ? filteredInventory.filter((item) => item.available > 0 && item.available < 10)
         .length
     : 0;
+  // Counted separately so In Stock + Out of Stock + Negative accounts for every
+  // row; previously these items fell outside all three and the totals did not
+  // reconcile against Total Items.
+  const negativeStockItems = Array.isArray(filteredInventory)
+    ? filteredInventory.filter((item) => item.available < 0).length
+    : 0;
   const totalAvailable = Array.isArray(filteredInventory)
     ? filteredInventory.reduce((sum, item) => sum + item.available, 0)
     : 0;
@@ -111,7 +120,29 @@ export default function InventoryReportPage() {
     try {
       const html2pdf = (await import("html2pdf.js")).default;
 
-      // Build table content
+      // Mirror the on-screen supplier bands, but only when the rows actually
+      // span more than one supplier.
+      const groupBySupplier = !supplierFilter;
+      let currentSupplier = "";
+
+      const bodyRows = filteredInventory
+        .map((item) => {
+          const band =
+            groupBySupplier && item.supplierName !== currentSupplier
+              ? `<tr class="no-page-break"><td colspan="4" class="font-bold">${item.supplierName}</td></tr>`
+              : "";
+          if (groupBySupplier) currentSupplier = item.supplierName;
+
+          return `${band}
+              <tr class="no-page-break">
+                <td>${item.itemName}</td>
+                <td>${item.supplierName}</td>
+                <td class="text-center">${item.available}</td>
+                <td class="font-bold">${getStockStatus(item.available).text}</td>
+              </tr>`;
+        })
+        .join("");
+
       const tableContent = `
         <table>
           <thead>
@@ -122,41 +153,40 @@ export default function InventoryReportPage() {
               <th>Status</th>
             </tr>
           </thead>
-          <tbody>
-            ${filteredInventory
-              .map(
-                (item) => `
-              <tr class="no-page-break">
-                <td>${item.itemName}</td>
-                <td>${item.supplierName}</td>
-                <td class="text-center">${item.available}</td>
-                <td class="font-bold">${
-                  item.available === 0
-                    ? "Out of Stock"
-                    : item.available < 10
-                    ? "Low Stock"
-                    : "In Stock"
-                }</td>
-              </tr>
-            `
-              )
-              .join("")}
-          </tbody>
+          <tbody>${bodyRows}</tbody>
         </table>
       `;
+
+      // Record what the reader is actually looking at — without this a filtered
+      // export is indistinguishable from a complete one.
+      const stockFilterLabels: Record<string, string> = {
+        "in-stock": "In stock only",
+        "out-of-stock": "Out of stock only",
+        "low-stock": "Low stock only",
+        "negative": "Negative stock only",
+      };
+      const activeFilters = [
+        supplierFilter ? `Supplier: ${supplierFilter}` : null,
+        stockFilterLabels[stockFilter] ?? null,
+        searchTerm ? `Search: "${searchTerm}"` : null,
+      ].filter(Boolean);
+      const scope = activeFilters.length
+        ? `Filtered — ${activeFilters.join(" · ")} (${filteredInventory.length} of ${inventory.length} items)`
+        : `All items (${inventory.length})`;
 
       // Use standardized HTML template with company branding
       const html = createHTMLReportTemplate(
         "Inventory Status Report",
         tableContent,
         {
-          subtitle: `Generated on: ${new Date().toLocaleDateString()}`,
+          subtitle: `${scope} — generated ${new Date().toLocaleDateString()}`,
           summaryStats: [
             { label: "Total Items", value: totalItems.toString() },
             { label: "Total Available", value: `${totalAvailable} units` },
             { label: "In Stock", value: inStockItems.toString() },
             { label: "Out of Stock", value: outOfStockItems.toString() },
             { label: "Low Stock", value: lowStockItems.toString() },
+            { label: "Negative", value: negativeStockItems.toString() },
           ],
         }
       );
@@ -167,17 +197,24 @@ export default function InventoryReportPage() {
           .toLocaleDateString()
           .replace(/\//g, "_")}.pdf`
       };
-      html2pdf()
-        .set(options)
-        .from(html)
-        .save();
+      // Deliberately not awaited, matching the app's other PDF exports: in
+      // testing, awaiting save() rejected and reported failure even though the
+      // document rendered correctly, so awaiting needs verifying in a real
+      // browser before it is applied here and to the other five exports.
+      html2pdf().set(options).from(html).save();
       toast.success("Report exported successfully!");
-    } catch {
+    } catch (error) {
+      console.error("Inventory export error:", error);
       toast.error("Failed to export report");
     }
   };
 
+  // Negative stock means more has been sold than was ever received, so it is a
+  // data problem rather than a stock level and must not be filed under
+  // "Low Stock" the way a plain `available < 10` test would.
   const getStockStatus = (available: number) => {
+    if (available < 0)
+      return { text: "Negative", color: "bg-red-200 text-red-900" };
     if (available === 0)
       return { text: "Out of Stock", color: "bg-red-100 text-red-800" };
     if (available < 10)
@@ -217,7 +254,7 @@ export default function InventoryReportPage() {
           </div>
 
           {/* Analytics Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className={`grid grid-cols-2 gap-4 mb-6 ${negativeStockItems > 0 ? "md:grid-cols-6" : "md:grid-cols-5"}`}>
             <div className="bg-white p-4 shadow-sm border border-gray-200 rounded-lg">
               <div className="text-sm text-gray-500 mb-1">Total Items</div>
               <div className="text-2xl font-bold text-gray-900">{totalItems}</div>
@@ -238,6 +275,13 @@ export default function InventoryReportPage() {
               <div className="text-sm text-gray-500 mb-1">Out of Stock</div>
               <div className="text-2xl font-bold text-red-600">{outOfStockItems}</div>
             </div>
+            {negativeStockItems > 0 && (
+              <div className="bg-white p-4 shadow-sm border border-red-300 rounded-lg">
+                <div className="text-sm text-red-700 mb-1">Negative</div>
+                <div className="text-2xl font-bold text-red-700">{negativeStockItems}</div>
+                <div className="text-xs text-gray-400 mt-0.5">sold beyond stock</div>
+              </div>
+            )}
           </div>
 
           {/* Filters */}
@@ -278,6 +322,7 @@ export default function InventoryReportPage() {
                 <option value="in-stock">In Stock</option>
                 <option value="low-stock">Low Stock</option>
                 <option value="out-of-stock">Out of Stock</option>
+                <option value="negative">Negative</option>
               </select>
             </div>
           </div>
