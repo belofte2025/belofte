@@ -197,11 +197,11 @@ export default function InventoryReportPage() {
           .toLocaleDateString()
           .replace(/\//g, "_")}.pdf`
       };
-      // Deliberately not awaited, matching the app's other PDF exports: in
-      // testing, awaiting save() rejected and reported failure even though the
-      // document rendered correctly, so awaiting needs verifying in a real
-      // browser before it is applied here and to the other five exports.
-      html2pdf().set(options).from(html).save();
+      // Awaited so a failure reaches the catch below. Left unawaited, save()
+      // rejected silently while the success toast fired anyway, which is how
+      // an oklch() colour in the table styles disabled every PDF export in the
+      // app without any visible error.
+      await html2pdf().set(options).from(html).save();
       toast.success("Report exported successfully!");
     } catch (error) {
       console.error("Inventory export error:", error);

@@ -187,7 +187,7 @@ export default function SupplierSummaryPage() {
         ...getHTML2PDFOptions(),
         filename: `Supplier_Sales_Summary_${startDate}_to_${endDate}.pdf`
       };
-      html2pdf()
+      await html2pdf()
         .set(options)
         .from(html)
         .save();

@@ -205,9 +205,15 @@ body {
    Applies to every table in the app — the shared .data-table pages, the
    DataTable component, and hand-rolled tables alike. Tailwind's preflight sets
    border-collapse: collapse, so adjacent cell borders merge into single lines. */
+/* The colour is written as a literal rather than @apply border-gray-200, which
+   Tailwind v4 emits as oklch(). html2canvas — bundled inside html2pdf.js and
+   used by every PDF export — cannot parse oklch()/oklab() and rejects with
+   "Attempting to parse an unsupported color function". html2pdf renders the
+   report inside the live document, so this rule reaches the exported tables
+   and broke every PDF export in the app until it was spelled out in hex. */
 table th,
 table td {
-  @apply border border-gray-200/80;
+  border: 1px solid #e5e7eb;
 }
 
 /* ── Responsive table wrapper ── */

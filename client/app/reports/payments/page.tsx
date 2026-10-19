@@ -161,7 +161,7 @@ export default function AllPaymentsReport() {
 
       const today = new Date().toISOString().split("T")[0];
       const options = { ...getHTML2PDFOptions(), filename: `Payments_Report_${today}.pdf` };
-      html2pdf().set(options).from(html).save();
+      await html2pdf().set(options).from(html).save();
       toast.success("PDF exported successfully!");
     } catch {
       toast.error("Failed to export PDF");

@@ -173,7 +173,7 @@ export default function SalesReportPage() {
         ...getHTML2PDFOptions(),
         filename: `Sales_Report_${startDate}_to_${endDate}.pdf`
       };
-      html2pdf().set(options).from(html).save();
+      await html2pdf().set(options).from(html).save();
       toast.success("Report exported successfully!");
     } catch {
       toast.error("Failed to export report");

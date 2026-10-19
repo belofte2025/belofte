@@ -109,7 +109,7 @@ export default function CustomersReportPage() {
         ...getHTML2PDFOptions(),
         filename: `Customer_Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`
       };
-      html2pdf().set(options).from(htmlContent).save();
+      await html2pdf().set(options).from(htmlContent).save();
       toast.success("Report exported successfully!");
     } catch {
       toast.error("Failed to export report");
