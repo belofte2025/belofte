@@ -109,14 +109,15 @@ export default function DashboardHome() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Scrolls rather than overflowing the viewport on a narrow screen. */}
+          <div className="inline-flex rounded-lg border border-gray-200 overflow-x-auto max-w-full">
             {PERIOD_OPTIONS.map((opt) => (
               <button
                 key={opt.key}
                 type="button"
                 onClick={() => setPeriod(opt.key)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs font-medium whitespace-nowrap flex-shrink-0 transition-colors ${
                   period === opt.key
                     ? "bg-blue-600 text-white"
                     : "bg-white text-gray-600 hover:bg-gray-50"
@@ -159,7 +160,7 @@ export default function DashboardHome() {
           </div>
           <div className="min-w-0">
             <p className="stat-label">Total Sales</p>
-            <p className="text-xl font-bold text-blue-600 mt-0.5">{fmt(stats?.period.salesTotal ?? 0)}</p>
+            <p className="amount text-blue-600 mt-0.5">{fmt(stats?.period.salesTotal ?? 0)}</p>
             {!loading && stats && (
               <p className="text-xs text-gray-400 mt-0.5">{stats.period.salesCount} transaction{stats.period.salesCount !== 1 ? "s" : ""}</p>
             )}
@@ -172,7 +173,7 @@ export default function DashboardHome() {
           </div>
           <div className="min-w-0">
             <p className="stat-label">Paid vs Credit</p>
-            <p className="text-xl font-bold text-purple-600 mt-0.5">{fmt(stats?.period.paidTotal ?? 0)}</p>
+            <p className="amount text-purple-600 mt-0.5">{fmt(stats?.period.paidTotal ?? 0)}</p>
             {!loading && stats && (
               <p className="text-xs text-gray-400 mt-0.5">
                 paid · {formatCurrency(stats.period.creditTotal)} on credit
@@ -187,7 +188,7 @@ export default function DashboardHome() {
           </div>
           <div className="min-w-0">
             <p className="stat-label">Total Customers</p>
-            <p className="text-xl font-bold text-green-600 mt-0.5">
+            <p className="amount text-green-600 mt-0.5">
               {loading ? "—" : (stats?.customers.total ?? 0)}
             </p>
           </div>
@@ -199,7 +200,7 @@ export default function DashboardHome() {
           </div>
           <div className="min-w-0">
             <p className="stat-label">Outstanding Credit</p>
-            <p className="text-xl font-bold text-orange-600 mt-0.5">{fmt(stats?.customers.outstandingCredit ?? 0)}</p>
+            <p className="amount text-orange-600 mt-0.5">{fmt(stats?.customers.outstandingCredit ?? 0)}</p>
             {!loading && stats && stats.customers.withCredit > 0 && (
               <p className="text-xs text-gray-400 mt-0.5">{stats.customers.withCredit} customer{stats.customers.withCredit !== 1 ? "s" : ""}</p>
             )}
@@ -213,7 +214,7 @@ export default function DashboardHome() {
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
             Sales Breakdown
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {SUMMARY_METHODS.map((method) => {
               const meta = paymentMethodMeta[method];
               const entry = stats.paymentMethods[method] ?? { total: 0, count: 0 };
@@ -228,7 +229,7 @@ export default function DashboardHome() {
                       {pct.toFixed(0)}%
                     </span>
                   </div>
-                  <p className={`text-lg font-bold mt-1 ${meta.color}`}>
+                  <p className={`amount mt-1 ${meta.color}`}>
                     {formatCurrency(entry.total)}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
@@ -294,7 +295,7 @@ export default function DashboardHome() {
 
       {/* Sales trend + Payment methods */}
       {!loading && stats && (
-        <div className="grid lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           {/* Sales trend chart */}
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
@@ -352,7 +353,7 @@ export default function DashboardHome() {
 
       {/* Low stock + Top items */}
       {!loading && stats && (stats.lowStockItems.length > 0 || stats.topItems.length > 0) && (
-        <div className="grid lg:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {stats.lowStockItems.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
@@ -362,7 +363,9 @@ export default function DashboardHome() {
               <div className="divide-y divide-gray-50">
                 {stats.lowStockItems.map((item) => (
                   <div key={item.itemName} className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-sm text-gray-700 truncate">{item.itemName}</span>
+                    {/* min-w-0 is required for truncate: a flex item defaults to
+                        min-width:auto and so refuses to shrink below its text. */}
+                    <span className="text-sm text-gray-700 truncate min-w-0">{item.itemName}</span>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${
                       item.available <= 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
                     }`}>

@@ -387,7 +387,7 @@ export default function AddContainerForm({ initialStatus = "Received" }: { initi
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left Column - Container Details */}
           <div className="lg:col-span-1 space-y-6">
             {/* Basic Information */}
@@ -1112,7 +1112,7 @@ export default function AddContainerForm({ initialStatus = "Received" }: { initi
               <h4 className="font-medium text-indigo-900 mb-2">
                 Container Creation Tips
               </h4>
-              <div className="grid md:grid-cols-2 gap-4 text-sm text-indigo-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-indigo-700">
                 <div>
                   <p className="font-medium mb-1">Required Information:</p>
                   <ul className="space-y-1">

@@ -78,14 +78,17 @@ body {
   @apply w-full px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6;
 }
 
-/* ── Stats grid ── */
+/* ── Stats grid ──
+   One card per row on phones. Two columns at 375px left roughly 170px of text
+   width, which is narrower than a figure like "₵ 1,803,373.06" needs, so the
+   amounts were being cut off mid-digit. */
 .stats-grid {
-  @apply grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4;
+  @apply grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4;
 }
 
 /* ── Stat card ── */
 .stat-card {
-  @apply bg-white shadow-sm ring-1 ring-black/5 p-4;
+  @apply bg-white shadow-sm ring-1 ring-black/5 p-4 min-w-0 overflow-hidden;
 }
 
 .stat-card .stat-label {
@@ -93,7 +96,19 @@ body {
 }
 
 .stat-card .stat-value {
-  @apply text-2xl font-bold text-gray-900 mt-1;
+  @apply font-bold text-gray-900 mt-1;
+  /* Scales with the viewport instead of overflowing a narrow card. */
+  font-size: clamp(1.125rem, 5.2vw, 1.5rem);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Currency / figure ──
+   For amounts rendered outside .stat-card. Keeps a long figure on one line and
+   shrinks it to fit rather than letting it spill past its container. */
+.amount {
+  @apply font-bold min-w-0 whitespace-nowrap;
+  font-size: clamp(1rem, 4.8vw, 1.25rem);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Card ── */
@@ -132,9 +147,11 @@ body {
 .btn-danger    { @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
 .btn-ghost     { @apply bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-400; }
 
-/* ── Page header ── */
+/* ── Page header ──
+   Wraps so that actions and filters drop to their own row on a narrow screen
+   instead of being squeezed beside the title and overflowing the viewport. */
 .page-header {
-  @apply flex items-center justify-between gap-3 mb-4;
+  @apply flex flex-wrap items-center justify-between gap-3 mb-4;
 }
 
 .page-title {
