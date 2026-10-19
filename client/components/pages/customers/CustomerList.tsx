@@ -115,7 +115,7 @@ export default function CustomerList() {
           accent="bg-orange-50"
           iconColor="text-orange-600"
           valueColor={balanceColor(totalBalance)}
-          className="col-span-2 lg:col-span-1"
+          className="sm:col-span-2 lg:col-span-1"
         />
       </div>
 

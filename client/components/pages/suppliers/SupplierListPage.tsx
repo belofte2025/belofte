@@ -123,7 +123,7 @@ export default function SupplierListPage() {
       <div className="stats-grid">
         <StatCard label="Suppliers" value={suppliers.length} icon={Factory} accent="bg-green-50" iconColor="text-green-600" />
         <StatCard label="Containers" value={totalContainers} icon={Building} accent="bg-blue-50" iconColor="text-blue-600" valueColor="text-blue-600" />
-        <StatCard label="Items" value={totalItems} icon={Package} accent="bg-purple-50" iconColor="text-purple-600" valueColor="text-purple-600" className="col-span-2 lg:col-span-1" />
+        <StatCard label="Items" value={totalItems} icon={Package} accent="bg-purple-50" iconColor="text-purple-600" valueColor="text-purple-600" className="sm:col-span-2 lg:col-span-1" />
       </div>
 
       {loading ? (

@@ -93,7 +93,19 @@ body {
    width, which is narrower than a figure like "₵ 1,803,373.06" needs, so the
    amounts were being cut off mid-digit. */
 .stats-grid {
-  @apply grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4;
+  @apply grid gap-3 lg:gap-4;
+  /* Written out rather than via @apply so the tracks are unambiguous: equal
+     columns that are allowed to shrink (minmax(0,1fr)), never content-sized
+     ones, which is what let a long figure widen its own column. */
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 640px) {
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* ── Stat card ── */
@@ -110,11 +122,20 @@ body {
   @apply text-xs font-medium text-gray-500 uppercase tracking-wider;
 }
 
-.stat-card .stat-value {
-  @apply font-bold text-gray-900 mt-1;
-  /* Scales with the viewport instead of overflowing a narrow card. */
+/* Usable both inside .stat-card and standalone, so the StatCard component and
+   hand-rolled cards size their figures identically. */
+.stat-value {
+  @apply font-bold;
+  /* Deliberately sets no colour. Callers pass their own (text-blue-600 and
+     friends); a colour declared here outranked those utilities and forced
+     every figure to the same grey. Uncoloured figures inherit the body text
+     colour, which is the grey they were getting anyway. */
   font-size: clamp(1.125rem, 5.2vw, 1.5rem);
   font-variant-numeric: tabular-nums;
+}
+
+.stat-card .stat-value {
+  @apply mt-1;
 }
 
 /* ── Currency / figure ──
