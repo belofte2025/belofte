@@ -68,9 +68,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       lowStockCount,
       paymentMethodGroups,
       trendRows,
-      receivedByItem,
-      soldByItem,
-      adjustmentsByItem,
+      lowStockRows,
       topItemsRaw,
     ] = await Promise.all([
       // Sales across the selected period
@@ -128,22 +126,50 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             GROUP BY day
             ORDER BY day ASC
           `,
-      // Stock inputs for low-stock detection, company-wide
-      prisma.containerItem.groupBy({
-        by: ["itemName"],
-        where: { Container: { companyId } },
-        _sum: { quantity: true },
-      }),
-      prisma.saleItem.groupBy({
-        by: ["itemName"],
-        where: { Sale: { companyId } },
-        _sum: { quantity: true },
-      }),
-      prisma.stockAdjustment.groupBy({
-        by: ["itemName"],
-        where: { companyId },
-        _sum: { adjustmentQty: true },
-      }),
+      // Low stock, per item AND supplier. Grouping by item name alone merged
+      // suppliers that happen to stock the same product, so a shortage at one
+      // supplier was masked by another's stock, and the figure disagreed with
+      // the inventory report. Sales are attributed to a supplier the same way
+      // the report does it: through the container for container sales, and
+      // through the supplier item for regular ones.
+      prisma.$queryRaw<{ itemName: string; supplierName: string; available: number }[]>`
+        WITH received AS (
+          SELECT ci."itemName", c."supplierId", SUM(ci.quantity)::int AS qty
+          FROM "ContainerItem" ci
+          JOIN "Container" c ON c.id = ci."containerId"
+          WHERE c."companyId" = ${companyId}
+          GROUP BY 1, 2
+        ),
+        sold AS (
+          SELECT si."itemName",
+                 COALESCE(c."supplierId", sup."supplierId") AS "supplierId",
+                 SUM(si.quantity)::int AS qty
+          FROM "SaleItem" si
+          JOIN "Sale" s ON s.id = si."saleId"
+          LEFT JOIN "Container" c
+            ON s."sourceType" = 'container' AND c.id = s."sourceId"
+          LEFT JOIN "SupplierItem" sup
+            ON s."sourceType" = 'regular' AND sup.id = s."sourceId"
+          WHERE s."companyId" = ${companyId}
+          GROUP BY 1, 2
+        ),
+        adj AS (
+          SELECT "itemName", "supplierId", SUM("adjustmentQty")::int AS qty
+          FROM "StockAdjustment"
+          WHERE "companyId" = ${companyId}
+          GROUP BY 1, 2
+        )
+        SELECT r."itemName",
+               sp.suppliername AS "supplierName",
+               (r.qty - COALESCE(sd.qty, 0) + COALESCE(a.qty, 0))::int AS available
+        FROM received r
+        JOIN "Supplier" sp ON sp.id = r."supplierId"
+        LEFT JOIN sold sd ON sd."itemName" = r."itemName" AND sd."supplierId" = r."supplierId"
+        LEFT JOIN adj  a  ON a."itemName"  = r."itemName" AND a."supplierId"  = r."supplierId"
+        WHERE (r.qty - COALESCE(sd.qty, 0) + COALESCE(a.qty, 0)) <= ${LOW_STOCK_THRESHOLD}
+        ORDER BY available ASC
+        LIMIT 8
+      `,
       // Top-selling items in the selected period by units sold
       prisma.saleItem.groupBy({
         by: ["itemName"],
@@ -198,21 +224,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       else cursor.setDate(cursor.getDate() + 1);
     }
 
-    // ── Low stock (company-wide, across all suppliers) ──
-    const receivedMap = new Map(receivedByItem.map((r) => [r.itemName, r._sum.quantity ?? 0]));
-    const soldMap = new Map(soldByItem.map((r) => [r.itemName, r._sum.quantity ?? 0]));
-    const adjMap = new Map(adjustmentsByItem.map((r) => [r.itemName, r._sum.adjustmentQty ?? 0]));
-
-    const lowStockItems = Array.from(receivedMap.entries())
-      .map(([itemName, received]) => {
-        const sold = soldMap.get(itemName) ?? 0;
-        const adjustments = adjMap.get(itemName) ?? 0;
-        const available = received - sold + adjustments;
-        return { itemName, available };
-      })
-      .filter((i) => i.available <= LOW_STOCK_THRESHOLD)
-      .sort((a, b) => a.available - b.available)
-      .slice(0, 8);
+    // ── Low stock, already filtered and ordered by the query ──
+    const lowStockItems = lowStockRows.map((r) => ({
+      itemName: r.itemName,
+      supplierName: r.supplierName,
+      available: Number(r.available),
+    }));
 
     // ── Top-selling items ──
     const topItems = topItemsRaw.map((r) => ({

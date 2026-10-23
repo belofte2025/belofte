@@ -377,10 +377,68 @@ export const listContainerItemsWithSales = async (
       supplierItems.map((item: { itemName: string; alias: string | null }) => [item.itemName, item.alias])
     );
 
+    // Step 5b: Stock held by this supplier for these items, counted the same way
+    // the inventory report and the stock adjustment screen count it: everything
+    // received across all of the supplier's containers, less everything sold
+    // through either sale route, plus stock adjustments.
+    //
+    // Deducting only this container's own sales is not enough. The same item
+    // also sells through regular sales, and damage or loss is recorded as an
+    // adjustment; neither touches this container's rows, so without them the
+    // screen offers stock that is no longer there.
+    const itemNames = containerItems.map((i: { itemName: string }) => i.itemName);
+    const supplierId = container.supplierId;
+    const companyId = container.companyId;
+
+    const [supplierContainerItems, supplierItemIds, adjustments] = await Promise.all([
+      prisma.containerItem.findMany({
+        where: { itemName: { in: itemNames }, Container: { supplierId, companyId } },
+        select: { itemName: true, quantity: true, containerId: true },
+      }),
+      prisma.supplierItem.findMany({ where: { supplierId }, select: { id: true } }),
+      prisma.stockAdjustment.findMany({
+        where: { supplierId, companyId, itemName: { in: itemNames } },
+        select: { itemName: true, adjustmentQty: true },
+      }),
+    ]);
+
+    const supplierContainerIds = [
+      ...new Set(supplierContainerItems.map((ci: { containerId: string }) => ci.containerId)),
+    ];
+
+    const allSupplierSales = await prisma.saleItem.findMany({
+      where: {
+        itemName: { in: itemNames },
+        OR: [
+          { Sale: { companyId, sourceType: "container", sourceId: { in: supplierContainerIds } } },
+          { Sale: { companyId, sourceType: "regular", sourceId: { in: supplierItemIds.map((s: { id: string }) => s.id) } } },
+        ],
+      },
+      select: { itemName: true, quantity: true },
+    });
+
+    const sum = <T>(rows: T[], name: (r: T) => string, qty: (r: T) => number) => {
+      const m: Record<string, number> = {};
+      for (const r of rows) m[name(r)] = (m[name(r)] || 0) + (qty(r) || 0);
+      return m;
+    };
+    const receivedBySupplier = sum(supplierContainerItems, r => r.itemName, r => r.quantity);
+    const soldBySupplier     = sum(allSupplierSales,       r => r.itemName, r => r.quantity);
+    const adjBySupplier      = sum(adjustments,            r => r.itemName, r => r.adjustmentQty);
+
     // Step 6: Final result
     const result = containerItems.map((item: { id: string; itemName: string; quantity: number; receivedQty: number; unitPrice: number }) => {
       const soldQty = soldMap[item.itemName] || 0;
-      const remainingQty = preWarehouse ? 0 : (item.quantity || 0) - soldQty;
+      const fromThisContainer = (item.quantity || 0) - soldQty;
+      const supplierAvailable =
+        (receivedBySupplier[item.itemName] || 0) -
+        (soldBySupplier[item.itemName] || 0) +
+        (adjBySupplier[item.itemName] || 0);
+      // Capped by both: never more than this container brought in and is still
+      // unsold, and never more than the supplier actually holds.
+      const remainingQty = preWarehouse
+        ? 0
+        : Math.max(0, Math.min(fromThisContainer, supplierAvailable));
       const alias = supplierItemMap.get(item.itemName);
       const isMatched = supplierItemMap.has(item.itemName);
       const supplierName = isMatched

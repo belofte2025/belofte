@@ -75,8 +75,11 @@ export const recordSale = async (req: Request, res: Response) => {
       }
     }
 
-    // Validate stock availability for regular sales
-    if (sourceType === "regular") {
+    // Validate stock availability. This runs for container sales as well as
+    // regular ones: it previously skipped container sales entirely, so those
+    // could be recorded against stock that no longer existed, which is how
+    // items ended up at negative quantities in the inventory report.
+    if (sourceType === "regular" || sourceType === "container") {
       // For each item, check if there's enough stock using its own supplier
       for (const item of items) {
         const itemName = item.itemName;
@@ -94,12 +97,32 @@ export const recordSale = async (req: Request, res: Response) => {
           }
         }
 
-        if (!supplierId) {
-          res.status(400).json({
-            error: "Failed to record sale",
-            detail: `No supplier found for item "${itemName}"`,
+        // A container sale carries the container as its source, so the supplier
+        // comes from there rather than from a supplier-item reference.
+        if (!supplierId && sourceType === "container" && sourceId) {
+          const container = await prisma.container.findFirst({
+            where: { id: sourceId, companyId },
+            select: { supplierId: true },
           });
-          return;
+          if (container) {
+            supplierId = container.supplierId;
+          }
+        }
+
+        if (!supplierId) {
+          // A regular sale has always required a resolvable supplier, so keep
+          // rejecting it. A container sale was not checked at all before, so
+          // skip the check rather than start refusing sales that used to go
+          // through; the aim is to stop overselling, not to block trade on an
+          // edge case this code cannot attribute.
+          if (sourceType === "regular") {
+            res.status(400).json({
+              error: "Failed to record sale",
+              detail: `No supplier found for item "${itemName}"`,
+            });
+            return;
+          }
+          continue;
         }
 
         // Get total received from containers (all containers count — legacy containers

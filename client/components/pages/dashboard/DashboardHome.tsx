@@ -34,7 +34,7 @@ type DashboardStats = {
   }[];
   paymentMethods: Record<string, { total: number; count: number }>;
   salesTrend: { date: string; total: number; count: number }[];
-  lowStockItems: { itemName: string; available: number }[];
+  lowStockItems: { itemName: string; supplierName?: string; available: number }[];
   topItems: { itemName: string; quantitySold: number }[];
 };
 
@@ -365,7 +365,14 @@ export default function DashboardHome() {
                   <div key={item.itemName} className="flex items-center justify-between px-4 py-2.5">
                     {/* min-w-0 is required for truncate: a flex item defaults to
                         min-width:auto and so refuses to shrink below its text. */}
-                    <span className="text-sm text-gray-700 truncate min-w-0">{item.itemName}</span>
+                    <span className="min-w-0 truncate">
+                      <span className="text-sm text-gray-700">{item.itemName}</span>
+                      {item.supplierName && (
+                        /* Stock is tracked per supplier, so the name alone is
+                           ambiguous when several suppliers carry the item. */
+                        <span className="text-xs text-gray-400 ml-1.5">{item.supplierName}</span>
+                      )}
+                    </span>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${
                       item.available <= 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
                     }`}>
