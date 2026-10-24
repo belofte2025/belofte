@@ -523,9 +523,57 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       }
     }
 
+    // Stock this supplier still holds of these items, counted as the inventory
+    // report counts it. Deducting only this container's own sales overstated
+    // "remaining": the same item also sells through regular sales, and damage
+    // or loss is an adjustment, and neither touches this container's rows.
+    const summaryItemNames = containerItems.map((i: { itemName: string }) => i.itemName);
+    const summarySupplierId = container.supplierId;
+    const summaryCompanyId = container.companyId;
+
+    const [supCI, supSI, supAdj] = await Promise.all([
+      prisma.containerItem.findMany({
+        where: { itemName: { in: summaryItemNames }, Container: { supplierId: summarySupplierId, companyId: summaryCompanyId } },
+        select: { itemName: true, quantity: true, containerId: true },
+      }),
+      prisma.supplierItem.findMany({ where: { supplierId: summarySupplierId }, select: { id: true } }),
+      prisma.stockAdjustment.findMany({
+        where: { supplierId: summarySupplierId, companyId: summaryCompanyId, itemName: { in: summaryItemNames } },
+        select: { itemName: true, adjustmentQty: true },
+      }),
+    ]);
+
+    const supCIds = [...new Set(supCI.map((c: { containerId: string }) => c.containerId))];
+    const supSales = await prisma.saleItem.findMany({
+      where: {
+        itemName: { in: summaryItemNames },
+        OR: [
+          { Sale: { companyId: summaryCompanyId, sourceType: "container", sourceId: { in: supCIds } } },
+          { Sale: { companyId: summaryCompanyId, sourceType: "regular", sourceId: { in: supSI.map((s: { id: string }) => s.id) } } },
+        ],
+      },
+      select: { itemName: true, quantity: true },
+    });
+
+    const roll = <T>(rows: T[], name: (r: T) => string, qty: (r: T) => number) => {
+      const m: Record<string, number> = {};
+      for (const r of rows) m[name(r)] = (m[name(r)] || 0) + (qty(r) || 0);
+      return m;
+    };
+    const supplierReceived = roll(supCI,    r => r.itemName, r => r.quantity);
+    const supplierSold     = roll(supSales, r => r.itemName, r => r.quantity);
+    const supplierAdjusted = roll(supAdj,   r => r.itemName, r => r.adjustmentQty);
+
     const itemReport = containerItems.map((item: { itemName: string; quantity: number; receivedQty: number; unitPrice: number }) => {
       const soldData = soldItemMap[item.itemName] || { soldQty: 0, totalAmount: 0 };
-      const remainingQty = item.quantity - soldData.soldQty;
+      const fromThisContainer = item.quantity - soldData.soldQty;
+      const supplierAvailable =
+        (supplierReceived[item.itemName] || 0) -
+        (supplierSold[item.itemName] || 0) +
+        (supplierAdjusted[item.itemName] || 0);
+      // Never more than this container still holds unsold, and never more than
+      // the supplier actually has.
+      const remainingQty = Math.max(0, Math.min(fromThisContainer, supplierAvailable));
 
       return {
         itemName: item.itemName,

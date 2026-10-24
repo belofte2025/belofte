@@ -46,6 +46,50 @@ export const getContainerReport = async (containerId: string, companyId: string)
     });
   });
 
+  // What this supplier still holds of these items, counted the way the
+  // inventory report counts it. The page presents "remaining" as stock on
+  // hand, so deducting only this container's own sales overstated it: the same
+  // item also sells through regular sales, and damage or loss is recorded as an
+  // adjustment, and neither touches this container's rows.
+  const itemNames = container.ContainerItem.map((i: { itemName: string }) => i.itemName);
+  const supplierId = container.supplierId;
+
+  const [supplierContainerItems, supplierItemIds, adjustments] = await Promise.all([
+    prisma.containerItem.findMany({
+      where: { itemName: { in: itemNames }, Container: { supplierId, companyId } },
+      select: { itemName: true, quantity: true, containerId: true },
+    }),
+    prisma.supplierItem.findMany({ where: { supplierId }, select: { id: true } }),
+    prisma.stockAdjustment.findMany({
+      where: { supplierId, companyId, itemName: { in: itemNames } },
+      select: { itemName: true, adjustmentQty: true },
+    }),
+  ]);
+
+  const supplierContainerIds = [
+    ...new Set(supplierContainerItems.map((ci: { containerId: string }) => ci.containerId)),
+  ];
+
+  const supplierSales = await prisma.saleItem.findMany({
+    where: {
+      itemName: { in: itemNames },
+      OR: [
+        { Sale: { companyId, sourceType: "container", sourceId: { in: supplierContainerIds } } },
+        { Sale: { companyId, sourceType: "regular", sourceId: { in: supplierItemIds.map((s: { id: string }) => s.id) } } },
+      ],
+    },
+    select: { itemName: true, quantity: true },
+  });
+
+  const tally = <T>(rows: T[], name: (r: T) => string, qty: (r: T) => number) => {
+    const m: Record<string, number> = {};
+    for (const r of rows) m[name(r)] = (m[name(r)] || 0) + (qty(r) || 0);
+    return m;
+  };
+  const supReceived = tally(supplierContainerItems, r => r.itemName, r => r.quantity);
+  const supSold     = tally(supplierSales,          r => r.itemName, r => r.quantity);
+  const supAdj      = tally(adjustments,            r => r.itemName, r => r.adjustmentQty);
+
   const itemSummary = container.ContainerItem.map(
     (item: {
       itemName: any;
@@ -53,12 +97,19 @@ export const getContainerReport = async (containerId: string, companyId: string)
       receivedQty: number;
     }) => {
       const soldQty = soldMap[item.itemName] || 0;
+      const fromThisContainer = item.quantity - soldQty;
+      const supplierAvailable =
+        (supReceived[item.itemName] || 0) -
+        (supSold[item.itemName] || 0) +
+        (supAdj[item.itemName] || 0);
       return {
         itemName: item.itemName,
         expected: item.quantity,
         received: item.receivedQty,
         sold: soldQty,
-        remaining: item.quantity - soldQty,
+        // Capped by both: never more than this container brought and still has
+        // unsold, and never more than the supplier actually holds.
+        remaining: Math.max(0, Math.min(fromThisContainer, supplierAvailable)),
       };
     }
   );
@@ -323,14 +374,21 @@ export const getItemTransactionHistory = async (
     throw new Error("Supplier not found");
   }
 
-  // Fetch all container receipts for this item (only warehouse-received containers)
+  // Every container receipt for this item, whatever the container's status.
+  //
+  // This used to count only warehouse-received containers, but the sales side
+  // was not filtered to match: a regular sale was counted from the supplier and
+  // item alone, so goods received on a container still marked Pending were sold
+  // out of a balance that never had them added. The result was a history that
+  // ran negative. The rest of the app — the inventory report, the sale-time
+  // stock check, the dashboard and both sale screens — counts all containers,
+  // because containers predating the status lifecycle are all left at Pending.
   const containerItems = await prisma.containerItem.findMany({
     where: {
       itemName,
       Container: {
         supplierId,
         companyId,
-        status: { in: ["Received", "Incomplete", "Done"] },
       },
     },
     include: {
@@ -372,19 +430,26 @@ export const getItemTransactionHistory = async (
       },
     }),
 
-    // Regular sales from supplier items
+    // Regular sales from supplier items.
+    //
+    // Matched against every supplier item of this supplier, not just the ones
+    // named for this item. A regular sale carries a single sourceId — the
+    // supplier item of its first line — while its lines may name several
+    // different items, so keying on the sourceId's own name dropped the rest.
+    // The line-level filter below still restricts this to the item in question.
     prisma.sale.findMany({
       where: {
         sourceType: "regular",
         sourceId: {
           in: await prisma.supplierItem
             .findMany({
-              where: { supplierId, itemName },
+              where: { supplierId },
               select: { id: true },
             })
             .then((items) => items.map((i) => i.id)),
         },
         companyId,
+        SaleItem: { some: { itemName } },
       },
       include: {
         SaleItem: {
