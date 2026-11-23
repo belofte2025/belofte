@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petros Trader Flyer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Single visual world, built for print and for forwarding as an image.
+     Layout: one A4-proportioned column — masthead, promise, three benefits,
+     three steps, specifics, contact. */
+  :root {
+    --ink:       #0b1424;
+    --ink-soft:  #44536b;
+    --cyan:      #4FDBFF;   /* EYO brand */
+    --cyan-ink:  #0a7f9e;   /* cyan dark enough to read on paper */
+    --paper:     #ffffff;
+    --mist:      #eef7fb;
+    --rule:      #d3e3ec;
+    --display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --body:    'Inter', system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #dfeaf1;
+    color: var(--ink);
+    font-family: var(--body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: 24px 16px;
+  }
+
+  .sheet {
+    max-width: 820px;
+    margin: 0 auto;
+    background: var(--paper);
+    box-shadow: 0 10px 40px rgba(11,20,36,.14);
+  }
+
+  /* ── Masthead ── */
+  .masthead {
+    background: var(--ink);
+    color: #fff;
+    padding: 28px 40px 32px;
+  }
+  .brandline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+  .brandline img { width: 92px; height: auto; display: block; }
+  .brandline .by {
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #8fb6c6;
+    border-left: 1px solid #2b3c52;
+    padding-left: 12px;
+  }
+  .eyebrow {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(30px, 6.4vw, 50px);
+    line-height: 1.04;
+    letter-spacing: -0.022em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--cyan); }
+  .standfirst {
+    font-size: clamp(15px, 2.2vw, 17px);
+    color: #c6d8e2;
+    margin: 0;
+    max-width: 56ch;
+  }
+
+  /* ── Who it's for ── */
+  .audience {
+    background: var(--mist);
+    border-bottom: 1px solid var(--rule);
+    padding: 20px 40px;
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  .audience .tag {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 11.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--cyan-ink);
+    white-space: nowrap;
+  }
+  .audience p { margin: 0; font-size: 15px; color: var(--ink-soft); max-width: 62ch; }
+  .audience strong { color: var(--ink); font-weight: 600; }
+
+  section { padding: 34px 40px; }
+  /* The benefits grid already carries a visible edge, so the gap to the next
+     heading does not need a second helping of section padding. */
+  section:has(.benefits) { padding-bottom: 22px; }
+  .steps-wrap { padding-top: 26px; }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--cyan-ink);
+    margin: 0 0 20px;
+  }
+
+  /* ── Benefits ── */
+  .benefits {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .benefit { background: var(--paper); padding: 22px 20px; display: flex; flex-direction: column; }
+  .benefit h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 17px;
+    line-height: 1.25;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .benefit p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .benefit .num {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--cyan-ink);
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  /* ── Steps ── */
+  .steps { border-top: 1px solid var(--rule); }
+  .step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .step:last-child { border-bottom: 0; }
+  .step .n {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--paper);
+    background: var(--ink);
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+  }
+  .step h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 16px;
+    margin: 3px 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .step p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+
+  /* ── Specifics ── */
+  .specifics { background: var(--mist); border-top: 1px solid var(--rule); }
+  .speclist {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 28px;
+  }
+  .speclist li {
+    font-size: 14px;
+    color: var(--ink-soft);
+    padding-left: 20px;
+    position: relative;
+  }
+  .speclist li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 9px;
+    width: 9px; height: 9px;
+    background: var(--cyan);
+    border: 1px solid var(--cyan-ink);
+  }
+  .speclist strong { color: var(--ink); font-weight: 600; }
+
+  /* ── Contact ── */
+  .contact {
+    background: var(--ink);
+    color: #fff;
+    padding: 28px 40px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .contact .ask {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(19px, 3.4vw, 25px);
+    margin: 0 0 6px;
+    letter-spacing: -0.015em;
+  }
+  .contact .sub { margin: 0; font-size: 14px; color: #9fc0cf; }
+  .phone {
+    text-align: right;
+  }
+  .phone .label {
+    font-size: 10.5px;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    color: #8fb6c6;
+    margin: 0 0 4px;
+  }
+  .phone .num {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(22px, 4.6vw, 30px);
+    color: var(--cyan);
+    letter-spacing: .01em;
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+  }
+  .phone .num a { color: inherit; text-decoration: none; }
+
+  @media (max-width: 680px) {
+    body { padding: 12px 8px; }
+    .masthead, .audience, section, .contact { padding-left: 22px; padding-right: 22px; }
+    .benefits { grid-template-columns: minmax(0, 1fr); }
+    .speclist { grid-template-columns: minmax(0, 1fr); }
+    .contact { flex-direction: column; align-items: flex-start; }
+    .phone { text-align: left; }
+  }
+
+  @media print {
+    /* A4 is proportionally far squarer than this page, so printing it at
+       screen spacing either runs to two sheets or shrinks to a narrow column.
+       Tightening the vertical rhythm lets it fill one sheet at full width. */
+    body { background: #fff; padding: 0; }
+    .sheet { box-shadow: none; max-width: none; }
+    .masthead { padding: 18px 34px 20px; }
+    .brandline { margin-bottom: 16px; }
+    .brandline img { width: 76px; }
+    h1 { font-size: 38px; margin-bottom: 10px; }
+    .standfirst { font-size: 14px; }
+    .audience { padding: 13px 34px; }
+    section { padding: 20px 34px; }
+    section:has(.benefits) { padding-bottom: 14px; }
+    .steps-wrap { padding-top: 16px; }
+    h2 { margin-bottom: 13px; }
+    .benefit { padding: 15px 15px; }
+    .benefit .num { margin-bottom: 8px; }
+    .benefit h3 { font-size: 15px; }
+    .benefit p, .step p, .speclist li, .audience p { font-size: 12.5px; }
+    .step { padding: 10px 0; }
+    .step h3 { font-size: 14px; }
+    .speclist { gap: 7px 24px; }
+    .contact { padding: 18px 34px 20px; }
+    .contact .ask { font-size: 21px; }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+
+    <header class="masthead">
+      <div class="brandline">
+        <img src="logo.svg" alt="EYO Solutions">
+        <span class="by">Petros</span>
+      </div>
+      <p class="eyebrow">Sales &amp; stock control for container importers</p>
+      <h1>Know what&rsquo;s left. <em>Know who owes you.</em></h1>
+      <p class="standfirst">
+        Petros is a sales and inventory system for traders who bring goods in by
+        container and sell them on wholesale &mdash; for cash and on credit.
+        It replaces the counting book.
+      </p>
+    </header>
+
+    <div class="audience">
+      <span class="tag">Built for</span>
+      <p>
+        <strong>Importers and wholesalers</strong> bringing in general goods &mdash; clothing,
+        bedding, textiles, household &mdash; from suppliers abroad, and selling to
+        market traders and shops.
+      </p>
+    </div>
+
+    <section>
+      <h2>What you get</h2>
+      <div class="benefits">
+        <div class="benefit">
+          <span class="num">01</span>
+          <h3>Stock you can trust</h3>
+          <p>
+            Every item counted per supplier, across every container. Damage and
+            shortages recorded as adjustments, so the figure stays honest.
+          </p>
+        </div>
+        <div class="benefit">
+          <span class="num">02</span>
+          <h3>Credit you can see</h3>
+          <p>
+            Deposits, balances and statements for every customer. They get an SMS
+            the moment a payment is recorded.
+          </p>
+        </div>
+        <div class="benefit">
+          <span class="num">03</span>
+          <h3>Cash, MoMo and bank</h3>
+          <p>
+            Every sale recorded by how it was paid, so the day&rsquo;s takings add up
+            without adding them up.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="steps-wrap">
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="n">1</span>
+          <div>
+            <h3>Photograph the packing list</h3>
+            <p>The items and quantities are read off the sheet and loaded for you. No typing in hundreds of lines.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="n">2</span>
+          <div>
+            <h3>Sell from the container or from stock</h3>
+            <p>Cash, mobile money or bank. Or on credit, with a deposit taken at the counter and the balance tracked.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="n">3</span>
+          <div>
+            <h3>Check your position any time</h3>
+            <p>Stock, debtors, daily cash and sales by supplier &mdash; on your phone, and exportable as PDF.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="specifics">
+      <h2>Also in the box</h2>
+      <ul class="speclist">
+        <li><strong>Works on phone and tablet</strong> &mdash; installs like an app</li>
+        <li><strong>Staff accounts</strong> with controlled access</li>
+        <li><strong>Customer statements</strong> ready to send</li>
+        <li><strong>Stock adjustments</strong> for damage and loss</li>
+        <li><strong>Bookkeeping built in</strong> &mdash; trial balance, profit &amp; loss</li>
+        <li><strong>Reports as PDF</strong> &mdash; sales, stock, customers, containers</li>
+        <li><strong>Supplier and item price lists</strong></li>
+        <li><strong>One login per business</strong> &mdash; your data stays yours</li>
+      </ul>
+    </section>
+
+    <footer class="contact">
+      <div>
+        <p class="ask">See it on your own stock.</p>
+        <p class="sub">Ask for a demo and we will set up your suppliers and items.</p>
+      </div>
+      <div class="phone">
+        <p class="label">EYO Solutions &middot; Ghana</p>
+        <p class="num"><a href="tel:+233246462398">024 646 2398</a></p>
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>
