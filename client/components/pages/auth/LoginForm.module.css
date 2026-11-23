@@ -1,0 +1,61 @@
+.screen {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 2rem 1rem;
+  background:
+    radial-gradient(ellipse at 18% 10%, #285e56, transparent 55%),
+    radial-gradient(ellipse at 90% 95%, #174842, transparent 50%),
+    #102f2f;
+}
+
+.content {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 27rem);
+}
+
+.card {
+  border: 1px solid #e2ece8;
+  border-radius: 1.75rem;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  background: linear-gradient(145deg, #f0faf6, #fff 48%);
+  box-shadow: 0 24px 72px #071f2070, 0 0 0 6px #ffffff10;
+}
+
+.password {
+  position: relative;
+}
+
+.password input {
+  padding-right: 3rem;
+}
+
+.support {
+  justify-self: center;
+  color: #d6ebe5;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.support:hover {
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: card-enter 480ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  }
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
