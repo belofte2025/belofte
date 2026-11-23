@@ -300,16 +300,16 @@ export default function RegularSaleComponent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-w-0">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-5">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg">
-              <ShoppingCart className="w-6 h-6 text-white" />
+            <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-blue-100 text-blue-800">
+              <ShoppingCart className="size-5" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="page-title">
                 Regular Sales
               </h1>
               <p className="text-gray-600">
@@ -319,11 +319,11 @@ export default function RegularSaleComponent() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(295px,1fr)_minmax(0,1.8fr)] xl:items-start">
           {/* Left Column - Sale Configuration */}
-          <div className="lg:col-span-1">
+          <div className="min-w-0 space-y-3">
             {/* Sale Date */}
-            <div className="bg-white p-6 shadow-sm border border-gray-200 border-b-0">
+            <div className="card">
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-purple-600" />
                 <h3 className="font-semibold text-gray-900">Sale Date</h3>
@@ -338,7 +338,7 @@ export default function RegularSaleComponent() {
             </div>
 
             {/* Customer Selection */}
-            <div className="bg-white p-6 shadow-sm border border-gray-200 border-b-0">
+            <div className="card">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-blue-600" />
@@ -385,7 +385,7 @@ export default function RegularSaleComponent() {
             />
 
             {/* Cart Summary */}
-            <div className="bg-white p-6 shadow-sm border border-gray-200">
+            <div className="card">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Cart Summary</h3>
                 <Badge variant="info">{cart.length} items</Badge>
@@ -461,7 +461,7 @@ export default function RegularSaleComponent() {
               <button
                 disabled={loading || cart.length === 0 || !selectedCustomer}
                 onClick={handleConfirmSale}
-                className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="btn btn-primary mt-4 w-full"
               >
                 {loading ? "Processing..." : "Complete Sale"}
               </button>
@@ -469,10 +469,10 @@ export default function RegularSaleComponent() {
           </div>
 
           {/* Right Column - Items and Cart */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="min-w-0 space-y-4">
             {/* Items List */}
-            <div className="bg-white shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
+            <div className="overflow-hidden rounded-xl bg-white border border-gray-200">
+              <div className="border-b border-gray-200 px-4 py-4 sm:px-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">
                     Available Items
@@ -498,29 +498,30 @@ export default function RegularSaleComponent() {
                 ) : (
                   <div className="divide-y divide-gray-200">
                     {filteredItems.map((item) => (
-                      <div
+                      <button
+                        type="button"
                         key={item.id}
                         onClick={() => addToCart(item)}
-                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200 group"
+                        className="group block w-full p-4 text-left transition-colors hover:bg-blue-50 focus-visible:outline-offset-[-2px] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                        <span className="flex items-center justify-between">
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                               {item.itemName}
-                            </h4>
+                            </span>
                             {item.alias && (
-                              <p className="text-xs text-gray-500 italic">
+                              <span className="block text-xs text-gray-500 italic">
                                 Alias: {item.alias}
-                              </p>
+                              </span>
                             )}
-                            <p className="text-sm text-gray-600">
+                            <span className="block text-sm text-gray-600">
                               by {item.supplierName}
-                            </p>
-                          </div>
-                          <div className="text-right ml-4">
-                            <div className="text-lg font-semibold text-gray-900">
+                            </span>
+                          </span>
+                          <span className="ml-3 shrink-0 text-right">
+                            <span className="block text-base font-semibold text-gray-900">
                               ₵ {item.unitPrice.toFixed(2)}
-                            </div>
+                            </span>
                             <Badge
                               variant={
                                 item.available > 10
@@ -533,10 +534,10 @@ export default function RegularSaleComponent() {
                             >
                               {item.available} in stock
                             </Badge>
-                          </div>
-                          <Plus className="w-5 h-5 text-gray-400 group-hover:text-green-500 ml-3 transition-colors" />
-                        </div>
-                      </div>
+                          </span>
+                          <Plus className="ml-2 size-5 shrink-0 text-blue-700" aria-hidden="true" />
+                        </span>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -544,8 +545,8 @@ export default function RegularSaleComponent() {
             </div>
 
             {/* Shopping Cart */}
-            <div className="bg-white shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
+            <div className="overflow-hidden rounded-xl bg-white border border-gray-200">
+              <div className="border-b border-gray-200 px-4 py-4 sm:px-5">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">
                     Shopping Cart
@@ -572,8 +573,8 @@ export default function RegularSaleComponent() {
                   <div className="divide-y divide-gray-200">
                     {cart.map((item) => (
                       <div key={item.id} className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
+                        <div className="flex flex-col gap-3 min-[1400px]:flex-row min-[1400px]:items-center">
+                          <div className="min-w-0 flex-1">
                             <h4 className="font-medium text-gray-900">
                               {item.itemName}
                             </h4>
@@ -582,16 +583,16 @@ export default function RegularSaleComponent() {
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-4">
+                          <div className="grid grid-cols-2 items-center gap-2 rounded-lg bg-gray-50 p-2 sm:flex sm:flex-wrap sm:gap-3 sm:bg-transparent sm:p-0">
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => decreaseQty(item.id)}
-                                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                className="icon-btn text-gray-600 hover:bg-gray-100"
                                 title="Decrease quantity"
                               >
                                 <Minus className="w-4 h-4" />
                               </button>
-                              <div className="text-center min-w-[40px]">
+                              <div className="min-w-7 text-center">
                                 <div className="text-sm font-medium text-gray-900">
                                   {item.qty}
                                 </div>
@@ -599,15 +600,15 @@ export default function RegularSaleComponent() {
                               </div>
                               <button
                                 onClick={() => increaseQty(item.id)}
-                                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                className="icon-btn text-gray-600 hover:bg-gray-100"
                                 title="Increase quantity"
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
                             </div>
 
-                            <div className="text-center min-w-[100px]">
-                              <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                            <div className="min-w-0 text-right sm:min-w-[5.5rem] sm:text-center">
+                              <div className="flex items-center justify-end gap-1 text-xs text-gray-600 sm:justify-center">
                                 Unit Price
                                 {!canEditPrice && (
                                   <span title="You don't have permission to edit prices">
@@ -629,7 +630,7 @@ export default function RegularSaleComponent() {
                                 />
                               ) : (
                                 <div
-                                  className="font-medium text-gray-700"
+                                  className="break-words font-medium text-gray-700"
                                   title="Price editing is restricted. Contact an admin or manager."
                                 >
                                   ₵ {item.unitPrice.toFixed(2)}
@@ -637,16 +638,16 @@ export default function RegularSaleComponent() {
                               )}
                             </div>
 
-                            <div className="text-right min-w-[80px]">
+                            <div className="min-w-0 pl-2 text-left sm:min-w-[4.5rem] sm:pl-0 sm:text-right">
                               <div className="text-sm text-gray-600">Total</div>
-                              <div className="font-bold text-green-600">
+                              <div className="break-words font-bold text-blue-700">
                                 ₵ {(item.qty * item.unitPrice).toFixed(2)}
                               </div>
                             </div>
 
                             <button
                               onClick={() => removeFromCart(item.id)}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors"
+                              className="icon-btn justify-self-end text-red-700 hover:bg-red-50"
                               title="Remove from cart"
                             >
                               <Trash2 className="w-4 h-4" />

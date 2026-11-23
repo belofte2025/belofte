@@ -6,7 +6,6 @@ import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
   Home, Users, X, ShoppingCart, ChevronDown, ChevronsLeft, ChevronsRight, BarChart3,
@@ -14,7 +13,7 @@ import {
   Settings, UserPlus, Truck, ShoppingBag, FileText, List,
   PiggyBankIcon, Shield, UserCog, Edit, ClipboardList,
   BookOpen, BookText, ArrowLeftRight, LineChart, Receipt, BadgeDollarSign,
-  Bell, History, Building2,
+  Bell, History, Building2, Boxes,
 } from "lucide-react";
 
 const mainItems = [
@@ -51,7 +50,7 @@ const utilityItems = [
   { name: "Supplier Import", href: "/utilities/supplier-import", icon: Truck,    permission: "utilities.import" },
 ];
 
-const settingsItems = [
+export const settingsItems = [
   { name: "Role Management",    href: "/settings/roles",              icon: Shield,      permission: "roles.manage" },
   { name: "User Management",    href: "/settings/users",              icon: UserCog,     permission: "users.view" },
   { name: "Item Deduplication", href: "/settings/item-deduplication", icon: Package,     permission: "items.deduplicate" },
@@ -84,7 +83,7 @@ type SidebarProps = {
 function SectionLabel({ children, collapsed }: { children: React.ReactNode; collapsed: boolean }) {
   if (collapsed) return <div className="mt-4 mx-3 border-t border-white/10 first:mt-2" />;
   return (
-    <p className="px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-widest text-white/30 select-none first:pt-2">
+    <p className="px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-widest text-[#8caeaa] select-none first:pt-2">
       {children}
     </p>
   );
@@ -97,23 +96,26 @@ function NavItem({
   exact?: boolean; small?: boolean; collapsed?: boolean; onClick?: () => void;
 }) {
   const pathname = usePathname();
-  const active = exact ? pathname === href : pathname.startsWith(href);
+  const currentPath = pathname.replace(/\/$/, "");
+  const active = currentPath === href || (!exact && currentPath.startsWith(`${href}/`));
   const link = (
     <Link
       href={href}
       onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      aria-label={collapsed ? name : undefined}
       className={clsx(
-        "group flex items-center gap-2.5 transition-colors duration-150",
+        "group flex items-center gap-2.5 rounded-lg transition-colors duration-150",
         collapsed ? "justify-center px-0 py-2.5" : small ? "px-3 py-1.5 text-xs" : "px-3 py-2 text-sm",
         active
-          ? "bg-blue-600 text-white font-semibold"
-          : "text-white/60 hover:bg-white/5 hover:text-white"
+          ? "bg-[#1c514b] text-[#d6fff4] font-semibold"
+          : "text-[#c4d7d4] hover:bg-white/5 hover:text-white"
       )}
     >
       <Icon className={clsx(
         "flex-shrink-0",
         small ? "h-3.5 w-3.5" : "h-[18px] w-[18px]",
-        active ? "text-white" : "text-white/40 group-hover:text-white/70"
+        active ? "text-white" : "text-[#9bb9b5] group-hover:text-white/70"
       )} />
       {!collapsed && <span className="truncate flex-1">{name}</span>}
     </Link>
@@ -148,21 +150,24 @@ function CollapsibleGroup({
 
   const button = (
     <button
+      type="button"
+      aria-expanded={open && !collapsed}
+      aria-label={collapsed ? label : undefined}
       onClick={handleClick}
       className={clsx(
-        "w-full flex items-center gap-2.5 text-sm font-medium transition-colors duration-150",
+        "w-full flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors duration-150",
         collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2",
         activeTest
           ? "text-white bg-white/10"
-          : "text-white/60 hover:bg-white/5 hover:text-white"
+          : "text-[#c4d7d4] hover:bg-white/5 hover:text-white"
       )}
     >
-      <Icon className={clsx(collapsed ? "h-[18px] w-[18px]" : "h-4 w-4 flex-shrink-0", activeTest ? "text-blue-400" : "text-white/40")} />
+      <Icon className={clsx(collapsed ? "h-[18px] w-[18px]" : "h-4 w-4 flex-shrink-0", activeTest ? "text-blue-400" : "text-[#9bb9b5]")} />
       {!collapsed && (
         <>
           <span className="flex-1 text-left truncate">{label}</span>
           <ChevronDown className={clsx(
-            "h-3.5 w-3.5 flex-shrink-0 text-white/30 transition-transform duration-200",
+            "h-3.5 w-3.5 flex-shrink-0 text-[#8caeaa] transition-transform duration-200",
             open && "rotate-180"
           )} />
         </>
@@ -232,25 +237,25 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
       />
 
       {/* Sidebar panel */}
-      <aside className={clsx(
-        "fixed top-0 left-0 z-50 h-screen flex flex-col bg-slate-900",
-        collapsed ? "lg:w-20" : "lg:w-64",
-        "w-64",
+      <aside id="workspace-navigation" aria-label="Workspace sidebar" inert={!open && !isDesktop} className={clsx(
+        "fixed top-0 left-0 z-50 h-dvh flex flex-col bg-[#102f2f] text-white",
+        collapsed ? "lg:w-20" : "lg:w-[248px]",
+        "w-[min(288px,86vw)]",
         "transform transition-[transform,width] duration-300 ease-in-out lg:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full"
       )}>
 
         {/* Logo bar */}
         <div className={clsx(
-          "h-14 flex items-center border-b border-white/10 flex-shrink-0",
+          "h-16 flex items-center flex-shrink-0",
           collapsedUi ? "justify-center px-2" : "justify-between px-4"
         )}>
           <div className="flex items-center gap-2.5 min-w-0">
-            <Image src="/icon/eyo.png" alt="EYO" width={22} height={22} className="object-contain block flex-shrink-0" priority />
-            {!collapsedUi && <span className="text-sm font-bold text-white tracking-tight truncate">PETROS</span>}
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#c6f2e4] text-[#102f2f]"><Boxes className="size-5" aria-hidden="true" /></span>
+            {!collapsedUi && <span className="text-lg font-bold text-white tracking-[-0.04em] truncate">PETROS</span>}
           </div>
           {!collapsedUi && (
-            <button onClick={close} className="lg:hidden p-1.5 rounded-md text-white/70 hover:text-white transition-colors">
+            <button type="button" aria-label="Close navigation" onClick={close} className="lg:hidden p-1.5 rounded-md text-white/70 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -259,25 +264,25 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
         {/* Company banner */}
         <div
           className={clsx(
-            "flex-shrink-0 border-b border-white/10 flex items-center gap-2.5 bg-blue-600/10",
-            collapsedUi ? "justify-center px-2 py-3" : "px-4 py-3"
+            "mx-3 mb-2 flex-shrink-0 rounded-xl border border-white/10 flex items-center gap-2.5 bg-white/5",
+            collapsedUi ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
           )}
           title={user?.company?.companyName || "Company"}
         >
           <Building2 className="h-5 w-5 flex-shrink-0 text-blue-400" />
           {!collapsedUi && (
-            <span className="text-base font-bold text-white leading-tight truncate">
+            <span className="text-sm font-semibold text-white leading-tight truncate">
               {user?.company?.companyName || "Company"}
             </span>
           )}
         </div>
 
         {/* Navigation */}
-        <nav className={clsx("flex-1 overflow-y-auto overflow-x-hidden py-2 space-y-0.5", collapsedUi ? "px-2.5" : "px-2")}>
+        <nav aria-label="Workspace navigation" className={clsx("flex-1 overflow-y-auto overflow-x-hidden py-2 space-y-0.5", collapsedUi ? "px-2.5" : "px-2")}>
 
           {visibleMain.length > 0 && (
             <>
-              <SectionLabel collapsed={collapsedUi}>Main</SectionLabel>
+              <SectionLabel collapsed={collapsedUi}>Workspace</SectionLabel>
               {visibleMain.map(({ name, href, icon }) => (
                 <NavItem key={href} href={href} name={name} icon={icon} exact={href === "/dashboard"} collapsed={collapsedUi} onClick={close} />
               ))}
@@ -305,12 +310,12 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
                             "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
                             pathname.startsWith(href)
                               ? "text-white font-semibold"
-                              : "text-white/60 hover:text-white hover:bg-white/5"
+                              : "text-[#c4d7d4] hover:text-white hover:bg-white/5"
                           )}
                         >
-                          <Icon className="h-3.5 w-3.5 flex-shrink-0 text-white/40" />
+                          <Icon className="h-3.5 w-3.5 flex-shrink-0 text-[#9bb9b5]" />
                           <span className="flex-1 text-left truncate">{name}</span>
-                          <ChevronDown className={clsx("h-3 w-3 text-white/30 flex-shrink-0 transition-transform duration-200", salesSubOpen && "rotate-180")} />
+                          <ChevronDown className={clsx("h-3 w-3 text-[#8caeaa] flex-shrink-0 transition-transform duration-200", salesSubOpen && "rotate-180")} />
                         </button>
                         {salesSubOpen && (
                           <div className="ml-3 pl-3 border-l border-white/10 space-y-0.5 mt-0.5">
@@ -384,7 +389,7 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
         <div className="flex-shrink-0 border-t border-white/10">
           <div className={clsx("flex items-center gap-2.5 px-3 py-3", collapsedUi && "justify-center px-2")}>
             <div
-              className="w-8 h-8 bg-blue-600 flex items-center justify-center flex-shrink-0 text-white font-semibold text-sm"
+              className="w-8 h-8 rounded-lg bg-[#286359] flex items-center justify-center flex-shrink-0 text-white font-semibold text-sm"
               title={collapsedUi ? (user?.userName || user?.email || "User") : undefined}
             >
               {initials}
@@ -392,15 +397,17 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
             {!collapsedUi && (
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-white truncate">{user?.userName || "User"}</p>
-                <p className="text-xs text-white/40 truncate">{user?.role || user?.email}</p>
+                <p className="text-xs text-[#9bb9b5] truncate">{user?.role || user?.email}</p>
               </div>
             )}
           </div>
 
           <button
+            type="button"
+            aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
             onClick={() => setCollapsed(!collapsed)}
             className={clsx(
-              "hidden lg:flex w-full items-center gap-2 px-3 py-2 text-xs text-white/40 hover:text-white hover:bg-white/5 transition-colors border-t border-white/10",
+              "hidden lg:flex w-full items-center gap-2 px-3 py-2 text-xs text-[#9bb9b5] hover:text-white hover:bg-white/5 transition-colors border-t border-white/10",
               collapsedUi && "justify-center px-0"
             )}
           >
@@ -408,7 +415,7 @@ export default function Sidebar({ open, setOpen, collapsed, setCollapsed }: Side
           </button>
 
           {!collapsedUi && (
-            <p className="px-3 pb-2 pt-1 text-[10px] text-white/25 text-center leading-snug">
+            <p className="px-3 pb-2 pt-1 text-[10px] text-[#8caeaa] text-center leading-snug">
               EYO Solutions Ghana · 0246462398
             </p>
           )}

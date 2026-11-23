@@ -78,7 +78,7 @@ export default function CompanyDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="workspace-shell min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
       </div>
     );
@@ -96,16 +96,16 @@ export default function CompanyDetailPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="workspace-shell min-h-screen">
       {/* Topbar */}
       <header
         className="h-14 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm"
-        style={{ background: "#0f172a" }}
+        style={{ background: "#102f2f" }}
       >
         <div className="flex items-center gap-3">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: "#0099d6" }}
+            style={{ background: "#087467" }}
           >
             <ShieldCheck className="w-4 h-4 text-white" />
           </div>

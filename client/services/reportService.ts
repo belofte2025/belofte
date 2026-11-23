@@ -5,8 +5,18 @@ export const getContainerReport = async (containerId: string) => {
   return res.data;
 };
 
+export type SupplierReportItem = {
+  itemId: string;
+  name: string;
+  totalQuantity: number;
+  sold: number;
+  remaining: number;
+};
+
 export const getSupplierReport = async (supplierId: string) => {
-  const res = await api.get(`/reports/supplier/${supplierId}`);
+  const res = await api.get<{ supplierId: string; items: SupplierReportItem[] }>(
+    `/reports/supplier/${supplierId}`
+  );
   return res.data;
 };
 

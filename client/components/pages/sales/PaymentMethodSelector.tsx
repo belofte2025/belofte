@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Banknote, CreditCard, Smartphone, Landmark } from "lucide-react";
 
 export type SaleType = "cash" | "credit";
@@ -28,33 +29,23 @@ const saleTypes: { value: SaleType; label: string; icon: React.ElementType }[] =
   { value: "credit", label: "Credit Sale", icon: CreditCard },
 ];
 
-/**
- * One segment of a toggle group. The group behaves as a radio set, so selection
- * is exposed through aria-checked rather than a pressed state.
- */
 function Segment({
-  active, onClick, icon: Icon, label,
+  name, active, onChange, icon: Icon, label,
 }: {
+  name: string;
   active: boolean;
-  onClick: () => void;
+  onChange: () => void;
   icon: React.ElementType;
   label: string;
 }) {
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
-        active
-          ? "bg-blue-600 text-white"
-          : "bg-white text-gray-600 hover:bg-gray-50"
-      }`}
-    >
-      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-      {label}
-    </button>
+    <label className="relative flex min-w-0 flex-1 cursor-pointer">
+      <input type="radio" name={name} checked={active} onChange={onChange} className="peer sr-only" />
+      <span className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-md px-2 text-xs font-semibold text-gray-600 hover:bg-white peer-checked:bg-blue-100 peer-checked:text-blue-800 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500">
+        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+        {label}
+      </span>
+    </label>
   );
 }
 
@@ -62,26 +53,28 @@ export default function PaymentMethodSelector({
   saleType, setSaleType, paymentMethod, setPaymentMethod,
   amountPaid = 0, setAmountPaid, total = 0,
 }: Props) {
+  const groupId = useId();
   const showDeposit = saleType === "credit" && !!setAmountPaid;
   const deposit = Math.min(Math.max(0, amountPaid), total);
   const remaining = Math.max(0, total - deposit);
 
   return (
-    <div className="bg-white p-4 shadow-sm border border-gray-200 border-b-0 space-y-3">
+    <div className="card space-y-3">
       <div>
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
           Payment Method
         </p>
         <div
           role="radiogroup"
-          aria-label="Payment method"
-          className="flex rounded-lg border border-gray-200 overflow-hidden divide-x divide-gray-200"
+          aria-label="Payment terms"
+          className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1"
         >
           {saleTypes.map(({ value, label, icon }) => (
             <Segment
               key={value}
+              name={`${groupId}-terms`}
               active={saleType === value}
-              onClick={() => {
+              onChange={() => {
                 setSaleType(value);
                 if (value === "cash") setAmountPaid?.(0);
               }}
@@ -111,6 +104,7 @@ export default function PaymentMethodSelector({
               setAmountPaid?.(Number.isFinite(v) ? Math.min(Math.max(0, v), total) : 0);
             }}
             placeholder="0.00"
+            aria-label="Down payment"
             className="input py-1.5 text-sm"
           />
           <div className="flex items-center justify-between mt-1.5 text-xs">
@@ -132,13 +126,14 @@ export default function PaymentMethodSelector({
           <div
             role="radiogroup"
             aria-label="How the payment was made"
-            className="flex rounded-lg border border-gray-200 overflow-hidden divide-x divide-gray-200"
+            className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1"
           >
             {methods.map(({ value, label, icon }) => (
               <Segment
                 key={value}
+                name={`${groupId}-method`}
                 active={paymentMethod === value}
-                onClick={() => setPaymentMethod(value)}
+                onChange={() => setPaymentMethod(value)}
                 icon={icon}
                 label={label}
               />

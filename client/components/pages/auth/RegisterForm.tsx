@@ -5,6 +5,7 @@ import { getCompanies, Company } from "@/services/companyService";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import PetrosBrand from "@/components/layout/PetrosBrand";
 import {
   User,
   Mail,
@@ -13,7 +14,6 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  ShieldCheck,
 } from "lucide-react";
 import toast from "@/lib/toast";
 
@@ -113,22 +113,13 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-md animate-fade-in">
-        {/* Main Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-8 space-y-8">
-          {/* Brand Section */}
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-lg mb-4">
-              <ShieldCheck className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              Join EYO Solutions
-            </h1>
-            <p className="text-gray-600 font-medium">
-              Create your business account
-            </p>
-            <div className="w-12 h-1 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full mx-auto"></div>
+    <div className="min-h-dvh bg-[#f4f7f6] flex items-center justify-center px-4 py-7 sm:p-8">
+      <div className="w-full max-w-xl space-y-5">
+        <PetrosBrand />
+        <div className="card space-y-6 px-5 py-6 sm:p-8">
+          <div>
+            <h1 className="page-title">Create an account</h1>
+            <p className="mt-1 text-sm text-gray-600">Register with an existing company.</p>
           </div>
 
           {/* Form Section */}
@@ -316,7 +307,7 @@ export default function RegisterForm() {
             <button
               onClick={handleRegister}
               disabled={loading || loadingCompanies}
-              className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none group"
+              className="btn btn-primary w-full group"
             >
               <span className="flex items-center justify-center gap-2">
                 {loading ? (
@@ -353,17 +344,12 @@ export default function RegisterForm() {
             </button>
           </div>
 
-          {/* Terms */}
-          <div className="text-center text-xs text-gray-500">
-            By creating an account, you agree to our{" "}
-            <Link href="/terms" className="text-green-600 hover:underline">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="text-green-600 hover:underline">
-              Privacy Policy
-            </Link>
-          </div>
+          <p className="text-center text-xs text-gray-500">
+            For questions about terms or privacy, call EYO Solutions at{" "}
+            <a href="tel:+233246462398" className="text-green-700 underline">
+              0246462398
+            </a>.
+          </p>
 
           {/* Login Link */}
           <div className="pt-6 border-t border-gray-100 text-center">

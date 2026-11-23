@@ -32,7 +32,7 @@ export function Btn({
   children, variant = 'primary', size = 'md', icon: Icon,
   href, onClick, disabled, type = 'button', className = '',
 }: BtnProps) {
-  const base = `inline-flex items-center font-medium transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${V[variant]} ${S[size]} ${className}`
+  const base = `inline-flex min-h-10 items-center justify-center rounded-lg font-semibold transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${V[variant]} ${S[size]} ${className}`
 
   const inner = (
     <>

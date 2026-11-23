@@ -21,13 +21,17 @@ export default function SearchInput({
       </div>
       <input
         type="text"
+        role="searchbox"
+        aria-label={placeholder.replace(/[.…]+$/, "")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="block w-full pl-10 pr-10 py-3 border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200 placeholder-gray-400"
+        className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200 placeholder-gray-400"
         placeholder={placeholder}
       />
       {value && (
         <button
+          type="button"
+          aria-label="Clear search"
           onClick={() => onChange("")}
           className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600"
         >

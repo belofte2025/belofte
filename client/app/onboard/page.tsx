@@ -4,6 +4,7 @@ import { onboardCompany } from "@/services/onboardService";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import PetrosBrand from "@/components/layout/PetrosBrand";
 import {
   Building2,
   User,
@@ -110,24 +111,15 @@ export default function OnboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex">
+    <div className="min-h-dvh bg-[#f4f7f6] flex">
       {/* Left Side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
-        <div className="w-full max-w-md animate-fade-in">
-          {/* Main Card */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-8 space-y-8">
-            {/* Brand Section */}
-            <div className="text-center space-y-3">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg mb-4">
-                <Building2 className="w-8 h-8 text-white" />
-              </div>
-              <h1 className="text-3xl font-bold text-blue-600">
-                Start Your Journey
-              </h1>
-              <p className="text-gray-600 font-medium">
-                Create your company and admin account
-              </p>
-              <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto"></div>
+        <div className="w-full max-w-xl space-y-5">
+          <PetrosBrand />
+          <div className="card space-y-6 px-5 py-6 sm:p-8">
+            <div>
+              <h1 className="page-title">Set up your company</h1>
+              <p className="mt-1 text-sm text-gray-600">Create a company workspace and its first admin account.</p>
             </div>
 
             {/* Form Section */}
@@ -377,7 +369,7 @@ export default function OnboardPage() {
       </div>
 
       {/* Right Side - Features */}
-      <div className="hidden lg:flex lg:w-1/2 bg-blue-600 p-12 items-center justify-center relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 m-4 rounded-3xl bg-[#102f2f] p-12 items-center justify-center relative overflow-hidden">
         {/* Decorative circles */}
         <div className="absolute top-20 right-20 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 left-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
@@ -386,11 +378,10 @@ export default function OnboardPage() {
           <div className="space-y-4">
             <Sparkles className="w-16 h-16 text-white/90" />
             <h2 className="text-4xl font-bold text-white">
-              Everything You Need to Manage Your Business
+              Your company workspace
             </h2>
             <p className="text-blue-100 text-lg">
-              Get started with our comprehensive inventory management platform in
-              minutes.
+              Manage stock, sales, and customer accounts with PETROS.
             </p>
           </div>
 

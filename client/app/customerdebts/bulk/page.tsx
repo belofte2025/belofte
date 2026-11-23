@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import { bulkCreateCustomerDebts } from "@/services/customerDebtService";
-import { getCustomers } from "@/services/customerService";
+import { getAllCustomers } from "@/services/customerService";
 import toast from "@/lib/toast";
 
 interface Customer {
@@ -47,7 +47,7 @@ export default function BulkDebtCreationPage() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const data = await getCustomers();
+        const data = await getAllCustomers();
         setCustomers(data);
       } catch (error) {
         console.error("Failed to load customers:", error);
@@ -120,7 +120,7 @@ export default function BulkDebtCreationPage() {
 
       await bulkCreateCustomerDebts(debts);
       toast.success(`Successfully created ${debts.length} debt entries`);
-      router.push("/customer-debts");
+      router.push("/customers");
     } catch (error) {
       console.error("Failed to create debts:", error);
       toast.error("Failed to create debts");
@@ -141,7 +141,7 @@ export default function BulkDebtCreationPage() {
           {/* Header */}
           <div className="mb-8">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push("/customers")}
               className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -312,7 +312,7 @@ export default function BulkDebtCreationPage() {
           {/* Action Buttons */}
           <div className="mt-6 flex gap-4">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push("/customers")}
               className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
             >
               Cancel

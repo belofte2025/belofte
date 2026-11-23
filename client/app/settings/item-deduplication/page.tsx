@@ -231,6 +231,7 @@ export default function ItemDeduplicationPage() {
               <div className="flex items-center gap-4 mb-2">
                 <Link
                   href="/settings"
+                  aria-label="Back to settings"
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
                 >
                   <ArrowLeft className="w-5 h-5" />

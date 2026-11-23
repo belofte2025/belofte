@@ -68,7 +68,7 @@ api.interceptors.response.use(
       });
     }
 
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && error.config?.url !== "/auth/login") {
       console.warn("[API] Unauthorized – redirecting to login");
       if (typeof window !== "undefined") {
         window.location.href = "/login";

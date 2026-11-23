@@ -1,7 +1,8 @@
 "use client";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { ShieldX } from "lucide-react";
 
 type ProtectedPageProps = {
@@ -34,7 +35,7 @@ export function ProtectedPage({
 }: ProtectedPageProps) {
   const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions();
   const router = useRouter();
-  const [isChecking, setIsChecking] = useState(true);
+  const { loading } = useAuth();
 
   // Convert to array for consistent handling
   const perms = Array.isArray(permission) ? permission : [permission];
@@ -47,16 +48,13 @@ export function ProtectedPage({
     : hasAnyPermission(...perms);
 
   useEffect(() => {
-    // If no access, redirect to dashboard or unauthorized page
-    if (!hasAccess) {
+    if (!loading && !hasAccess) {
       router.push("/dashboard");
-    } else {
-      setIsChecking(false);
     }
-  }, [hasAccess, router]);
+  }, [loading, hasAccess, router]);
 
   // Show loading state while checking permissions
-  if (isChecking || !hasAccess) {
+  if (loading || !hasAccess) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

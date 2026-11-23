@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Menu, Bell, ChevronDown, ChevronRight, User, Lock, LogOut, Building2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import UpdatePasswordModal from "@/components/auth/UpdatePasswordModal";
 
 const UUID_OR_ID_RE = /^[0-9a-f-]{16,}$/i;
@@ -29,26 +30,29 @@ function useBreadcrumb() {
   return crumbs;
 }
 
-export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
+export default function Topbar({ onMenuClick, menuOpen }: { onMenuClick: () => void; menuOpen: boolean }) {
   const { user, logout } = useAuth();
+  const { hasPermission } = usePermissions();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const crumbs = useBreadcrumb();
 
   return (
     <>
-      <header className="h-14 px-3 flex items-center justify-between lg:px-6 bg-white border-b border-gray-200 shadow-sm">
+      <header className="h-16 px-4 flex items-center justify-between lg:px-6 bg-white/95 backdrop-blur border-b border-gray-200">
         {/* Left: menu toggle + breadcrumb */}
         <div className="flex items-center gap-3 min-w-0">
           <button
             className="lg:hidden p-2 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
             onClick={onMenuClick}
-            aria-label="Open menu"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-controls="workspace-navigation"
+            aria-expanded={menuOpen}
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <nav className="flex items-center gap-1.5 min-w-0 text-sm">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 min-w-0 text-sm">
             <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 hidden sm:inline">
               Home
             </Link>
@@ -70,28 +74,35 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         {/* Right */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <span
-            className="hidden sm:flex items-center gap-1.5 mr-2 px-3 py-1.5 bg-blue-50 ring-1 ring-blue-200/60 truncate max-w-[220px]"
+            className="hidden sm:flex items-center gap-1.5 mr-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 truncate max-w-[220px]"
             title={user?.company?.companyName}
           >
             <Building2 className="w-4 h-4 flex-shrink-0 text-blue-700" />
-            <span className="text-sm font-bold truncate text-blue-700">
+            <span className="text-xs font-semibold truncate text-gray-700">
               {user?.company?.companyName}
             </span>
           </span>
 
-          <button className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
-          </button>
+          {hasPermission("users.view") && (
+            <Link
+              href="/settings/notifications"
+              aria-label="Notification settings"
+              title="Notification settings"
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+            >
+              <Bell className="w-5 h-5" aria-hidden="true" />
+            </Link>
+          )}
 
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
               aria-label="User menu"
+              aria-expanded={showDropdown}
             >
-              <div className="w-8 h-8 bg-slate-900 flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-sm">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-800 font-semibold text-sm">
                   {user?.email?.charAt(0).toUpperCase() || "U"}
                 </span>
               </div>

@@ -13,7 +13,7 @@ export default function Badge({
   size = "md",
   className 
 }: BadgeProps) {
-  const baseClasses = "inline-flex items-center font-medium ring-1";
+  const baseClasses = "inline-flex items-center rounded-full font-medium ring-1";
 
   const variants = {
     default: "bg-gray-100 text-gray-600 ring-gray-200/60",

@@ -382,7 +382,7 @@ export default function OffloadPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg lg:sticky lg:bottom-auto">
+              <div className="fixed bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px))] left-0 right-0 z-30 bg-white border-t border-gray-200 p-4 shadow-lg lg:sticky lg:bottom-auto">
                 <div className="max-w-7xl mx-auto flex gap-3">
                   <button
                     onClick={handleSaveIncomplete}

@@ -38,9 +38,9 @@ export default function SuperAdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-dvh flex bg-[#f4f7f6]">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-900 to-blue-950 relative overflow-hidden flex-col">
+      <div className="hidden lg:flex lg:w-1/2 m-4 rounded-3xl bg-[#102f2f] relative overflow-hidden flex-col">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse delay-1000" />

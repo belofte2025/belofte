@@ -72,14 +72,17 @@ export function DataTable<T extends Record<string, any>>({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
-            type="text"
+            type="search"
+            aria-label={searchPlaceholder.replace(/[.…]+$/, "")}
             placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-9 py-2.5 bg-white border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+            className="w-full pl-9 pr-9 py-2.5 rounded-lg bg-white border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
           />
           {searchTerm && (
             <button
+              type="button"
+              aria-label="Clear search"
               onClick={() => setSearchTerm('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
@@ -91,7 +94,7 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Table */}
-      <div className="bg-white shadow-sm ring-1 ring-black/5 overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
@@ -99,21 +102,20 @@ export function DataTable<T extends Record<string, any>>({
                 {columns.map(col => (
                   <th
                     key={col.key}
-                    onClick={() => col.sortable && handleSort(col.key)}
-                    className={`px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider select-none ${
-                      col.sortable ? 'cursor-pointer hover:text-gray-700' : ''
-                    } ${col.className || ''}`}
+                    scope="col"
+                    aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                    className={`whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-gray-700 ${col.className || ''}`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      {col.label}
-                      {col.sortable && (
-                        sortKey === col.key
+                    {col.sortable ? (
+                      <button type="button" className="inline-flex items-center gap-1.5 rounded hover:text-blue-700" onClick={() => handleSort(col.key)}>
+                        {col.label}
+                        {sortKey === col.key
                           ? sortDir === 'asc'
-                            ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" />
-                            : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />
-                          : <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
-                      )}
-                    </div>
+                            ? <ChevronUp className="size-3.5" aria-hidden="true" />
+                            : <ChevronDown className="size-3.5" aria-hidden="true" />
+                          : <ChevronsUpDown className="size-3.5 text-gray-500" aria-hidden="true" />}
+                      </button>
+                    ) : col.label}
                   </th>
                 ))}
               </tr>
