@@ -28,12 +28,27 @@ interface Sale {
   paymentMethod: string | null;
   customerName: string;
   totalAmount: number;
+  /** Deposit taken at the till. */
   amountPaid: number;
+  /** Deposit plus any later payments that reach this invoice. */
+  settledAmount: number;
+  outstanding: number;
+  settlementStatus: "paid" | "part-paid" | "unpaid";
   createdAt: string;
   items: SaleItem[];
 }
 
 type SaleTypeFilter = "all" | "paid" | "credit";
+type SettlementFilter = "all" | "paid" | "part-paid" | "unpaid";
+
+// How a credit invoice actually stands, once payments made against the
+// customer are applied to it. Without this every credit sale reads as fully
+// outstanding no matter how much has been paid off.
+const SETTLEMENT_LABEL: Record<string, { text: string; className: string }> = {
+  paid: { text: "Paid", className: "bg-green-100 text-green-700" },
+  "part-paid": { text: "Part paid", className: "bg-amber-100 text-amber-800" },
+  unpaid: { text: "Unpaid", className: "bg-red-100 text-red-700" },
+};
 type PaymentMethodFilter = "all" | "CASH" | "MOMO" | "BANK";
 
 const paymentMethodLabel = (m: string | null) => {
@@ -57,6 +72,7 @@ export default function SalesReportPage() {
     return date.toISOString().split('T')[0];
   });
   const [saleTypeFilter, setSaleTypeFilter] = useState<SaleTypeFilter>("all");
+  const [settlementFilter, setSettlementFilter] = useState<SettlementFilter>("all");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<PaymentMethodFilter>("all");
 
   const fetchSalesReport = useCallback(async () => {
@@ -98,9 +114,12 @@ export default function SalesReportPage() {
         const method = (s.paymentMethod || "CASH").toUpperCase();
         if (method !== paymentMethodFilter) return false;
       }
+      // How the invoice actually stands, which is a different question from
+      // whether it was made on credit.
+      if (settlementFilter !== "all" && s.settlementStatus !== settlementFilter) return false;
       return true;
     });
-  }, [sales, saleTypeFilter, paymentMethodFilter]);
+  }, [sales, saleTypeFilter, paymentMethodFilter, settlementFilter]);
 
   // Calculate summary stats for PDF export
   const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
@@ -108,16 +127,19 @@ export default function SalesReportPage() {
   const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
   const cashSales = filteredSales.filter(s => s.saleType.toLowerCase() === 'cash');
   const creditSales = filteredSales.filter(s => s.saleType.toLowerCase() === 'credit');
-  // A deposit on a credit sale is money received, not credit extended — so it
-  // counts as paid and only the remainder counts as credit. The two then sum
-  // to total revenue instead of double-counting the deposit.
+  // Settled means the deposit taken at the till plus any payment the customer
+  // has made since. Counting only the deposit called a half-paid invoice fully
+  // outstanding, and would now contradict the status shown on its own row.
+  // The two figures still sum to total revenue.
   const totalCashRevenue =
     cashSales.reduce((sum, s) => sum + s.totalAmount, 0) +
-    creditSales.reduce((sum, s) => sum + (s.amountPaid ?? 0), 0);
+    creditSales.reduce((sum, s) => sum + (s.settledAmount ?? s.amountPaid ?? 0), 0);
   const totalCreditRevenue = creditSales.reduce(
-    (sum, s) => sum + (s.totalAmount - (s.amountPaid ?? 0)),
+    (sum, s) => sum + (s.outstanding ?? s.totalAmount - (s.amountPaid ?? 0)),
     0
   );
+  const partPaidCount = creditSales.filter((s) => s.settlementStatus === "part-paid").length;
+  const fullyPaidCredit = creditSales.filter((s) => s.settlementStatus === "paid").length;
 
   const exportToPDF = async () => {
     try {
@@ -131,8 +153,10 @@ export default function SalesReportPage() {
               <th>Date</th>
               <th>Customer</th>
               <th>Type</th>
+              <th>Status</th>
               <th>Method</th>
               <th>Amount</th>
+              <th>Outstanding</th>
               <th>Items</th>
             </tr>
           </thead>
@@ -142,8 +166,10 @@ export default function SalesReportPage() {
                 <td>${new Date(sale.createdAt).toLocaleDateString()}</td>
                 <td>${sale.customerName}</td>
                 <td>${sale.saleType}</td>
+                <td>${(SETTLEMENT_LABEL[sale.settlementStatus] ?? SETTLEMENT_LABEL.unpaid).text}</td>
                 <td>${sale.saleType.toLowerCase() === "cash" ? paymentMethodLabel(sale.paymentMethod) : "-"}</td>
                 <td class="text-right font-bold">${formatCurrency(sale.totalAmount)}</td>
+                <td class="text-right">${(sale.outstanding ?? 0) > 0 ? formatCurrency(sale.outstanding) : "-"}</td>
                 <td class="text-center">${Array.isArray(sale.items) ? sale.items.length : 0} items</td>
               </tr>
             `).join('')}
@@ -242,6 +268,19 @@ export default function SalesReportPage() {
                 </select>
               </div>
             )}
+            <div className="form-group">
+              <label className="form-label flex items-center gap-1.5"><Filter className="w-3.5 h-3.5" />Settlement</label>
+              <select
+                value={settlementFilter}
+                onChange={(e) => setSettlementFilter(e.target.value as SettlementFilter)}
+                className="input"
+              >
+                <option value="all">All</option>
+                <option value="paid">Paid</option>
+                <option value="part-paid">Part paid</option>
+                <option value="unpaid">Unpaid</option>
+              </select>
+            </div>
             <button onClick={fetchSalesReport} disabled={loading} className="btn btn-primary">
               <BarChart3 className="w-4 h-4" />
               Generate
@@ -275,12 +314,18 @@ export default function SalesReportPage() {
             <div className="stat-card">
               <p className="stat-label">Total Paid</p>
               <p className="stat-value text-green-600">{formatCurrency(totalCashRevenue)}</p>
-              <p className="text-xs text-gray-400 mt-0.5">incl. deposits on credit sales</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                cash sales, deposits and payments received since
+              </p>
             </div>
             <div className="stat-card">
-              <p className="stat-label">Total On Credit</p>
+              <p className="stat-label">Still Outstanding</p>
               <p className="stat-value text-orange-500">{formatCurrency(totalCreditRevenue)}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{creditSales.length} transaction{creditSales.length !== 1 ? "s" : ""}, net of deposits</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {creditSales.length} credit sale{creditSales.length !== 1 ? "s" : ""}
+                {fullyPaidCredit > 0 ? ` · ${fullyPaidCredit} settled` : ""}
+                {partPaidCount > 0 ? ` · ${partPaidCount} part paid` : ""}
+              </p>
             </div>
           </div>
         )}
@@ -310,6 +355,7 @@ export default function SalesReportPage() {
                     <th>Date</th>
                     <th>Customer</th>
                     <th>Type</th>
+                    <th>Status</th>
                     <th>Method</th>
                     <th>Amount</th>
                     <th>Items</th>
@@ -325,6 +371,16 @@ export default function SalesReportPage() {
                           {sale.saleType}
                         </span>
                       </td>
+                      <td>
+                        {(() => {
+                          const s = SETTLEMENT_LABEL[sale.settlementStatus] ?? SETTLEMENT_LABEL.unpaid;
+                          return (
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${s.className}`}>
+                              {s.text}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td className="text-gray-500">
                         {sale.saleType.toLowerCase() === "cash" || (sale.amountPaid ?? 0) > 0
                           ? paymentMethodLabel(sale.paymentMethod)
@@ -332,9 +388,9 @@ export default function SalesReportPage() {
                       </td>
                       <td className="font-semibold">
                         {formatCurrency(sale.totalAmount)}
-                        {sale.saleType.toLowerCase() === "credit" && (sale.amountPaid ?? 0) > 0 && (
+                        {sale.saleType.toLowerCase() === "credit" && (sale.settledAmount ?? 0) > 0 && (sale.outstanding ?? 0) > 0 && (
                           <span className="block text-xs font-normal text-gray-400">
-                            {formatCurrency(sale.amountPaid)} paid · {formatCurrency(sale.totalAmount - sale.amountPaid)} owing
+                            {formatCurrency(sale.settledAmount)} paid · {formatCurrency(sale.outstanding)} owing
                           </span>
                         )}
                       </td>

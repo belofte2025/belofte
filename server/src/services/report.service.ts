@@ -1,3 +1,4 @@
+import { settleSales } from "./saleSettlement.service";
 import prisma from "../utils/prisma";
 
 export const getContainerReport = async (containerId: string, companyId: string) => {
@@ -136,73 +137,58 @@ export const getSupplierReport = async (supplierId: string, companyId: string) =
         status: { in: ["Received", "Incomplete", "Done"] },
       },
     },
-    include: {
-      Container: true,
-    },
+    select: { id: true, itemName: true, quantity: true, containerId: true },
   });
 
   // Get container IDs for this supplier
   const containerIds = [...new Set(items.map((item) => item.containerId))];
 
-  // Get all sales from these containers
-  const containerSales = await prisma.sale.findMany({
-    where: {
-      sourceType: "container",
-      sourceId: { in: containerIds },
-      companyId,
-    },
-    include: { SaleItem: true },
-  });
-
-  // Get all supplier items for regular sales
   const supplierItems = await prisma.supplierItem.findMany({
-    where: { supplierId },
-    select: { id: true, itemName: true },
+    where: { supplierId, Supplier: { companyId } },
+    select: { id: true },
   });
+  const supplierItemIds = supplierItems.map(({ id }) => id);
 
-  const supplierItemIds = supplierItems.map((si) => si.id);
-
-  // Get regular sales from this supplier
-  const regularSales = await prisma.sale.findMany({
+  const soldItems = await prisma.saleItem.groupBy({
+    by: ["itemName"],
     where: {
-      sourceType: "regular",
-      sourceId: { in: supplierItemIds },
-      companyId,
+      Sale: { companyId },
+      OR: [
+        { Sale: { sourceType: "container", sourceId: { in: containerIds } } },
+        { Sale: { sourceType: "regular" }, supplierItemId: { in: supplierItemIds } },
+        // Sales recorded before supplierItemId was added used the sale source.
+        {
+          supplierItemId: null,
+          Sale: { sourceType: "regular", sourceId: { in: supplierItemIds } },
+        },
+      ],
     },
-    include: { SaleItem: true },
+    _sum: { quantity: true },
   });
+  const soldByName = new Map(soldItems.map(({ itemName, _sum }) => [itemName, _sum.quantity ?? 0]));
 
-  // Aggregate sold quantities by item name across all sales
-  const soldMap: Record<string, number> = {};
-
-  [...containerSales, ...regularSales].forEach((sale) => {
-    sale.SaleItem.forEach((saleItem) => {
-      soldMap[saleItem.itemName] = (soldMap[saleItem.itemName] || 0) + saleItem.quantity;
-    });
-  });
-
-  // Aggregate items by name and calculate totals
-  const itemMap: Record<string, { id: string; quantity: number }> = {};
-
-  items.forEach((item) => {
-    if (!itemMap[item.itemName]) {
-      itemMap[item.itemName] = {
-        id: item.id,
-        quantity: 0,
-      };
+  const receivedByName = new Map<string, { id: string; quantity: number }>();
+  for (const item of items) {
+    const received = receivedByName.get(item.itemName);
+    if (received) {
+      received.quantity += item.quantity;
+    } else {
+      receivedByName.set(item.itemName, { id: item.id, quantity: item.quantity });
     }
-    itemMap[item.itemName].quantity += item.quantity;
-  });
+  }
 
   return {
     supplierId,
-    items: Object.entries(itemMap).map(([itemName, data]) => ({
-      itemId: data.id,
-      name: itemName,
-      totalQuantity: data.quantity,
-      sold: soldMap[itemName] || 0,
-      remaining: data.quantity - (soldMap[itemName] || 0),
-    })),
+    items: Array.from(receivedByName, ([itemName, data]) => {
+      const sold = soldByName.get(itemName) ?? 0;
+      return {
+        itemId: data.id,
+        name: itemName,
+        totalQuantity: data.quantity,
+        sold,
+        remaining: data.quantity - sold,
+      };
+    }),
   };
 };
 
@@ -225,17 +211,41 @@ startDate: string, endDate: string, companyId: string) => {
     },
   });
 
-  // Transform sales to include customer name
-  const transformedSales = sales.map((sale) => ({
-    id: sale.id,
-    saleType: sale.saleType,
-    paymentMethod: sale.paymentMethod,
-    customerName: sale.Customer?.customerName || "Walk-in",
-    totalAmount: sale.totalAmount,
-    amountPaid: sale.amountPaid,
-    createdAt: sale.createdAt,
-    items: sale.SaleItem,
-  }));
+  // How much of each credit sale has actually been settled. A payment is
+  // recorded against the customer rather than an invoice, so without this a
+  // credit sale reports its full value as outstanding however much has since
+  // been paid — a half-paid invoice looked identical to an untouched one.
+  const settlements = await settleSales(
+    sales.map((s) => s.id),
+    companyId
+  );
+
+  const transformedSales = sales.map((sale) => {
+    const settlement = settlements.get(sale.id);
+    const isCredit = sale.saleType?.toLowerCase() === "credit";
+
+    // A cash sale was settled when it was made.
+    const settledAmount = isCredit
+      ? settlement?.settled ?? sale.amountPaid ?? 0
+      : sale.totalAmount;
+    const outstanding = Math.max(0, sale.totalAmount - settledAmount);
+
+    return {
+      id: sale.id,
+      saleType: sale.saleType,
+      paymentMethod: sale.paymentMethod,
+      customerName: sale.Customer?.customerName || "Walk-in",
+      totalAmount: sale.totalAmount,
+      amountPaid: sale.amountPaid,
+      /** Deposit plus any later payments that reach this invoice. */
+      settledAmount,
+      outstanding,
+      /** "paid" | "part-paid" | "unpaid" — cash sales are always paid. */
+      settlementStatus: isCredit ? settlement?.status ?? "unpaid" : "paid",
+      createdAt: sale.createdAt,
+      items: sale.SaleItem,
+    };
+  });
 
   return transformedSales;
 };
