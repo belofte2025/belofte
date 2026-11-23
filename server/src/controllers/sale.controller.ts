@@ -699,32 +699,32 @@ export const updateSale = async (req: Request, res: Response) => {
       updateData.createdAt = new Date(saleDate);
     }
 
-    const updated = await prisma.sale.update({ where: { id }, data: updateData });
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { enableAccounting: true },
+    });
+    const restatesLedger = !!(company?.enableAccounting && userId);
 
-    // Re-post the ledger. The original entry described the sale as it was:
-    // a cash sale debits cash, the same sale on credit debits receivables, and
-    // the totals move when the items change. Reversing and reposting keeps the
-    // trial balance in step with the sale instead of stating both versions.
-    try {
-      const company = await prisma.company.findUnique({
-        where: { id: companyId },
-        select: { enableAccounting: true },
-      });
-      if (company?.enableAccounting && userId) {
-        await prisma.$transaction(async (tx) => {
-          await reverseSaleJournal(tx as any, id, companyId!, userId);
-          const itemsWithCost = items.map((i: any) => ({
-            ...i,
-            costPrice: editCostMap.get(i.itemName) ?? 0,
-          }));
-          await postSaleJournal(tx as any, updated, itemsWithCost, companyId!, userId);
-        }, { timeout: 20000, maxWait: 10000 });
+    // The edit and the ledger move together. The original entry described the
+    // sale as it was: a cash sale debits cash, the same sale on credit debits
+    // receivables, and the totals move when the items change. Reversing and
+    // reposting in the same transaction as the edit means the books can never
+    // be left behind the sale — if the ledger cannot be restated, the edit does
+    // not happen either. An unposted sale is caught by the backfill, but an
+    // edited one is not: it still has its original entries, so nothing would
+    // ever flag it.
+    const updated = await prisma.$transaction(async (tx) => {
+      const saved = await tx.sale.update({ where: { id }, data: updateData });
+      if (restatesLedger) {
+        await reverseSaleJournal(tx as any, id, companyId!, userId!);
+        const itemsWithCost = items.map((i: any) => ({
+          ...i,
+          costPrice: editCostMap.get(i.itemName) ?? 0,
+        }));
+        await postSaleJournal(tx as any, saved, itemsWithCost, companyId!, userId!);
       }
-    } catch (journalErr) {
-      // Non-fatal, matching how the sale's first posting is treated — but it
-      // leaves the ledger behind the sale, so it is logged loudly.
-      console.error(`Journal re-post failed for edited sale ${id}:`, journalErr);
-    }
+      return saved;
+    }, { timeout: 20000, maxWait: 10000 });
 
     if (userId) {
       const changes: string[] = [];
@@ -739,7 +739,14 @@ export const updateSale = async (req: Request, res: Response) => {
     res.json({ message: "Sale updated successfully", totalAmount });
   } catch (error) {
     console.error("Error updating sale:", error);
-    res.status(500).json({ error: "Internal server error" });
+    // The edit and its ledger entries share a transaction, so nothing was
+    // saved. Say so, rather than leaving the user guessing whether half of it
+    // went through.
+    res.status(500).json({
+      error: "Failed to update sale",
+      detail:
+        "The sale was not changed. Its accounting entries could not be restated, so the edit was rolled back to keep the books in step with the sale.",
+    });
   }
 };
 export const updateSaleTotalAmount = async (req: Request, res: Response) => {
@@ -771,31 +778,33 @@ export const updateSaleTotalAmount = async (req: Request, res: Response) => {
       ? Math.min(Math.max(0, existing.amountPaid ?? 0), newTotal)
       : newTotal;
 
-    const sale = await prisma.sale.update({
-      where: { id },
-      data: { totalAmount: newTotal, amountPaid },
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { enableAccounting: true },
     });
+    const userId = req.user?.id;
+    const restatesLedger = !!(company?.enableAccounting && userId);
 
-    // The ledger stated the old total; restate it.
-    try {
-      const company = await prisma.company.findUnique({
-        where: { id: companyId },
-        select: { enableAccounting: true },
-      });
-      const userId = req.user?.id;
-      if (company?.enableAccounting && userId) {
-        const lines = await prisma.saleItem.findMany({
+    const lines = restatesLedger
+      ? await prisma.saleItem.findMany({
           where: { saleId: id },
           select: { itemName: true, quantity: true, unitPrice: true, costPrice: true },
-        });
-        await prisma.$transaction(async (tx) => {
-          await reverseSaleJournal(tx as any, id, companyId!, userId);
-          await postSaleJournal(tx as any, sale, lines, companyId!, userId);
-        }, { timeout: 20000, maxWait: 10000 });
+        })
+      : [];
+
+    // The ledger stated the old total; it is restated in the same transaction,
+    // so the figure and the books cannot disagree.
+    const sale = await prisma.$transaction(async (tx) => {
+      const saved = await tx.sale.update({
+        where: { id },
+        data: { totalAmount: newTotal, amountPaid },
+      });
+      if (restatesLedger) {
+        await reverseSaleJournal(tx as any, id, companyId!, userId!);
+        await postSaleJournal(tx as any, saved, lines, companyId!, userId!);
       }
-    } catch (journalErr) {
-      console.error(`Journal re-post failed for sale ${id} after total change:`, journalErr);
-    }
+      return saved;
+    }, { timeout: 20000, maxWait: 10000 });
 
     res.json(sale);
   } catch (error) {

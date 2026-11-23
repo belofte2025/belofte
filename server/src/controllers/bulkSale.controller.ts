@@ -74,6 +74,9 @@ export const bulkUpdateSales = async (req: Request, res: Response) => {
       select: { enableAccounting: true },
     });
 
+    const failed: Array<{ saleId: string; reason: string }> = [];
+    let updatedCount = 0;
+
     // One sale at a time. Each may re-post its ledger in its own transaction,
     // and a hundred of those opened at once would exhaust the connection pool.
     for (const sale of sales) {
@@ -127,27 +130,35 @@ export const bulkUpdateSales = async (req: Request, res: Response) => {
         ? Math.min(Math.max(0, sale.amountPaid ?? 0), totalAmount)
         : 0;
 
-      const updated = await prisma.sale.update({
-        where: { id: sale.id },
-        data: updateData,
-      });
-
-      // Restate the ledger for this sale.
-      if (accounting?.enableAccounting) {
-        try {
-          const lines = await prisma.saleItem.findMany({
-            where: { saleId: sale.id },
-            select: { itemName: true, quantity: true, unitPrice: true, costPrice: true },
+      // Each sale moves with its own ledger, in one transaction: a sale whose
+      // books cannot be restated is left untouched rather than edited with the
+      // ledger behind it. The rest of the batch still goes through, and the
+      // response names the ones that did not.
+      try {
+        await prisma.$transaction(async (tx) => {
+          const updated = await tx.sale.update({
+            where: { id: sale.id },
+            data: updateData,
           });
-          await prisma.$transaction(async (tx) => {
+          if (accounting?.enableAccounting) {
+            const lines = await tx.saleItem.findMany({
+              where: { saleId: sale.id },
+              select: { itemName: true, quantity: true, unitPrice: true, costPrice: true },
+            });
             await reverseSaleJournal(tx as any, sale.id, companyId!, userId);
             await postSaleJournal(tx as any, updated, lines, companyId!, userId);
-          }, { timeout: 20000, maxWait: 10000 });
-        } catch (journalErr) {
-          console.error(`Journal re-post failed for sale ${sale.id} in bulk update:`, journalErr);
-        }
+          }
+        }, { timeout: 20000, maxWait: 10000 });
+      } catch (err) {
+        console.error(`Bulk update skipped sale ${sale.id}:`, err);
+        failed.push({
+          saleId: sale.id,
+          reason: err instanceof Error ? err.message : "Unknown error",
+        });
+        continue;
       }
 
+      updatedCount++;
       await logUpdate(
         userId,
         EntityType.SALE,
@@ -158,9 +169,12 @@ export const bulkUpdateSales = async (req: Request, res: Response) => {
     }
 
     res.json({
-      message: "Bulk update successful",
+      message: failed.length
+        ? `Updated ${updatedCount} of ${saleIds.length} sales; ${failed.length} could not be updated`
+        : "Bulk update successful",
       count: saleIds.length,
-      updated: saleIds.length
+      updated: updatedCount,
+      failed,
     });
     return;
   } catch (error) {
