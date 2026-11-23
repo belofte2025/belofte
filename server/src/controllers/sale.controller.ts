@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 import { logUpdate, EntityType } from "../utils/auditLogger";
-import { postSaleJournal } from "../services/accounting/journalEngine";
+import { postSaleJournal, reverseSaleJournal } from "../services/accounting/journalEngine";
 import notificationService from "../services/notification.service";
 import { computeCustomerBalance } from "../services/customerBalance.service";
 
@@ -569,7 +569,7 @@ export const getSaleById = async (req: Request, res: Response) => {
 };
 export const updateSale = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { saleType, paymentMethod, items, saleDate, customerId: newCustomerId } = req.body;
+  const { saleType, paymentMethod, items, saleDate, customerId: newCustomerId, amountPaid } = req.body;
   const userId = req.user?.id;
   const companyId = req.user?.companyId;
 
@@ -582,6 +582,7 @@ export const updateSale = async (req: Request, res: Response) => {
         sourceId: true,
         customerId: true,
         saleType: true,
+        amountPaid: true,
         discountType: true,
         discountValue: true,
       },
@@ -648,21 +649,46 @@ export const updateSale = async (req: Request, res: Response) => {
         : "CASH"
       : undefined; // undefined → Prisma leaves the existing value untouched
 
+    // How much of this sale is settled, recomputed for the type it now has.
+    // Leaving the old figure in place is what made a type change invisible: a
+    // cash sale switched to credit kept amountPaid at the full total, so the
+    // customer's balance — which counts a credit sale as totalAmount minus
+    // amountPaid — did not move at all.
+    const wasCredit = existing.saleType?.toLowerCase() === "credit";
+    const requestedDeposit = Number(amountPaid);
+    const hasRequestedDeposit = Number.isFinite(requestedDeposit);
+    let resolvedAmountPaid: number;
+    if (!isCredit) {
+      // Settled in full the moment it stops being a credit sale.
+      resolvedAmountPaid = totalAmount;
+    } else if (hasRequestedDeposit) {
+      resolvedAmountPaid = Math.min(Math.max(0, requestedDeposit), totalAmount);
+    } else if (wasCredit) {
+      // Still on credit and no new deposit given: keep what was taken, capped
+      // in case the edit lowered the total.
+      resolvedAmountPaid = Math.min(Math.max(0, existing.amountPaid ?? 0), totalAmount);
+    } else {
+      // Cash becoming credit with no deposit stated: nothing has been paid.
+      resolvedAmountPaid = 0;
+    }
+
     const updateData: any = {
       saleType,
       paymentMethod: resolvedPaymentMethod,
       customerId: targetCustomerId,
       subtotal,
       totalAmount,
+      amountPaid: resolvedAmountPaid,
       SaleItem: {
         deleteMany: {},
         createMany: {
           data: items.map(
-            (item: { itemName: string; quantity: number; unitPrice: number }) => ({
+            (item: { itemName: string; quantity: number; unitPrice: number; supplierItemId?: string }) => ({
               itemName: item.itemName,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               costPrice: editCostMap.get(item.itemName) ?? 0,
+              supplierItemId: item.supplierItemId ?? null,
             })
           ),
         },
@@ -673,7 +699,32 @@ export const updateSale = async (req: Request, res: Response) => {
       updateData.createdAt = new Date(saleDate);
     }
 
-    await prisma.sale.update({ where: { id }, data: updateData });
+    const updated = await prisma.sale.update({ where: { id }, data: updateData });
+
+    // Re-post the ledger. The original entry described the sale as it was:
+    // a cash sale debits cash, the same sale on credit debits receivables, and
+    // the totals move when the items change. Reversing and reposting keeps the
+    // trial balance in step with the sale instead of stating both versions.
+    try {
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { enableAccounting: true },
+      });
+      if (company?.enableAccounting && userId) {
+        await prisma.$transaction(async (tx) => {
+          await reverseSaleJournal(tx as any, id, companyId!, userId);
+          const itemsWithCost = items.map((i: any) => ({
+            ...i,
+            costPrice: editCostMap.get(i.itemName) ?? 0,
+          }));
+          await postSaleJournal(tx as any, updated, itemsWithCost, companyId!, userId);
+        }, { timeout: 20000, maxWait: 10000 });
+      }
+    } catch (journalErr) {
+      // Non-fatal, matching how the sale's first posting is treated — but it
+      // leaves the ledger behind the sale, so it is logged loudly.
+      console.error(`Journal re-post failed for edited sale ${id}:`, journalErr);
+    }
 
     if (userId) {
       const changes: string[] = [];
@@ -697,13 +748,55 @@ export const updateSaleTotalAmount = async (req: Request, res: Response) => {
   const companyId = req.user?.companyId;
 
   try {
-    const existing = await prisma.sale.findUnique({ where: { id }, select: { companyId: true } });
+    const existing = await prisma.sale.findUnique({
+      where: { id },
+      select: { companyId: true, saleType: true, amountPaid: true },
+    });
     if (!existing || existing.companyId !== companyId) {
       res.status(404).json({ error: "Sale not found" });
       return;
     }
 
-    const sale = await prisma.sale.update({ where: { id }, data: { totalAmount } });
+    const newTotal = Number(totalAmount);
+    if (!Number.isFinite(newTotal) || newTotal < 0) {
+      res.status(400).json({ error: "Invalid total amount" });
+      return;
+    }
+
+    // Keep the settled figure consistent with the new total, or the paid and
+    // credit columns stop adding up to it: a cash sale is settled in full, and
+    // a credit sale's deposit cannot exceed what is now owed.
+    const isCreditSale = existing.saleType?.toLowerCase() === "credit";
+    const amountPaid = isCreditSale
+      ? Math.min(Math.max(0, existing.amountPaid ?? 0), newTotal)
+      : newTotal;
+
+    const sale = await prisma.sale.update({
+      where: { id },
+      data: { totalAmount: newTotal, amountPaid },
+    });
+
+    // The ledger stated the old total; restate it.
+    try {
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { enableAccounting: true },
+      });
+      const userId = req.user?.id;
+      if (company?.enableAccounting && userId) {
+        const lines = await prisma.saleItem.findMany({
+          where: { saleId: id },
+          select: { itemName: true, quantity: true, unitPrice: true, costPrice: true },
+        });
+        await prisma.$transaction(async (tx) => {
+          await reverseSaleJournal(tx as any, id, companyId!, userId);
+          await postSaleJournal(tx as any, sale, lines, companyId!, userId);
+        }, { timeout: 20000, maxWait: 10000 });
+      }
+    } catch (journalErr) {
+      console.error(`Journal re-post failed for sale ${id} after total change:`, journalErr);
+    }
+
     res.json(sale);
   } catch (error) {
     console.error("Error updating sale:", error);

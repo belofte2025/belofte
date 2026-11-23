@@ -22,6 +22,59 @@ interface SaleRecord {
   createdAt: Date;
 }
 
+/**
+ * Reverses every posted journal entry behind a sale, leaving an audit trail
+ * rather than deleting anything: each original is marked REVERSED and a
+ * mirror entry with the debits and credits swapped is posted against it.
+ *
+ * Needed when a sale is edited. A cash sale debits cash; the same sale on
+ * credit debits receivables instead. Without reversing the original, an edit
+ * leaves the first posting in the ledger and the trial balance states both.
+ *
+ * Returns how many entries were reversed.
+ */
+export async function reverseSaleJournal(
+  tx: Tx,
+  saleId: string,
+  companyId: string,
+  postedById: string
+): Promise<number> {
+  const originals = await tx.journalEntry.findMany({
+    where: { saleId, companyId, status: "POSTED" },
+    include: { lines: true },
+  });
+
+  for (const original of originals) {
+    const entryNumber = await nextEntryNumber(tx as PrismaClient, companyId);
+    await tx.journalEntry.create({
+      data: {
+        companyId,
+        entryNumber,
+        date: new Date(),
+        description: `Reversal of ${original.entryNumber}: ${original.description}`,
+        source: original.source,
+        saleId,
+        reversalOfId: original.id,
+        postedById,
+        lines: {
+          create: original.lines.map((l) => ({
+            accountId: l.accountId,
+            debit: l.credit,
+            credit: l.debit,
+            description: l.description,
+          })),
+        },
+      },
+    });
+    await tx.journalEntry.update({
+      where: { id: original.id },
+      data: { status: "REVERSED" },
+    });
+  }
+
+  return originals.length;
+}
+
 export async function postSaleJournal(
   prismaOrTx: PrismaClient | Tx,
   sale: SaleRecord,
