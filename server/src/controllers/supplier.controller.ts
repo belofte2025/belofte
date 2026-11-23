@@ -509,6 +509,7 @@ export const listSupplierItemsWithSales = async (
       select: {
         itemName: true,
         quantity: true,
+        supplierItemId: true,
         Sale: {
           select: {
             companyId: true,
@@ -590,6 +591,7 @@ export const listSupplierItemsWithSales = async (
       const relatedSales = allSaleItems.filter(
         (s: {
           itemName: string;
+          supplierItemId: string | null;
           Sale: { companyId: string; sourceType: string; sourceId: string };
         }) => {
           // Only count sales for this item name
@@ -600,9 +602,14 @@ export const listSupplierItemsWithSales = async (
             return containerIds.includes(s.Sale.sourceId);
           }
 
-          // For regular sales: check if supplierItem belongs to this supplier
+          // For regular sales: the line's own supplier item decides. The sale's
+          // sourceId names only the first item in the cart, so it charges every
+          // other line of a mixed-supplier cart to the wrong supplier; it is
+          // used only for rows written before the column existed.
           if (s.Sale.sourceType === 'regular') {
-            return supplierItemIds.includes(s.Sale.sourceId);
+            return s.supplierItemId
+              ? supplierItemIds.includes(s.supplierItemId)
+              : supplierItemIds.includes(s.Sale.sourceId);
           }
 
           return false;

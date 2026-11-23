@@ -3,8 +3,20 @@ import prisma from "../utils/prisma";
 import { logUpdate, EntityType } from "../utils/auditLogger";
 import { postSaleJournal } from "../services/accounting/journalEngine";
 import notificationService from "../services/notification.service";
+import { computeCustomerBalance } from "../services/customerBalance.service";
 
 const VALID_PAYMENT_METHODS = ["CASH", "MOMO", "BANK"];
+
+/**
+ * Refusal raised from inside the sale transaction. The stock check and the
+ * insert have to run in one transaction, and a transaction callback cannot
+ * write the response, so it throws this and the handler answers with it.
+ */
+class SaleRefused extends Error {
+  constructor(readonly status: number, readonly body: Record<string, unknown>) {
+    super(typeof body.detail === "string" ? body.detail : "Sale refused");
+  }
+}
 
 export const recordSale = async (req: Request, res: Response) => {
   const { saleType, paymentMethod, sourceType, sourceId, customerId, items, saleDate, discountType, discountValue, amountPaid } = req.body;
@@ -24,10 +36,37 @@ export const recordSale = async (req: Request, res: Response) => {
   }
 
   try {
+    // Shape of the request itself, before anything is looked up.
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: "Failed to record sale", detail: "A sale needs at least one item." });
+      return;
+    }
+    for (const item of items) {
+      const qty = Number(item?.quantity);
+      if (!Number.isFinite(qty) || qty <= 0 || !Number.isInteger(qty)) {
+        res.status(400).json({
+          error: "Failed to record sale",
+          detail: `Item "${item?.itemName ?? "unknown"}" has an invalid quantity. It must be a whole number above zero.`,
+        });
+        return;
+      }
+      const price = Number(item?.unitPrice);
+      if (!Number.isFinite(price) || price < 0) {
+        res.status(400).json({
+          error: "Failed to record sale",
+          detail: `Item "${item?.itemName ?? "unknown"}" has an invalid price.`,
+        });
+        return;
+      }
+    }
+
     // Verify container exists for container sales
     if (sourceType === "container" && sourceId) {
-      const container = await prisma.container.findUnique({
-        where: { id: sourceId },
+      // Scoped to the company: unscoped, a sale could name another company's
+      // container, and the supplier lookup further down would then fail to
+      // resolve and skip the stock check instead of rejecting the sale.
+      const container = await prisma.container.findFirst({
+        where: { id: sourceId, companyId },
         select: { id: true, status: true },
       });
 
@@ -44,28 +83,39 @@ export const recordSale = async (req: Request, res: Response) => {
 
     // If user cannot edit prices, validate that submitted prices match current prices
     if (!canEditPrice) {
-      // Get all supplier items for the company to check current prices
+      // Keyed on the supplier item the line was actually picked from, not on the
+      // item name. 88 item names here are carried by several suppliers at
+      // different prices, so a name-keyed map compared against whichever row
+      // happened to load last: it blocked correct prices and let edits through.
       const itemNames = items.map((i: { itemName: string }) => i.itemName);
+      const supplierItemIds = items
+        .map((i: { supplierItemId?: string }) => i.supplierItemId)
+        .filter((id: string | undefined): id is string => !!id);
+
       const supplierItems = await prisma.supplierItem.findMany({
         where: {
-          itemName: { in: itemNames },
           Supplier: { companyId },
+          OR: [
+            ...(supplierItemIds.length ? [{ id: { in: supplierItemIds } }] : []),
+            { itemName: { in: itemNames } },
+          ],
         },
-        select: {
-          itemName: true,
-          price: true,
-        },
+        select: { id: true, itemName: true, price: true },
       });
 
-      // Create a map of item prices
-      const priceMap = new Map(
-        supplierItems.map((item) => [item.itemName, item.price])
-      );
+      const priceById = new Map(supplierItems.map((i) => [i.id, i.price]));
+      // Fallback for lines that carry no supplier item (container sales): every
+      // price this company sells the name at, so a correct one is never refused.
+      const pricesByName = new Map<string, Set<number>>();
+      for (const i of supplierItems) {
+        if (!pricesByName.has(i.itemName)) pricesByName.set(i.itemName, new Set());
+        pricesByName.get(i.itemName)!.add(i.price);
+      }
 
-      // Check if any submitted price differs from current price
       for (const item of items) {
-        const currentPrice = priceMap.get(item.itemName);
-        if (currentPrice !== undefined && item.unitPrice !== currentPrice) {
+        const exact = item.supplierItemId ? priceById.get(item.supplierItemId) : undefined;
+        const allowed = exact !== undefined ? new Set([exact]) : pricesByName.get(item.itemName);
+        if (allowed && allowed.size > 0 && !allowed.has(item.unitPrice)) {
           res.status(403).json({
             error: "Forbidden: You don't have permission to modify prices",
             detail: `Item "${item.itemName}" has a different price than the current price. Contact an admin or manager to override prices.`,
@@ -75,6 +125,10 @@ export const recordSale = async (req: Request, res: Response) => {
       }
     }
 
+    // The stock check and the insert run in one serializable transaction.
+    // Previously the check and the write were separate statements, so two
+    // tills could both pass the check on the last unit and both sell it.
+    const { created: sale, costPriceMap, totalAmount } = await prisma.$transaction(async (tx) => {
     // Validate stock availability. This runs for container sales as well as
     // regular ones: it previously skipped container sales entirely, so those
     // could be recorded against stock that no longer existed, which is how
@@ -88,7 +142,7 @@ export const recordSale = async (req: Request, res: Response) => {
         // Get the supplier for this specific item
         let supplierId: string | null = null;
         if (item.supplierItemId) {
-          const supplierItem = await prisma.supplierItem.findUnique({
+          const supplierItem = await tx.supplierItem.findUnique({
             where: { id: item.supplierItemId },
             select: { supplierId: true },
           });
@@ -100,7 +154,7 @@ export const recordSale = async (req: Request, res: Response) => {
         // A container sale carries the container as its source, so the supplier
         // comes from there rather than from a supplier-item reference.
         if (!supplierId && sourceType === "container" && sourceId) {
-          const container = await prisma.container.findFirst({
+          const container = await tx.container.findFirst({
             where: { id: sourceId, companyId },
             select: { supplierId: true },
           });
@@ -116,18 +170,17 @@ export const recordSale = async (req: Request, res: Response) => {
           // through; the aim is to stop overselling, not to block trade on an
           // edge case this code cannot attribute.
           if (sourceType === "regular") {
-            res.status(400).json({
+            throw new SaleRefused(400, {
               error: "Failed to record sale",
               detail: `No supplier found for item "${itemName}"`,
             });
-            return;
           }
           continue;
         }
 
         // Get total received from containers (all containers count — legacy containers
         // pre-dating the lifecycle feature all have "Pending" as their default status)
-        const containerItems = await prisma.containerItem.findMany({
+        const containerItems = await tx.containerItem.findMany({
           where: {
             itemName,
             Container: { supplierId, companyId },
@@ -137,6 +190,10 @@ export const recordSale = async (req: Request, res: Response) => {
 
         const totalReceived = containerItems.reduce((sum, ci) => sum + ci.quantity, 0);
         const containerIds = containerItems.map((ci) => ci.containerId);
+
+        const supplierItemIdsOfSupplier = (
+          await tx.supplierItem.findMany({ where: { supplierId }, select: { id: true } })
+        ).map((i) => i.id);
 
         // Get total sold from all sales (container + regular)
         const [containerSales, regularSales] = await Promise.all([
@@ -152,22 +209,21 @@ export const recordSale = async (req: Request, res: Response) => {
             },
             select: { quantity: true },
           }),
-          // Regular sales
+          // Regular sales. Matched on every supplier item of this supplier,
+          // then narrowed by itemName above: a line is attributed by its own
+          // supplier item, and only older rows fall back to the sale's
+          // sourceId, which names just the first item in the cart.
           prisma.saleItem.findMany({
             where: {
               itemName,
-              Sale: {
-                companyId,
-                sourceType: "regular",
-                sourceId: {
-                  in: await prisma.supplierItem
-                    .findMany({
-                      where: { supplierId, itemName },
-                      select: { id: true },
-                    })
-                    .then((items) => items.map((i) => i.id)),
+              Sale: { companyId, sourceType: "regular" },
+              OR: [
+                { supplierItemId: { in: supplierItemIdsOfSupplier } },
+                {
+                  supplierItemId: null,
+                  Sale: { sourceId: { in: supplierItemIdsOfSupplier } },
                 },
-              },
+              ],
             },
             select: { quantity: true },
           }),
@@ -178,7 +234,7 @@ export const recordSale = async (req: Request, res: Response) => {
           regularSales.reduce((sum, s) => sum + s.quantity, 0);
 
         // Get total stock adjustments
-        const adjustments = await prisma.stockAdjustment.findMany({
+        const adjustments = await tx.stockAdjustment.findMany({
           where: {
             supplierId,
             itemName,
@@ -194,14 +250,13 @@ export const recordSale = async (req: Request, res: Response) => {
 
         // Validate
         if (requestedQty > available) {
-          res.status(400).json({
+          throw new SaleRefused(400, {
             error: "Insufficient stock",
             detail: `Item "${itemName}" has only ${available} units available, but you're trying to sell ${requestedQty} units.`,
             itemName,
             available,
             requested: requestedQty,
           });
-          return;
         }
       }
     }
@@ -211,13 +266,13 @@ export const recordSale = async (req: Request, res: Response) => {
     const costPriceMap = new Map<string, number>();
     try {
       if (sourceType === "container" && sourceId) {
-        const containerItems = await prisma.containerItem.findMany({
+        const containerItems = await tx.containerItem.findMany({
           where: { containerId: sourceId, itemName: { in: itemNames } },
           select: { itemName: true, unitPrice: true },
         });
         containerItems.forEach((ci) => costPriceMap.set(ci.itemName, ci.unitPrice));
       } else {
-        const latestCosts = await prisma.containerItem.findMany({
+        const latestCosts = await tx.containerItem.findMany({
           where: { itemName: { in: itemNames }, Container: { companyId } },
           select: { itemName: true, unitPrice: true },
           orderBy: { Container: { arrivalDate: "desc" } },
@@ -260,7 +315,22 @@ export const recordSale = async (req: Request, res: Response) => {
     const resolvedPaymentMethod =
       isCredit && resolvedAmountPaid === 0 ? null : normalizedPaymentMethod;
 
-    const sale = await prisma.sale.create({
+    // Only supplier items that belong to this company may be attributed to.
+    const claimedSupplierItemIds = items
+      .map((i: { supplierItemId?: string }) => i.supplierItemId)
+      .filter((id: string | undefined): id is string => !!id);
+    const ownSupplierItemIds = new Set(
+      claimedSupplierItemIds.length
+        ? (
+            await tx.supplierItem.findMany({
+              where: { id: { in: claimedSupplierItemIds }, Supplier: { companyId } },
+              select: { id: true },
+            })
+          ).map((s) => s.id)
+        : []
+    );
+
+    const created = await tx.sale.create({
       data: {
         saleType,
         paymentMethod: resolvedPaymentMethod,
@@ -281,17 +351,29 @@ export const recordSale = async (req: Request, res: Response) => {
                 itemName: string;
                 quantity: number;
                 unitPrice: number;
+                supplierItemId?: string;
               }) => ({
                 itemName: i.itemName,
                 quantity: i.quantity,
                 unitPrice: i.unitPrice,
                 costPrice: costPriceMap.get(i.itemName) ?? 0,
+                // Recorded per line. The sale's own sourceId names only the
+                // first item's supplier, so a cart spanning suppliers charged
+                // every line to that one.
+                supplierItemId:
+                  i.supplierItemId && ownSupplierItemIds.has(i.supplierItemId)
+                    ? i.supplierItemId
+                    : null,
               })
             ),
           },
         },
       },
     });
+      // Carried out of the transaction for the journal and the SMS below.
+      return { created, costPriceMap, totalAmount };
+    }, { isolationLevel: "Serializable", timeout: 20000, maxWait: 10000 });
+
     // Post accounting journal if enabled (non-fatal)
     try {
       const company = await prisma.company.findUnique({ where: { id: companyId }, select: { enableAccounting: true } });
@@ -309,11 +391,19 @@ export const recordSale = async (req: Request, res: Response) => {
     // Send notification (fire-and-forget, non-fatal)
     try {
       const customer = await prisma.customer.findUnique({
-        where: { id: customerId },
-        select: { customerName: true, phone: true, balance: true },
+        where: { id: customerId, companyId },
+        select: { customerName: true, phone: true },
       });
       if (customer) {
-        const balance = saleType === "credit" ? customer.balance + totalAmount : undefined;
+        // Derived, not read from Customer.balance. That column is decremented
+        // by payments and returns but never raised by a credit sale, so it runs
+        // far negative — customers were being texted balances like -1,099,000
+        // when they actually owed 142,900. The sale is already written at this
+        // point, so the derived figure includes it.
+        const balance =
+          saleType === "credit"
+            ? await computeCustomerBalance(customerId, companyId)
+            : undefined;
         const msg = notificationService.saleMessage(customer.customerName, items.length, totalAmount, balance);
         notificationService.send({
           companyId,
@@ -327,12 +417,33 @@ export const recordSale = async (req: Request, res: Response) => {
 
     res.status(201).json(sale);
   } catch (err) {
+    // A refusal decided inside the transaction: answer with what it carried.
+    if (err instanceof SaleRefused) {
+      res.status(err.status).json(err.body);
+      return;
+    }
+
+    // Two tills committing against the same stock at the same moment. The
+    // transaction is serializable, so one of them is rolled back rather than
+    // both selling the last unit; it is safe to try again.
+    const code = (err as { code?: string })?.code;
+    if (code === "P2034" || code === "40001") {
+      console.warn("Sale serialization conflict; asking the caller to retry");
+      res.status(409).json({
+        error: "Could not record sale",
+        detail: "Another sale was recorded against the same stock at that moment. Please try again.",
+        retryable: true,
+      });
+      return;
+    }
+
     console.error("Sale recording error:", err);
     const errorMessage = err instanceof Error ? err.message : String(err);
+    // No stack in the response: it reaches the browser and says more about the
+    // server than a caller needs.
     res.status(400).json({
       error: "Failed to record sale",
       detail: errorMessage,
-      stack: err instanceof Error ? err.stack : undefined
     });
   }
 };

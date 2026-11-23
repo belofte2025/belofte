@@ -75,7 +75,13 @@ export const getContainerReport = async (containerId: string, companyId: string)
       itemName: { in: itemNames },
       OR: [
         { Sale: { companyId, sourceType: "container", sourceId: { in: supplierContainerIds } } },
-        { Sale: { companyId, sourceType: "regular", sourceId: { in: supplierItemIds.map((s: { id: string }) => s.id) } } },
+        {
+          Sale: { companyId, sourceType: "regular" },
+          OR: [
+            { supplierItemId: { in: supplierItemIds.map((s: { id: string }) => s.id) } },
+            { supplierItemId: null, Sale: { sourceId: { in: supplierItemIds.map((s: { id: string }) => s.id) } } },
+          ],
+        },
       ],
     },
     select: { itemName: true, quantity: true },
@@ -406,6 +412,13 @@ export const getItemTransactionHistory = async (
 
   const containerIds = containerItems.map((ci) => ci.Container.id);
 
+  // Every supplier item of this supplier, not only those named for this item:
+  // a regular sale's lines are attributed individually, and a line's supplier
+  // item is the one it was picked from.
+  const supplierItemIdsForSupplier = (
+    await prisma.supplierItem.findMany({ where: { supplierId }, select: { id: true } })
+  ).map((i) => i.id);
+
   // Fetch all sales for this item - both container and regular
   const [containerSales, regularSales] = await Promise.all([
     // Container sales
@@ -440,20 +453,34 @@ export const getItemTransactionHistory = async (
     prisma.sale.findMany({
       where: {
         sourceType: "regular",
-        sourceId: {
-          in: await prisma.supplierItem
-            .findMany({
-              where: { supplierId },
-              select: { id: true },
-            })
-            .then((items) => items.map((i) => i.id)),
-        },
         companyId,
-        SaleItem: { some: { itemName } },
+        SaleItem: {
+          some: {
+            itemName,
+            // The line's own supplier item decides which supplier it came out
+            // of; sourceId is used only for rows written before that column.
+            OR: [
+              { supplierItemId: { in: supplierItemIdsForSupplier } },
+              {
+                supplierItemId: null,
+                Sale: { sourceId: { in: supplierItemIdsForSupplier } },
+              },
+            ],
+          },
+        },
       },
       include: {
         SaleItem: {
-          where: { itemName },
+          where: {
+            itemName,
+            OR: [
+              { supplierItemId: { in: supplierItemIdsForSupplier } },
+              {
+                supplierItemId: null,
+                Sale: { sourceId: { in: supplierItemIdsForSupplier } },
+              },
+            ],
+          },
         },
         Customer: {
           select: {

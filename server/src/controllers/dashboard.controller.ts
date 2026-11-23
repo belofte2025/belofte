@@ -148,8 +148,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           JOIN "Sale" s ON s.id = si."saleId"
           LEFT JOIN "Container" c
             ON s."sourceType" = 'container' AND c.id = s."sourceId"
+          -- A line's own supplier item decides where it came from. The sale's
+          -- sourceId names only the first item in the cart, so it is used just
+          -- for rows written before that column existed.
           LEFT JOIN "SupplierItem" sup
-            ON s."sourceType" = 'regular' AND sup.id = s."sourceId"
+            ON s."sourceType" = 'regular'
+           AND sup.id = COALESCE(si."supplierItemId", s."sourceId")
           WHERE s."companyId" = ${companyId}
           GROUP BY 1, 2
         ),

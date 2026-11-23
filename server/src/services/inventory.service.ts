@@ -115,7 +115,13 @@ export const getInventoryBySupplier = async (supplierId: string, companyId: stri
 
   const regularSaleItems = await prisma.saleItem.findMany({
     where: {
-      Sale: { companyId, sourceType: "regular", sourceId: { in: supplierItemIdList } },
+      Sale: { companyId, sourceType: "regular" },
+      // Own supplier item first; the sale's sourceId only for older lines that
+      // predate the column, since it names just the first item in the cart.
+      OR: [
+        { supplierItemId: { in: supplierItemIdList } },
+        { supplierItemId: null, Sale: { sourceId: { in: supplierItemIdList } } },
+      ],
     },
     select: {
       itemName: true,
@@ -173,8 +179,11 @@ export const getInventoryBySupplier = async (supplierId: string, companyId: stri
       (s) => s.itemName === itemName && containerIds.includes(s.Sale.sourceId)
     );
 
+    // The query above already restricted these to this supplier, by the line's
+    // own supplier item where it has one. Re-filtering on sourceId alone would
+    // drop correctly attributed lines from mixed-supplier carts.
     const relatedRegularSales = regularSaleItems.filter(
-      (s) => s.itemName === itemName && supplierItemIdList.includes(s.Sale.sourceId)
+      (s) => s.itemName === itemName
     );
 
     const containerSoldQty = relatedContainerSales.reduce(
@@ -244,6 +253,10 @@ export const getInventoryReport = async (companyId: string) => {
         select: {
           itemName: true,
           quantity: true,
+          // The line's own supplier item is authoritative. The sale's sourceId
+          // names only the first item in the cart, so it misattributes every
+          // other line when a cart spans suppliers.
+          supplierItemId: true,
           Sale: {
             select: { sourceId: true },
           },
@@ -267,10 +280,16 @@ export const getInventoryReport = async (companyId: string) => {
     ]);
 
   // 2. Batch fetch all supplier items in ONE query (fixes N+1 problem)
+  // A line is attributed through its own supplier item where it has one, and
+  // only otherwise through the sale's sourceId — which names the first item in
+  // the cart and so is wrong for every other line of a mixed-supplier cart.
+  const attributionIdOf = (line: { supplierItemId: string | null; Sale: { sourceId: string | null } }) =>
+    line.supplierItemId ?? line.Sale.sourceId;
+
   const supplierItemIds = [
     ...new Set(
       regularSaleItems
-        .map((item) => item.Sale.sourceId)
+        .map(attributionIdOf)
         .filter((id): id is string => id !== null)
     ),
   ];
@@ -290,8 +309,9 @@ export const getInventoryReport = async (companyId: string) => {
   const regularSalesBySupplier = new Map<string, Map<string, number>>();
 
   for (const saleItem of regularSaleItems) {
-    if (saleItem.Sale.sourceId) {
-      const supplierItem = supplierItemMap.get(saleItem.Sale.sourceId);
+    const attributionId = attributionIdOf(saleItem);
+    if (attributionId) {
+      const supplierItem = supplierItemMap.get(attributionId);
       if (supplierItem) {
         const supplierName = supplierItem.Supplier.suppliername;
 

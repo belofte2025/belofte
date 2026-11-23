@@ -218,7 +218,10 @@ export default function RegularSaleComponent() {
       setLoading(true);
 
       const customerId = selectedCustomer.value;
-      // Use the first item's supplierItemId as sourceId for inventory tracking
+      // Kept for older records and for sales recorded before each line carried
+      // its own supplier. Stock is attributed per line from the supplierItemId
+      // sent with it below, so a cart spanning suppliers is no longer charged
+      // entirely to whichever item happened to be added first.
       const sourceId = cart.length > 0 ? cart[0].id : null;
 
       await recordSale({

@@ -411,7 +411,13 @@ export const listContainerItemsWithSales = async (
         itemName: { in: itemNames },
         OR: [
           { Sale: { companyId, sourceType: "container", sourceId: { in: supplierContainerIds } } },
-          { Sale: { companyId, sourceType: "regular", sourceId: { in: supplierItemIds.map((s: { id: string }) => s.id) } } },
+          {
+            Sale: { companyId, sourceType: "regular" },
+            OR: [
+              { supplierItemId: { in: supplierItemIds.map((s: { id: string }) => s.id) } },
+              { supplierItemId: null, Sale: { sourceId: { in: supplierItemIds.map((s: { id: string }) => s.id) } } },
+            ],
+          },
         ],
       },
       select: { itemName: true, quantity: true },
@@ -549,7 +555,13 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
         itemName: { in: summaryItemNames },
         OR: [
           { Sale: { companyId: summaryCompanyId, sourceType: "container", sourceId: { in: supCIds } } },
-          { Sale: { companyId: summaryCompanyId, sourceType: "regular", sourceId: { in: supSI.map((s: { id: string }) => s.id) } } },
+          {
+            Sale: { companyId: summaryCompanyId, sourceType: "regular" },
+            OR: [
+              { supplierItemId: { in: supSI.map((s: { id: string }) => s.id) } },
+              { supplierItemId: null, Sale: { sourceId: { in: supSI.map((s: { id: string }) => s.id) } } },
+            ],
+          },
         ],
       },
       select: { itemName: true, quantity: true },

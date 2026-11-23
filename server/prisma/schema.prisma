@@ -81,32 +81,32 @@ model AuditLog {
 }
 
 model Company {
-  id               String           @id @default(uuid())
-  address          String?
-  phone            String?
-  createdAt        DateTime         @default(now())
-  companyName             String
-  enableAccounting        Boolean          @default(false)
-  notificationsEnabled    Boolean          @default(false)
-  notificationChannel     String           @default("SMS")
-  suspended               Boolean          @default(false)
-  Account          Account[]
-  Container        Container[]
-  Customer         Customer[]
-  CustomerDebt     CustomerDebt[]
-  CustomerPayment  CustomerPayment[]
-  CustomerReturn   CustomerReturn[]
-  Expense          Expense[]
-  Invoice          Invoice[]
-  JournalEntry     JournalEntry[]
-  LedgerTransfer   LedgerTransfer[]
-  Role             Role[]
-  SMSLog           SMSLog[]
-  Sale             Sale[]
-  StockAdjustment  StockAdjustment[]
-  Supplier         Supplier[]
-  User             User[]
-  Waybill          Waybill[]
+  id                   String            @id @default(uuid())
+  address              String?
+  phone                String?
+  createdAt            DateTime          @default(now())
+  companyName          String
+  enableAccounting     Boolean           @default(false)
+  notificationsEnabled Boolean           @default(false)
+  notificationChannel  String            @default("SMS")
+  suspended            Boolean           @default(false)
+  Account              Account[]
+  Container            Container[]
+  Customer             Customer[]
+  CustomerDebt         CustomerDebt[]
+  CustomerPayment      CustomerPayment[]
+  CustomerReturn       CustomerReturn[]
+  Expense              Expense[]
+  Invoice              Invoice[]
+  JournalEntry         JournalEntry[]
+  LedgerTransfer       LedgerTransfer[]
+  Role                 Role[]
+  SMSLog               SMSLog[]
+  Sale                 Sale[]
+  StockAdjustment      StockAdjustment[]
+  Supplier             Supplier[]
+  User                 User[]
+  Waybill              Waybill[]
 }
 
 model Container {
@@ -135,13 +135,13 @@ model ContainerItem {
 }
 
 model Customer {
-  id              String           @id @default(uuid())
+  id              String            @id @default(uuid())
   phone           String
-  balance         Float            @default(0)
+  balance         Float             @default(0)
   companyId       String
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime          @default(now())
   customerName    String
-  Company         Company          @relation(fields: [companyId], references: [id])
+  Company         Company           @relation(fields: [companyId], references: [id])
   CustomerDebt    CustomerDebt[]
   CustomerPayment CustomerPayment[]
   CustomerReturn  CustomerReturn[]
@@ -149,8 +149,8 @@ model Customer {
   SMSLog          SMSLog[]
   Sale            Sale[]
   Waybill         Waybill[]
-  DebitTransfers  LedgerTransfer[] @relation("TransferDebitCustomer")
-  CreditTransfers LedgerTransfer[] @relation("TransferCreditCustomer")
+  DebitTransfers  LedgerTransfer[]  @relation("TransferDebitCustomer")
+  CreditTransfers LedgerTransfer[]  @relation("TransferCreditCustomer")
 }
 
 model CustomerDebt {
@@ -168,17 +168,17 @@ model CustomerDebt {
 }
 
 model CustomerPayment {
-  id            String         @id @default(uuid())
-  customerId    String
-  companyId     String
-  amount        Float
-  note          String?
-  createdAt     DateTime       @default(now())
-  paymentType         String?        @db.VarChar
-  depositAccountCode  String?
-  Company             Company        @relation(fields: [companyId], references: [id])
-  Customer            Customer       @relation(fields: [customerId], references: [id])
-  JournalEntries      JournalEntry[]
+  id                 String         @id @default(uuid())
+  customerId         String
+  companyId          String
+  amount             Float
+  note               String?
+  createdAt          DateTime       @default(now())
+  paymentType        String?        @db.VarChar
+  depositAccountCode String?
+  Company            Company        @relation(fields: [companyId], references: [id])
+  Customer           Customer       @relation(fields: [customerId], references: [id])
+  JournalEntries     JournalEntry[]
 }
 
 model Permission {
@@ -229,7 +229,7 @@ model SMSLog {
 }
 
 model Sale {
-  id             String         @id @default(uuid())
+  id             String           @id @default(uuid())
   saleType       String
   paymentMethod  String?
   sourceType     String
@@ -237,13 +237,13 @@ model Sale {
   customerId     String
   companyId      String
   totalAmount    Float
-  amountPaid     Float          @default(0)
-  createdAt      DateTime       @default(now())
+  amountPaid     Float            @default(0)
+  createdAt      DateTime         @default(now())
   discountType   String?
-  discountValue  Float          @default(0)
-  subtotal       Float          @default(0)
-  Company        Company        @relation(fields: [companyId], references: [id])
-  Customer       Customer       @relation(fields: [customerId], references: [id])
+  discountValue  Float            @default(0)
+  subtotal       Float            @default(0)
+  Company        Company          @relation(fields: [companyId], references: [id])
+  Customer       Customer         @relation(fields: [customerId], references: [id])
   SaleItem       SaleItem[]
   Invoice        Invoice[]
   Waybill        Waybill[]
@@ -252,13 +252,24 @@ model Sale {
 }
 
 model SaleItem {
-  id        String @id @default(uuid())
-  saleId    String
-  itemName  String
-  quantity  Int
-  unitPrice Float
-  costPrice Float  @default(0)
-  Sale      Sale   @relation(fields: [saleId], references: [id])
+  id             String  @id @default(uuid())
+  saleId         String
+  itemName       String
+  quantity       Int
+  unitPrice      Float
+  costPrice      Float   @default(0)
+  /// Which supplier's stock this line came out of. A regular sale carries one
+  /// sourceId for the whole cart, so a cart spanning suppliers charged every
+  /// line to the first one. Null on rows written before this column existed;
+  /// those still fall back to the sale's sourceId.
+  supplierItemId String?
+
+  Sale         Sale          @relation(fields: [saleId], references: [id])
+  SupplierItem SupplierItem? @relation(fields: [supplierItemId], references: [id])
+
+  @@index([saleId])
+  @@index([supplierItemId])
+  @@index([itemName])
 }
 
 model StockAdjustment {
@@ -282,49 +293,50 @@ model StockAdjustment {
 }
 
 model Supplier {
-  id              String           @id @default(uuid())
+  id              String            @id @default(uuid())
   contact         String
   country         String
   companyId       String
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime          @default(now())
   suppliername    String
   Container       Container[]
   StockAdjustment StockAdjustment[]
-  Company         Company          @relation(fields: [companyId], references: [id])
+  Company         Company           @relation(fields: [companyId], references: [id])
   SupplierItem    SupplierItem[]
-  DebitTransfers  LedgerTransfer[] @relation("TransferDebitSupplier")
-  CreditTransfers LedgerTransfer[] @relation("TransferCreditSupplier")
+  DebitTransfers  LedgerTransfer[]  @relation("TransferDebitSupplier")
+  CreditTransfers LedgerTransfer[]  @relation("TransferCreditSupplier")
 }
 
 model SupplierItem {
-  id              String   @id @default(uuid())
+  id              String     @id @default(uuid())
   supplierId      String
   itemName        String
   price           Float
   alias           String?
   incomeAccountId String?
   cogsAccountId   String?
-  Supplier        Supplier @relation(fields: [supplierId], references: [id])
-  IncomeAccount   Account? @relation("IncomeAccount", fields: [incomeAccountId], references: [id])
-  CogsAccount     Account? @relation("CogsAccount", fields: [cogsAccountId], references: [id])
+  Supplier        Supplier   @relation(fields: [supplierId], references: [id])
+  IncomeAccount   Account?   @relation("IncomeAccount", fields: [incomeAccountId], references: [id])
+  CogsAccount     Account?   @relation("CogsAccount", fields: [cogsAccountId], references: [id])
+  SaleItem        SaleItem[]
 }
 
 model User {
-  id              String           @id @default(uuid())
-  email           String           @unique
+  id              String            @id @default(uuid())
+  email           String            @unique
   password        String
   companyId       String
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime          @default(now())
   userName        String
   roleId          String?
-  isSuperAdmin    Boolean          @default(false)
+  isSuperAdmin    Boolean           @default(false)
   AuditLog        AuditLog[]
   StockAdjustment StockAdjustment[]
-  Company         Company          @relation(fields: [companyId], references: [id])
-  Role            Role?            @relation(fields: [roleId], references: [id])
-  JournalEntries  JournalEntry[]   @relation("JournalPostedBy")
-  LedgerTransfers LedgerTransfer[] @relation("TransferPostedBy")
-  Expenses        Expense[]        @relation("ExpensePostedBy")
+  Company         Company           @relation(fields: [companyId], references: [id])
+  Role            Role?             @relation(fields: [roleId], references: [id])
+  JournalEntries  JournalEntry[]    @relation("JournalPostedBy")
+  LedgerTransfers LedgerTransfer[]  @relation("TransferPostedBy")
+  Expenses        Expense[]         @relation("ExpensePostedBy")
 }
 
 // ── Accounting Models ─────────────────────────────────────────────────────────
@@ -344,13 +356,13 @@ model Account {
   Company         Company          @relation(fields: [companyId], references: [id])
   Parent          Account?         @relation("AccountParent", fields: [parentId], references: [id])
   Children        Account[]        @relation("AccountParent")
-  JournalLines         JournalLine[]
-  DebitTransfers       LedgerTransfer[] @relation("TransferDebitAccount")
-  CreditTransfers      LedgerTransfer[] @relation("TransferCreditAccount")
-  IncomeItems          SupplierItem[]   @relation("IncomeAccount")
-  CogsItems            SupplierItem[]   @relation("CogsAccount")
-  ExpenseEntries       Expense[]        @relation("ExpenseAccount")
-  ExpensePayments      Expense[]        @relation("ExpensePaymentAccount")
+  JournalLines    JournalLine[]
+  DebitTransfers  LedgerTransfer[] @relation("TransferDebitAccount")
+  CreditTransfers LedgerTransfer[] @relation("TransferCreditAccount")
+  IncomeItems     SupplierItem[]   @relation("IncomeAccount")
+  CogsItems       SupplierItem[]   @relation("CogsAccount")
+  ExpenseEntries  Expense[]        @relation("ExpenseAccount")
+  ExpensePayments Expense[]        @relation("ExpensePaymentAccount")
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -437,28 +449,28 @@ model LedgerTransfer {
 // ── Invoice / Waybill / Expense ───────────────────────────────────────────────
 
 model Invoice {
-  id            String        @id @default(uuid())
-  companyId     String
-  customerId    String
-  saleId        String?
-  invoiceNumber String
-  issueDate     DateTime      @default(now())
-  dueDate       DateTime?
-  status        InvoiceStatus @default(DRAFT)
-  notes         String?
-  terms         String?
-  subtotal      Float
-  discountValue Float         @default(0)
-  totalAmount   Float
-  paidAmount    Float         @default(0)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  Company       Company       @relation(fields: [companyId], references: [id])
-  Customer      Customer      @relation(fields: [customerId], references: [id])
-  Sale          Sale?         @relation(fields: [saleId], references: [id])
-  Items         InvoiceItem[]
+  id             String         @id @default(uuid())
+  companyId      String
+  customerId     String
+  saleId         String?
+  invoiceNumber  String
+  issueDate      DateTime       @default(now())
+  dueDate        DateTime?
+  status         InvoiceStatus  @default(DRAFT)
+  notes          String?
+  terms          String?
+  subtotal       Float
+  discountValue  Float          @default(0)
+  totalAmount    Float
+  paidAmount     Float          @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  Company        Company        @relation(fields: [companyId], references: [id])
+  Customer       Customer       @relation(fields: [customerId], references: [id])
+  Sale           Sale?          @relation(fields: [saleId], references: [id])
+  Items          InvoiceItem[]
   JournalEntries JournalEntry[]
-  Waybill       Waybill[]
+  Waybill        Waybill[]
 
   @@unique([companyId, invoiceNumber])
   @@index([companyId])
@@ -511,7 +523,7 @@ model WaybillItem {
 }
 
 model Expense {
-  id               String   @id @default(uuid())
+  id               String         @id @default(uuid())
   companyId        String
   expenseNumber    String
   date             DateTime
@@ -521,11 +533,11 @@ model Expense {
   paymentAccountId String
   reference        String?
   postedById       String
-  createdAt        DateTime @default(now())
-  Company          Company  @relation(fields: [companyId], references: [id])
-  ExpenseAccount   Account  @relation("ExpenseAccount",        fields: [accountId],        references: [id])
-  PaymentAccount   Account  @relation("ExpensePaymentAccount", fields: [paymentAccountId], references: [id])
-  PostedBy         User     @relation("ExpensePostedBy",       fields: [postedById],       references: [id])
+  createdAt        DateTime       @default(now())
+  Company          Company        @relation(fields: [companyId], references: [id])
+  ExpenseAccount   Account        @relation("ExpenseAccount", fields: [accountId], references: [id])
+  PaymentAccount   Account        @relation("ExpensePaymentAccount", fields: [paymentAccountId], references: [id])
+  PostedBy         User           @relation("ExpensePostedBy", fields: [postedById], references: [id])
   JournalEntries   JournalEntry[]
 
   @@unique([companyId, expenseNumber])
@@ -533,18 +545,18 @@ model Expense {
 }
 
 model CustomerReturn {
-  id          String               @id @default(uuid())
-  returnNo    String
-  customerId  String
-  companyId   String
-  saleId      String?
-  totalAmount Float
-  note        String?
-  createdAt   DateTime             @default(now())
-  Customer    Customer             @relation(fields: [customerId], references: [id])
-  Company     Company              @relation(fields: [companyId], references: [id])
-  Sale        Sale?                @relation(fields: [saleId], references: [id])
-  Items       CustomerReturnItem[]
+  id             String               @id @default(uuid())
+  returnNo       String
+  customerId     String
+  companyId      String
+  saleId         String?
+  totalAmount    Float
+  note           String?
+  createdAt      DateTime             @default(now())
+  Customer       Customer             @relation(fields: [customerId], references: [id])
+  Company        Company              @relation(fields: [companyId], references: [id])
+  Sale           Sale?                @relation(fields: [saleId], references: [id])
+  Items          CustomerReturnItem[]
   JournalEntries JournalEntry[]
 
   @@unique([companyId, returnNo])
@@ -553,11 +565,11 @@ model CustomerReturn {
 }
 
 model CustomerReturnItem {
-  id         String         @id @default(uuid())
-  returnId   String
-  itemName   String
-  quantity   Int
-  unitPrice  Float
-  costPrice  Float          @default(0)
-  Return     CustomerReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  id        String         @id @default(uuid())
+  returnId  String
+  itemName  String
+  quantity  Int
+  unitPrice Float
+  costPrice Float          @default(0)
+  Return    CustomerReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
 }
