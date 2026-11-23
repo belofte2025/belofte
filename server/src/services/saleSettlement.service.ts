@@ -47,31 +47,24 @@ const statusFor = (total: number, settled: number): SettlementStatus => {
  * A cash sale is settled by definition and is not included: it was paid when
  * it was made.
  */
-export const settleCustomerSales = async (
-  customerId: string,
-  companyId: string
-): Promise<Map<string, SaleSettlement>> => {
-  const [sales, debts, payments] = await Promise.all([
-    prisma.sale.findMany({
-      where: { customerId, companyId, saleType: "credit" },
-      select: { id: true, totalAmount: true, amountPaid: true, createdAt: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.customerDebt.findMany({
-      where: { customerId, companyId, status: { in: UNPAID_DEBT_STATUSES } },
-      select: { amount: true, createdAt: true },
-    }),
-    prisma.customerPayment.aggregate({
-      where: { customerId, companyId },
-      _sum: { amount: true },
-    }),
-  ]);
+interface CreditSaleRow {
+  id: string;
+  totalAmount: number;
+  amountPaid: number;
+}
 
+/**
+ * Applies one customer's payments to their credit sales, oldest first. Pure:
+ * the callers differ only in how they fetch, so the rule lives in one place.
+ */
+const allocate = (
+  sales: CreditSaleRow[],
+  openingTotal: number,
+  paymentsTotal: number
+): Map<string, SaleSettlement> => {
   // Opening balances are older than anything recorded here, so they take the
   // first call on what has been paid.
-  let pot = payments._sum.amount ?? 0;
-  const openingTotal = debts.reduce((s, d) => s + d.amount, 0);
-  pot = Math.max(0, pot - openingTotal);
+  let pot = Math.max(0, paymentsTotal - openingTotal);
 
   const result = new Map<string, SaleSettlement>();
 
@@ -95,6 +88,29 @@ export const settleCustomerSales = async (
   return result;
 };
 
+export const settleCustomerSales = async (
+  customerId: string,
+  companyId: string
+): Promise<Map<string, SaleSettlement>> => {
+  const [sales, debts, payments] = await Promise.all([
+    prisma.sale.findMany({
+      where: { customerId, companyId, saleType: "credit" },
+      select: { id: true, totalAmount: true, amountPaid: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.customerDebt.aggregate({
+      where: { customerId, companyId, status: { in: UNPAID_DEBT_STATUSES } },
+      _sum: { amount: true },
+    }),
+    prisma.customerPayment.aggregate({
+      where: { customerId, companyId },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  return allocate(sales, debts._sum.amount ?? 0, payments._sum.amount ?? 0);
+};
+
 /**
  * The same, for a set of sales that may span many customers — the shape the
  * sales reports need. Sales are grouped by customer so each customer's
@@ -114,13 +130,51 @@ export const settleSales = async (
   const customerIds = [
     ...new Set(sales.map((s) => s.customerId).filter((id): id is string => !!id)),
   ];
+  if (customerIds.length === 0) return new Map();
 
+  // Three queries for the whole report. Fetching per customer meant three
+  // round trips each, which on a year of sales across a hundred-odd customers
+  // took the report from seconds to minutes.
+  const [allSales, debtTotals, paymentTotals] = await Promise.all([
+    prisma.sale.findMany({
+      where: { customerId: { in: customerIds }, companyId, saleType: "credit" },
+      select: { id: true, customerId: true, totalAmount: true, amountPaid: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.customerDebt.groupBy({
+      by: ["customerId"],
+      where: { customerId: { in: customerIds }, companyId, status: { in: UNPAID_DEBT_STATUSES } },
+      _sum: { amount: true },
+    }),
+    prisma.customerPayment.groupBy({
+      by: ["customerId"],
+      where: { customerId: { in: customerIds }, companyId },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const openingByCustomer = new Map(debtTotals.map((d) => [d.customerId, d._sum.amount ?? 0]));
+  const paidByCustomer = new Map(paymentTotals.map((p) => [p.customerId, p._sum.amount ?? 0]));
+
+  const salesByCustomer = new Map<string, CreditSaleRow[]>();
+  for (const sale of allSales) {
+    if (!sale.customerId) continue;
+    const bucket = salesByCustomer.get(sale.customerId);
+    if (bucket) bucket.push(sale);
+    else salesByCustomer.set(sale.customerId, [sale]);
+  }
+
+  const wanted = new Set(saleIds);
   const merged = new Map<string, SaleSettlement>();
-  for (const customerId of customerIds) {
-    const perCustomer = await settleCustomerSales(customerId, companyId);
+  for (const [customerId, customerSales] of salesByCustomer) {
+    const perCustomer = allocate(
+      customerSales,
+      openingByCustomer.get(customerId) ?? 0,
+      paidByCustomer.get(customerId) ?? 0
+    );
     for (const [saleId, settlement] of perCustomer) {
       // Only the sales that were asked for.
-      if (saleIds.includes(saleId)) merged.set(saleId, settlement);
+      if (wanted.has(saleId)) merged.set(saleId, settlement);
     }
   }
 
