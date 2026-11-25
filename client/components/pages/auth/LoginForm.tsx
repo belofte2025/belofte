@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import PetrosBrand from "@/components/layout/PetrosBrand";
 import { login } from "@/services/authService";
@@ -74,7 +75,13 @@ export default function LoginForm() {
             <Link href="/onboard" className="font-semibold text-blue-700 hover:underline">Set up a company</Link>
           </div>
         </section>
-        <a href="tel:+233246462398" className={styles.support}>EYO Solutions support · 0246462398</a>
+        <div className={styles.developer}>
+          <Image src="/icon/eyo.png" alt="" width={48} height={36} className={styles.developerLogo} />
+          <div>
+            <p>Developed by EYO Solutions</p>
+            <a href="tel:+233246462398" className={styles.support}>Support · 0246462398</a>
+          </div>
+        </div>
       </div>
     </main>
   );

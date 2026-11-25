@@ -31,11 +31,25 @@
   padding-right: 3rem;
 }
 
-.support {
+.developer {
+  display: flex;
+  align-items: center;
   justify-self: center;
+  gap: 0.75rem;
   color: #d6ebe5;
-  font-size: 0.875rem;
-  text-align: center;
+  font-size: 0.8125rem;
+}
+
+.developerLogo {
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  padding: 0.2rem;
+  background: #fff;
+  object-fit: contain;
+}
+
+.support {
+  color: inherit;
 }
 
 .support:hover {
