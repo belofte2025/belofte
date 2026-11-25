@@ -157,6 +157,31 @@ export const getContainerSalesSummary = async (id: string) => {
     totalSales: data.totalSales ?? 0,
     creditSales: data.creditSales ?? 0,
     cashSales: data.cashSales ?? 0,
+    // How much of the credit has actually been collected. Older deployments
+    // of the API don't send these, so fall back to treating credit as unpaid,
+    // which is what the report showed before.
+    creditSettled: data.creditSettled ?? 0,
+    creditOutstanding: data.creditOutstanding ?? data.creditSales ?? 0,
+    amountCollected: data.amountCollected ?? data.cashSales ?? 0,
+    invoiceCounts: {
+      paid: data.invoiceCounts?.paid ?? 0,
+      partPaid: data.invoiceCounts?.partPaid ?? 0,
+      unpaid: data.invoiceCounts?.unpaid ?? 0,
+    },
+    invoices: Array.isArray(data.invoices)
+      ? data.invoices.map((inv: any) => ({
+          saleId: inv.saleId,
+          invoiceNumber: inv.invoiceNumber ?? null,
+          date: inv.date,
+          customerName: inv.customerName ?? "Unknown",
+          saleType: inv.saleType === "credit" ? "credit" : "cash",
+          totalAmount: inv.totalAmount ?? 0,
+          deposit: inv.deposit ?? 0,
+          settled: inv.settled ?? 0,
+          outstanding: inv.outstanding ?? 0,
+          status: (inv.status ?? "unpaid") as "paid" | "part-paid" | "unpaid",
+        }))
+      : [],
     items: rawItems.map((item: any) => ({
       name: item.itemName,
       expected: item.quantity ?? item.expectedQty ?? 0,

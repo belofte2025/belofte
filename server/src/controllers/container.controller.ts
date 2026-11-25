@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
+import { settleSales } from "../services/saleSettlement.service";
 
 export const getContainers = async (req: Request, res: Response) => {
   try {
@@ -480,6 +481,12 @@ export const listContainerItemsWithSales = async (
 export const getContainerSalesSummary = async (req: Request, res: Response) => {
   try {
     const containerId = req.params.id;
+    const requestCompanyId = req.user?.companyId;
+
+    if (!(await verifyContainerOwnership(containerId, requestCompanyId))) {
+      res.status(404).json({ message: "Container not found" });
+      return;
+    }
 
     // Get container + items
     const container = await prisma.container.findUnique({
@@ -502,10 +509,14 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       where: {
         sourceId: containerId,
         sourceType: "container",
+        companyId: container.companyId,
       },
       include: {
         SaleItem: true,
+        Customer: { select: { id: true, customerName: true } },
+        Invoice: { select: { invoiceNumber: true }, take: 1 },
       },
+      orderBy: { createdAt: "asc" },
     });
 
     // Flatten and group sale items by itemName; also tally credit vs cash
@@ -603,6 +614,63 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       0
     );
 
+    // Which of this container's invoices have actually been settled.
+    //
+    // Payments are banked against the customer, not the invoice, so a sale's
+    // own amountPaid only holds the deposit taken at the till. Splitting on
+    // saleType alone therefore called every credit sale outstanding, including
+    // the ones the customer has since part paid or cleared. settleSales
+    // applies each customer's payments oldest first and gives every invoice a
+    // settled figure, which is what this report shows.
+    const creditSaleIds = sales
+      .filter((sale) => (sale.saleType ?? "").toLowerCase() === "credit")
+      .map((sale) => sale.id);
+    const settlements = await settleSales(creditSaleIds, container.companyId);
+
+    let creditSettled = 0;
+    let creditOutstanding = 0;
+    const invoiceCounts = { paid: 0, partPaid: 0, unpaid: 0 };
+
+    const invoices = sales.map((sale) => {
+      const total = sale.totalAmount ?? 0;
+      const isCredit = (sale.saleType ?? "").toLowerCase() === "credit";
+
+      // A cash sale was paid when it was made.
+      const settlement = isCredit ? settlements.get(sale.id) : undefined;
+      const settled = isCredit
+        ? settlement?.settled ?? Math.min(sale.amountPaid ?? 0, total)
+        : total;
+      const outstanding = Math.max(0, total - settled);
+      const status = !isCredit || outstanding <= 0.005
+        ? "paid"
+        : settled > 0.005
+        ? "part-paid"
+        : "unpaid";
+
+      if (isCredit) {
+        creditSettled += settled;
+        creditOutstanding += outstanding;
+      }
+      if (status === "paid") invoiceCounts.paid += 1;
+      else if (status === "part-paid") invoiceCounts.partPaid += 1;
+      else invoiceCounts.unpaid += 1;
+
+      return {
+        saleId: sale.id,
+        invoiceNumber: sale.Invoice[0]?.invoiceNumber ?? null,
+        date: sale.createdAt,
+        customerName: sale.Customer?.customerName ?? "Unknown",
+        saleType: isCredit ? "credit" : "cash",
+        totalAmount: total,
+        // The deposit taken at the till, kept apart from later payments so a
+        // teller can see where the money came from.
+        deposit: settlement?.deposit ?? (isCredit ? Math.min(sale.amountPaid ?? 0, total) : total),
+        settled,
+        outstanding,
+        status,
+      };
+    });
+
     res.json({
       id: container.id,
       containerNo: container.containerNo,
@@ -612,6 +680,13 @@ export const getContainerSalesSummary = async (req: Request, res: Response) => {
       totalSales,
       creditSales,
       cashSales,
+      // Credit sales split by what has actually come in.
+      creditSettled,
+      creditOutstanding,
+      // Cash sales are settled by definition, so collected is cash + settled credit.
+      amountCollected: cashSales + creditSettled,
+      invoiceCounts,
+      invoices,
     });
     return;
   } catch (error) {

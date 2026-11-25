@@ -12,6 +12,7 @@ import {
   CreditCard,
   Banknote,
   Archive,
+  Receipt,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
@@ -28,6 +29,23 @@ interface Item {
   total: number;
 }
 
+type SettlementStatus = "paid" | "part-paid" | "unpaid";
+
+interface ContainerInvoice {
+  saleId: string;
+  invoiceNumber: string | null;
+  date: string | Date;
+  customerName: string;
+  saleType: "credit" | "cash";
+  totalAmount: number;
+  /** Taken at the till when the sale was made. */
+  deposit: number;
+  /** Deposit plus whatever later payments have reached this invoice. */
+  settled: number;
+  outstanding: number;
+  status: SettlementStatus;
+}
+
 interface ContainerSummary {
   id: string;
   number: string;
@@ -36,8 +54,25 @@ interface ContainerSummary {
   totalSales: number;
   creditSales: number;
   cashSales: number;
+  creditSettled: number;
+  creditOutstanding: number;
+  amountCollected: number;
+  invoiceCounts: { paid: number; partPaid: number; unpaid: number };
+  invoices: ContainerInvoice[];
   items: Item[];
 }
+
+const STATUS_LABEL: Record<SettlementStatus, string> = {
+  paid: "Paid",
+  "part-paid": "Part Paid",
+  unpaid: "Unpaid",
+};
+
+const STATUS_CLASS: Record<SettlementStatus, string> = {
+  paid: "bg-green-100 text-green-800",
+  "part-paid": "bg-amber-100 text-amber-800",
+  unpaid: "bg-red-100 text-red-700",
+};
 
 // formatCurrency already includes the ₵ symbol
 const fmt = (n: number) => formatCurrency(n);
@@ -110,17 +145,63 @@ export default function ContainerSummaryPage() {
         </table>
       `;
 
+      const { paid, partPaid, unpaid } = container.invoiceCounts;
+
+      const invoiceContent = container.invoices.length === 0 ? "" : `
+        <h2>Invoices</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Invoice</th>
+              <th>Customer</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Paid</th>
+              <th>Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${container.invoices.map(inv => `
+              <tr class="no-page-break">
+                <td>${new Date(inv.date).toLocaleDateString()}</td>
+                <td>${inv.invoiceNumber ?? inv.saleId.slice(0, 8).toUpperCase()}</td>
+                <td>${inv.customerName}</td>
+                <td>${inv.saleType === "credit" ? "Credit" : "Cash"}</td>
+                <td class="text-right">${formatCurrency(inv.totalAmount)}</td>
+                <td class="text-right">${formatCurrency(inv.settled)}</td>
+                <td class="text-right">${inv.outstanding > 0 ? formatCurrency(inv.outstanding) : "-"}</td>
+                <td class="text-center">${STATUS_LABEL[inv.status]}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" class="text-right font-bold">Totals</td>
+              <td class="text-right font-bold">${formatCurrency(container.totalSales)}</td>
+              <td class="text-right font-bold">${formatCurrency(container.amountCollected)}</td>
+              <td class="text-right font-bold">${formatCurrency(container.creditOutstanding)}</td>
+              <td class="text-center font-bold">${paid} paid / ${partPaid} part / ${unpaid} unpaid</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+
       const html = createHTMLReportTemplate(
         `Container Sales Summary: ${container.number}`,
-        tableContent,
+        tableContent + invoiceContent,
         {
           subtitle: `Supplier: ${container.company} | Delivery Date: ${new Date(container.deliveryDate).toLocaleDateString()}`,
           summaryStats: [
-            { label: "Total Sales",     value: formatCurrency(container.totalSales) },
-            { label: "Credit Sales",    value: formatCurrency(container.creditSales) },
-            { label: "Cash Sales",      value: formatCurrency(container.cashSales) },
-            { label: "Items Sold",      value: totalSold.toString() },
-            { label: "Remaining Stock", value: totalRemaining.toString() },
+            { label: "Total Sales",       value: formatCurrency(container.totalSales) },
+            { label: "Collected",         value: formatCurrency(container.amountCollected) },
+            { label: "Still Outstanding", value: formatCurrency(container.creditOutstanding) },
+            { label: "Paid Invoices",     value: paid.toString() },
+            { label: "Part Paid",         value: partPaid.toString() },
+            { label: "Unpaid",            value: unpaid.toString() },
+            { label: "Items Sold",        value: totalSold.toString() },
+            { label: "Remaining Stock",   value: totalRemaining.toString() },
           ],
         }
       );
@@ -293,7 +374,103 @@ export default function ContainerSummaryPage() {
                     />
                   </div>
                 )}
+
+                {/* What has actually been collected. Credit is not the same as
+                    unpaid: most of these invoices get part paid over time, and
+                    splitting on sale type alone hid that. */}
+                <div className="mt-5 pt-5 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Collected</p>
+                    <p className="text-lg font-bold text-green-600">{fmt(container.amountCollected)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Cash + credit received</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Credit Received</p>
+                    <p className="text-lg font-bold text-blue-600">{fmt(container.creditSettled)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Deposits and part payments</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Still Outstanding</p>
+                    <p className="text-lg font-bold text-red-600">{fmt(container.creditOutstanding)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Invoices</p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        {container.invoiceCounts.paid} paid
+                      </span>
+                      <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
+                        {container.invoiceCounts.partPaid} part paid
+                      </span>
+                      <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+                        {container.invoiceCounts.unpaid} unpaid
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* Invoices raised against this container */}
+              {container.invoices.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+                  <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-gray-400" />
+                    <h2 className="text-xl font-semibold text-gray-900">Invoices</h2>
+                    <span className="text-sm text-gray-500">({container.invoices.length})</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {container.invoices.map((inv) => (
+                          <tr key={inv.saleId} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                              {new Date(inv.date).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                              {inv.invoiceNumber ?? inv.saleId.slice(0, 8).toUpperCase()}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{inv.customerName}</td>
+                            <td className="px-4 py-3 text-center text-sm text-gray-600 capitalize">{inv.saleType}</td>
+                            <td className="px-4 py-3 text-right text-sm text-gray-900">{fmt(inv.totalAmount)}</td>
+                            <td className="px-4 py-3 text-right text-sm text-green-700">{fmt(inv.settled)}</td>
+                            <td className={`px-4 py-3 text-right text-sm font-semibold ${
+                              inv.outstanding > 0 ? "text-red-600" : "text-gray-400"
+                            }`}>
+                              {inv.outstanding > 0 ? fmt(inv.outstanding) : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${STATUS_CLASS[inv.status]}`}>
+                                {STATUS_LABEL[inv.status]}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-gray-50">
+                        <tr>
+                          <td colSpan={4} className="px-4 py-3 text-right text-sm font-bold text-gray-900">Totals</td>
+                          <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">{fmt(container.totalSales)}</td>
+                          <td className="px-4 py-3 text-right text-sm font-bold text-green-700">{fmt(container.amountCollected)}</td>
+                          <td className="px-4 py-3 text-right text-sm font-bold text-red-600">{fmt(container.creditOutstanding)}</td>
+                          <td />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* Items Table */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

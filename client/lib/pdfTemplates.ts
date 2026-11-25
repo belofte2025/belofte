@@ -492,7 +492,10 @@ export function createHTMLReportTemplate(
 
           .summary-stats {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            /* Auto-fit rather than a fixed five: reports carry different
+               numbers of stats, and a hard five left the sixth stranded
+               alone on its own row. */
+            grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
             gap: 6px;
             margin: 6px 0;
             page-break-inside: avoid;
