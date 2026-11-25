@@ -4,6 +4,7 @@ import { logUpdate, EntityType } from "../utils/auditLogger";
 import { postSaleJournal, reverseSaleJournal } from "../services/accounting/journalEngine";
 import notificationService from "../services/notification.service";
 import { computeCustomerBalance } from "../services/customerBalance.service";
+import { availableStockFor } from "../services/inventory.service";
 
 const VALID_PAYMENT_METHODS = ["CASH", "MOMO", "BANK"];
 
@@ -605,6 +606,20 @@ export const updateSale = async (req: Request, res: Response) => {
       }
     }
 
+    // Which supplier each line was already attributed to. The edit screen
+    // sends only name, quantity and price, so without carrying this forward an
+    // edit would blank supplierItemId and quietly put the sale back on the old
+    // rule, where the whole cart is charged to its first item's supplier.
+    const priorAttribution = new Map<string, string | null>();
+    for (const line of await prisma.saleItem.findMany({
+      where: { saleId: id },
+      select: { itemName: true, supplierItemId: true },
+    })) {
+      if (!priorAttribution.has(line.itemName)) {
+        priorAttribution.set(line.itemName, line.supplierItemId);
+      }
+    }
+
     // Re-look up cost prices so COGS stays accurate after edit
     const editedItemNames = items.map((i: { itemName: string }) => i.itemName);
     const editCostMap = new Map<string, number>();
@@ -688,7 +703,8 @@ export const updateSale = async (req: Request, res: Response) => {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               costPrice: editCostMap.get(item.itemName) ?? 0,
-              supplierItemId: item.supplierItemId ?? null,
+              supplierItemId:
+                item.supplierItemId ?? priorAttribution.get(item.itemName) ?? null,
             })
           ),
         },
@@ -714,6 +730,66 @@ export const updateSale = async (req: Request, res: Response) => {
     // edited one is not: it still has its original entries, so nothing would
     // ever flag it.
     const updated = await prisma.$transaction(async (tx) => {
+      // Stock check. recordSale refuses to oversell, but an edit replaces the
+      // lines wholesale and was never checked, so the same guard could be walked
+      // straight past by editing a sale upward afterwards.
+      //
+      // The sale's own current lines are credited back before comparing: they
+      // are about to be deleted, so the stock they hold is available to the
+      // version replacing them. Without that, raising a line from 5 to 6 would
+      // be judged as if all 6 were new.
+      {
+        const currentLines = await tx.saleItem.groupBy({
+          by: ["itemName"],
+          where: { saleId: id },
+          _sum: { quantity: true },
+        });
+        const releasedByItem = new Map(
+          currentLines.map((l) => [l.itemName, l._sum.quantity ?? 0])
+        );
+
+        for (const item of items as { itemName: string; quantity: number; supplierItemId?: string }[]) {
+          let supplierId: string | null = null;
+          if (item.supplierItemId) {
+            supplierId = (await tx.supplierItem.findFirst({
+              where: { id: item.supplierItemId, Supplier: { companyId } },
+              select: { supplierId: true },
+            }))?.supplierId ?? null;
+          }
+          if (!supplierId && existing.sourceType === "container" && existing.sourceId) {
+            supplierId = (await tx.container.findFirst({
+              where: { id: existing.sourceId, companyId },
+              select: { supplierId: true },
+            }))?.supplierId ?? null;
+          }
+          if (!supplierId) {
+            const prior = priorAttribution.get(item.itemName);
+            if (prior) {
+              supplierId = (await tx.supplierItem.findFirst({
+                where: { id: prior, Supplier: { companyId } },
+                select: { supplierId: true },
+              }))?.supplierId ?? null;
+            }
+          }
+          // Not attributable to a supplier: leave it, as recordSale does for the
+          // same case, rather than blocking an edit this code cannot place.
+          if (!supplierId) continue;
+
+          const available = await availableStockFor(item.itemName, supplierId, companyId!, tx as never);
+          const released = releasedByItem.get(item.itemName) ?? 0;
+          if (item.quantity > available + released) {
+            throw new SaleRefused(400, {
+              error: "Insufficient stock",
+              detail: `Item "${item.itemName}" has only ${available + released} units available, but the edit asks for ${item.quantity}.`,
+              itemName: item.itemName,
+              available: available + released,
+              requested: item.quantity,
+            });
+          }
+        }
+      }
+
+
       const saved = await tx.sale.update({ where: { id }, data: updateData });
       if (restatesLedger) {
         await reverseSaleJournal(tx as any, id, companyId!, userId!);

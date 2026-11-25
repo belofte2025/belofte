@@ -76,6 +76,13 @@ export default function InventoryReportPage() {
       case "negative":
         filtered = filtered.filter((item) => item.available < 0);
         break;
+      // Anything carrying a balance either way. Most of this report is lines
+      // at zero — items long sold out that are still listed because a
+      // container once brought them in — and they bury the stock that is
+      // actually there.
+      case "non-zero":
+        filtered = filtered.filter((item) => item.available !== 0);
+        break;
     }
 
     setFilteredInventory(filtered);
@@ -164,6 +171,7 @@ export default function InventoryReportPage() {
         "out-of-stock": "Out of stock only",
         "low-stock": "Low stock only",
         "negative": "Negative stock only",
+        "non-zero": "Excluding items at zero",
       };
       const activeFilters = [
         supplierFilter ? `Supplier: ${supplierFilter}` : null,
@@ -319,6 +327,7 @@ export default function InventoryReportPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               >
                 <option value="all">All Stock Levels</option>
+                <option value="non-zero">Has Stock (exclude zero)</option>
                 <option value="in-stock">In Stock</option>
                 <option value="low-stock">Low Stock</option>
                 <option value="out-of-stock">Out of Stock</option>

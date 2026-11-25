@@ -577,3 +577,63 @@ export const getInventoryReport_22 = async (companyId: string) => {
 
   return inventoryArray;
 };
+
+/**
+ * Units of one item a supplier still has: everything received across their
+ * containers, less everything sold through either route, plus adjustments.
+ *
+ * This is the figure a sale is checked against. It lives here so recording a
+ * sale and editing one cannot drift apart — the edit path had no check at all
+ * and could be used to walk straight past the one on recording.
+ */
+export const availableStockFor = async (
+  itemName: string,
+  supplierId: string,
+  companyId: string,
+  /** Pass the transaction client when checking inside one, so the figure is
+   *  read under the same snapshot as the write it guards. */
+  client: Pick<typeof prisma, "containerItem" | "supplierItem" | "saleItem" | "stockAdjustment"> = prisma
+): Promise<number> => {
+  const containerItems = await client.containerItem.findMany({
+    where: { itemName, Container: { supplierId, companyId } },
+    select: { quantity: true, containerId: true },
+  });
+  const totalReceived = containerItems.reduce((sum, ci) => sum + ci.quantity, 0);
+  const containerIds = containerItems.map((ci) => ci.containerId);
+
+  const supplierItemIds = (
+    await client.supplierItem.findMany({ where: { supplierId }, select: { id: true } })
+  ).map((i) => i.id);
+
+  const [containerSales, regularSales, adjustments] = await Promise.all([
+    client.saleItem.findMany({
+      where: {
+        itemName,
+        Sale: { companyId, sourceType: "container", sourceId: { in: containerIds } },
+      },
+      select: { quantity: true },
+    }),
+    client.saleItem.findMany({
+      where: {
+        itemName,
+        Sale: { companyId, sourceType: "regular" },
+        OR: [
+          { supplierItemId: { in: supplierItemIds } },
+          { supplierItemId: null, Sale: { sourceId: { in: supplierItemIds } } },
+        ],
+      },
+      select: { quantity: true },
+    }),
+    client.stockAdjustment.findMany({
+      where: { supplierId, itemName, companyId },
+      select: { adjustmentQty: true },
+    }),
+  ]);
+
+  const totalSold =
+    containerSales.reduce((sum, s) => sum + s.quantity, 0) +
+    regularSales.reduce((sum, s) => sum + s.quantity, 0);
+  const totalAdjustments = adjustments.reduce((sum, a) => sum + a.adjustmentQty, 0);
+
+  return totalReceived - totalSold + totalAdjustments;
+};
