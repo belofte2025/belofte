@@ -421,12 +421,14 @@ export default function DailyCash() {
             `${report.summary.totalTransactions} transactions`,
           ],
         ],
+        // Points, not millimetres — the document's unit is "pt". Details
+        // carries no width so it absorbs whatever the rest leave.
         columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 50 },
-          3: { cellWidth: 30, halign: "right" },
-          4: { cellWidth: 45 },
+          0: { cellWidth: 95 },                   // Date & Time
+          1: { cellWidth: 62 },                   // Type
+          2: { cellWidth: 130 },                  // Customer
+          3: { cellWidth: 95, halign: "right" },  // Amount
+          4: {},                                  // Details
         },
       }
     );

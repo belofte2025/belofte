@@ -153,13 +153,18 @@ export default function CustomerStatement({ customerId }: Props) {
       ["Date", "Type", "Description", "Debit", "Credit", "Balance"],
       summaryY + 5,
       {
+        // Widths are points: the document is created with unit "pt", and these
+        // used to be millimetre-sized numbers, so the table sat in a third of
+        // the page. Description carries no width on purpose — autotable gives
+        // it whatever the fixed columns leave, which keeps the row exactly as
+        // wide as the page whatever the margins are.
         columnStyles: {
-          0: { cellWidth: 70 },  // Date column
-          1: { cellWidth: 85 },  // Type column
-          2: { cellWidth: 140 }, // Description column
-          3: { cellWidth: 90, halign: "right" },  // Debit column
-          4: { cellWidth: 90, halign: "right" },  // Credit column
-          5: { cellWidth: 90, halign: "right" },  // Balance column
+          0: { cellWidth: 58 },                   // Date
+          1: { cellWidth: 82 },                   // Type
+          2: {},                                  // Description (takes the rest)
+          3: { cellWidth: 86, halign: "right" },  // Debit
+          4: { cellWidth: 86, halign: "right" },  // Credit
+          5: { cellWidth: 90, halign: "right" },  // Balance
         },
       }
     );

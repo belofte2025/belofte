@@ -115,12 +115,14 @@ export default function ContainerSummaryComponent() {
             formatPDFCurrency(container.totalSales),
           ],
         ],
+        // Points, not millimetres — the document's unit is "pt". Item carries
+        // no width so it absorbs whatever the figure columns leave.
         columnStyles: {
-          0: { cellWidth: 60 },
-          1: { cellWidth: 25, halign: "center" },
-          2: { cellWidth: 25, halign: "center" },
-          3: { cellWidth: 35, halign: "right" },
-          4: { cellWidth: 40, halign: "right" },
+          0: {},                                   // Item
+          1: { cellWidth: 55, halign: "center" },  // Sold
+          2: { cellWidth: 70, halign: "center" },  // Remaining
+          3: { cellWidth: 100, halign: "right" },  // Unit Price
+          4: { cellWidth: 110, halign: "right" },  // Total
         },
       }
     );

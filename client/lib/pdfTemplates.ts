@@ -72,27 +72,30 @@ const COLORS = {
 export function addPDFHeader(doc: jsPDF, options: PDFReportOptions): number {
   const companyInfo = options.companyInfo || getCompanyInfo();
   const pageWidth = doc.internal.pageSize.getWidth();
-  let yPosition = 15;
+  // The document is in points. These steps used to be millimetre-sized, so a
+  // 16pt company name was followed 6pt later by a 13pt title and the two
+  // overlapped. Each step now clears the line above it.
+  let yPosition = 34;
 
   // Company Name (Large, Bold)
   doc.setFontSize(16);
   doc.setTextColor(...COLORS.primary);
   doc.setFont("helvetica", "bold");
   doc.text(companyInfo.name, pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 6;
+  yPosition += 10;
 
   // Horizontal line separator
   doc.setDrawColor(...COLORS.primary);
   doc.setLineWidth(0.5);
   doc.line(14, yPosition, pageWidth - 14, yPosition);
-  yPosition += 7;
+  yPosition += 20;
 
   // Report Title
   doc.setFontSize(13);
   doc.setTextColor(...COLORS.text);
   doc.setFont("helvetica", "bold");
   doc.text(options.title, pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 5;
+  yPosition += 15;
 
   // Subtitle and Generation date on same line
   doc.setFontSize(8);
@@ -107,7 +110,7 @@ export function addPDFHeader(doc: jsPDF, options: PDFReportOptions): number {
   } else {
     doc.text(generatedText, pageWidth / 2, yPosition, { align: "center" });
   }
-  yPosition += 5;
+  yPosition += 14;
 
   return yPosition; // Return next available Y position
 }
@@ -220,12 +223,6 @@ export function addPDFTable(
     },
     columnStyles: options?.columnStyles,
     margin: { left: 14, right: 14 },
-    // Page break handling
-    didDrawPage: (data) => {
-      // Add footer to each page
-      const pageCount = doc.getNumberOfPages();
-      addPDFFooter(doc, data.pageNumber, pageCount);
-    },
     // Prevent rows from breaking across pages where possible
     rowPageBreak: "avoid",
     // Add spacing between rows for readability
@@ -235,6 +232,17 @@ export function addPDFTable(
       lineWidth: 0.1,
     },
   });
+
+  // Footers are stamped once the table is finished, not from didDrawPage.
+  // While the table is still being laid out getNumberOfPages() only knows
+  // about the pages drawn so far, so page one of a two page statement read
+  // "Page 1 of 1".
+  const pageCount = doc.getNumberOfPages();
+  for (let page = 1; page <= pageCount; page += 1) {
+    doc.setPage(page);
+    addPDFFooter(doc, page, pageCount);
+  }
+  doc.setPage(pageCount);
 }
 
 /**
@@ -261,18 +269,18 @@ export function addPDFSummarySection(
     doc.setTextColor(...COLORS.text);
     doc.setFont("helvetica", "bold");
     doc.text(title, 14, yPosition);
-    yPosition += 8;
+    yPosition += 14;
   }
 
   // Draw summary boxes in a grid (5 per row)
   let xPosition = 14;
-  const rowHeight = 20; // Further reduced for more compact display
+  const rowHeight = 34; // Tall enough for the label and the figure beneath it
 
   summaryData.forEach((item, index) => {
     // Start new row every 5 items
     if (index > 0 && index % itemsPerRow === 0) {
       xPosition = 14;
-      yPosition += rowHeight + 4;
+      yPosition += rowHeight + 8;
     }
 
     // Draw box
@@ -286,27 +294,37 @@ export function addPDFSummarySection(
     doc.rect(xPosition, yPosition, boxWidth, rowHeight, "S");
 
     // Add label
-    doc.setFontSize(6.5);
+    doc.setFontSize(7.5);
     const labelColor = item.highlight ? COLORS.white : COLORS.gray;
     doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
     doc.setFont("helvetica", "normal");
-    doc.text(item.label, xPosition + 3, yPosition + 7);
+    doc.text(item.label, xPosition + 7, yPosition + 13);
 
     // Add value
     doc.setFontSize(10);
     const valueColor = item.highlight ? COLORS.white : COLORS.text;
     doc.setTextColor(valueColor[0], valueColor[1], valueColor[2]);
     doc.setFont("helvetica", "bold");
-    doc.text(String(item.value), xPosition + 3, yPosition + 15);
+    doc.text(String(item.value), xPosition + 7, yPosition + 27);
 
     xPosition += boxWidth + gapBetweenBoxes;
   });
 
-  return yPosition + rowHeight + 6;
+  return yPosition + rowHeight + 12;
 }
 
 export function formatPDFCurrency(amount: number): string {
-  return `₵ ${amount.toFixed(2)}`;
+  // "GH¢", not "₵". jsPDF's built-in fonts are WinAnsi-encoded, which has no
+  // U+20B5 CEDI SIGN: it fell through to the micro sign, so every figure on
+  // every exported PDF read "µ 1099000.00". U+00A2 CENT SIGN is in WinAnsi and
+  // renders correctly, and "GH¢" is how the amount is written here anyway.
+  // Grouped as well — six and seven figure cedi amounts are unreadable without
+  // separators.
+  const grouped = amount.toLocaleString("en-GB", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `GH\u00A2 ${grouped}`;
 }
 
 /**
