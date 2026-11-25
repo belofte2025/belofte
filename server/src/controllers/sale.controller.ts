@@ -595,15 +595,31 @@ export const updateSale = async (req: Request, res: Response) => {
 
     // Validate new customer belongs to same company (if changing)
     const targetCustomerId = newCustomerId || existing.customerId;
-    if (newCustomerId && newCustomerId !== existing.customerId) {
-      const customer = await prisma.customer.findUnique({
-        where: { id: newCustomerId },
-        select: { companyId: true },
-      });
-      if (!customer || customer.companyId !== companyId) {
+    const customerMoved = Boolean(newCustomerId) && newCustomerId !== existing.customerId;
+    let movedFromName = "";
+    let movedToName = "";
+    if (customerMoved) {
+      const [fromCustomer, toCustomer] = await Promise.all([
+        prisma.customer.findUnique({
+          where: { id: existing.customerId },
+          select: { customerName: true },
+        }),
+        prisma.customer.findUnique({
+          where: { id: newCustomerId },
+          select: { companyId: true, customerName: true },
+        }),
+      ]);
+      if (!toCustomer || toCustomer.companyId !== companyId) {
         res.status(400).json({ error: "Customer not found in this company" });
         return;
       }
+      movedFromName = fromCustomer?.customerName ?? "Unknown";
+      movedToName = toCustomer.customerName;
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: "A sale must keep at least one item" });
+      return;
     }
 
     // Which supplier each line was already attributed to. The edit screen
@@ -791,6 +807,19 @@ export const updateSale = async (req: Request, res: Response) => {
 
 
       const saved = await tx.sale.update({ where: { id }, data: updateData });
+
+      // Everything raised off this sale belongs to whoever the sale belongs
+      // to. Moving only Sale.customerId put the balance on the right customer
+      // while the invoice, waybill and any return stayed listed under the
+      // wrong one, so the two would never agree again.
+      if (customerMoved) {
+        await Promise.all([
+          tx.invoice.updateMany({ where: { saleId: id, companyId }, data: { customerId: targetCustomerId } }),
+          tx.waybill.updateMany({ where: { saleId: id, companyId }, data: { customerId: targetCustomerId } }),
+          tx.customerReturn.updateMany({ where: { saleId: id, companyId }, data: { customerId: targetCustomerId } }),
+        ]);
+      }
+
       if (restatesLedger) {
         await reverseSaleJournal(tx as any, id, companyId!, userId!);
         const itemsWithCost = items.map((i: any) => ({
@@ -805,7 +834,7 @@ export const updateSale = async (req: Request, res: Response) => {
     if (userId) {
       const changes: string[] = [];
       if (saleType && saleType !== existing.saleType) changes.push(`Type: ${existing.saleType} → ${saleType}`);
-      if (newCustomerId && newCustomerId !== existing.customerId) changes.push(`Customer changed`);
+      if (customerMoved) changes.push(`Customer: ${movedFromName} → ${movedToName}`);
       if (saleDate) changes.push(`Date: ${saleDate}`);
       if (items) changes.push(`Items: ${items.length} items, Total: GHS ${totalAmount.toFixed(2)}`);
 

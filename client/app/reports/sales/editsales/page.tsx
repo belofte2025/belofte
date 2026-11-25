@@ -251,8 +251,15 @@ export default function EditSalesPage() {
       setShowEditModal(false);
       setEditingSale(null);
       loadSales();
-    } catch {
-      toast.error("Failed to update sale");
+    } catch (err: unknown) {
+      // The server says why — an edit can be refused for want of stock, and
+      // "Failed to update sale" sent the teller away with nothing to act on.
+      const body = (err as { response?: { data?: { error?: string; detail?: string } } })
+        ?.response?.data;
+      toast.error(
+        [body?.error, body?.detail].filter(Boolean).join(" — ") ||
+          "Failed to update sale"
+      );
     } finally {
       setSaving(false);
     }
