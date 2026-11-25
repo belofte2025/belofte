@@ -238,6 +238,25 @@ export const getAllCustomerPayments = async (req: Request, res: Response) => {
       _count: true,
     });
 
+    // The method breakdown covers everything the filter matched, not just the
+    // page being displayed. The report used to total the rows it had in hand
+    // and then show them as a share of the full period, so on any filter
+    // wider than one page the percentages did not add up.
+    const byTypeRows = await prisma.customerPayment.groupBy({
+      by: ["paymentType"],
+      where,
+      _sum: { amount: true },
+      _count: { _all: true },
+    });
+
+    const byType = byTypeRows
+      .map((row) => ({
+        paymentType: row.paymentType ?? "UNSPECIFIED",
+        count: row._count._all,
+        total: row._sum.amount ?? 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
     // Normalize Prisma's PascalCase relation name to camelCase for the client
     const normalizedPayments = payments.map(({ Customer, ...rest }) => ({
       ...rest,
@@ -255,6 +274,7 @@ export const getAllCustomerPayments = async (req: Request, res: Response) => {
       summary: {
         totalAmount: summary._sum.amount || 0,
         totalPayments: summary._count,
+        byType,
       },
     });
   } catch (error) {
