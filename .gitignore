@@ -55,3 +55,12 @@ coverage/
 # Temporary folders
 tmp/
 temp/.claude/
+
+# Client data exports: real customer names, balances and supplier catalogues
+# that land here when working with a client's books. This repo is public, and
+# git history keeps whatever is committed even after the file is deleted, so
+# these must never be added. Anchored to the repo root so the blank import
+# templates the app ships under client/ are unaffected.
+/*.xlsx
+/*.xls
+/*.csv
